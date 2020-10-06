@@ -1,0 +1,9 @@
+---
+# Server configurations
+Servers:
+  testsystem:
+    url: https://dev11.myodoo.io/
+    port: 443
+    user: admin
+    password: password
+    database: db

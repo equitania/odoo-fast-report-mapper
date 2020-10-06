@@ -10,3 +10,6 @@ import eq_utils
 reports_folder = "/reports_yaml"
 
 # Collect reports
+yaml_objects = utils.parse_yaml_folder(reports_folder)
+eq_report_objects = eq_utils.collect_all_reports_from_yaml_objects(yaml_objects)
+

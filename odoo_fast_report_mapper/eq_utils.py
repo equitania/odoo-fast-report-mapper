@@ -23,3 +23,11 @@ def create_report_object_from_yaml_object(yaml_object):
         yaml_object['eq_print_button']
     )
     return report
+
+
+def collect_all_reports_from_yaml_objects(yaml_objects: list):
+    report_object_list = []
+    for yaml_object in yaml_objects:
+        report_object = create_report_object_from_yaml_object(yaml_object)
+        report_object_list.append(report_object)
+    return report_object_list
