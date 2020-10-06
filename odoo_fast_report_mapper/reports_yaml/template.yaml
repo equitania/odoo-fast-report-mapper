@@ -1,0 +1,64 @@
+---
+# Naming
+name:
+  ger: Deutsch_Report
+  eng: english_report
+# .frx name and model
+report_name: eq_fr_core_test_report
+report_model: test.model
+# File naming
+attachment: ('Report.pdf')
+print_report_name: ('Report')
+# Properties
+report_type: fast_report
+eq_export_type: pdf
+eq_ignore_images: True
+eq_ignore_html: False
+eq_export_complete_html: False
+eq_export_as_sql: True
+eq_print_button: False
+multiprint: False
+attachment_use: True
+
+dependencies:
+  - module_name
+
+report_fields:
+  model.test1:
+  - id
+  - number
+  - date_invoice
+  - origin
+  - name
+  - state
+  - eq_head_text
+  - incoterms_id
+  - currency_id
+  - comment
+  - amount_total
+  - amount_tax
+  - amount_untaxed
+  - user_id
+  - company_id
+  - type
+  model.test2:
+  - id
+  - sequence
+  - product_id
+  - delivery_date
+  - discount
+  - price_subtotal
+  - name
+  - uom_id
+  - quantity
+  - price_unit
+  - price_total
+  - display_type
+  - eq_pos
+
+calculated_fields:
+  field_name:
+    function_name:
+      - parameter1
+      - parameter2
+
