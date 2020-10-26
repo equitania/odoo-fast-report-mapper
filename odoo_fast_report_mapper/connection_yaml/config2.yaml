@@ -1,0 +1,9 @@
+---
+# Server configuration
+Server:
+    url: https://dev12.myodoo.io/
+    port: 443
+    user: admin
+    password: password
+    database: db
+    delete_old_reports: True

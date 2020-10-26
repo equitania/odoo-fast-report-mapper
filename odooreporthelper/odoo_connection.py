@@ -2,6 +2,7 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+import urllib
 import utils
 import odoorpc
 import sys
@@ -13,7 +14,12 @@ class OdooConnection:
         self.username = username
         self.password = password
         self.database = database
-        self.connection = utils.prepare_connection(url, port)
+        try:
+            self.connection = utils.prepare_connection(url, port)
+        except urllib.error.URLError as ex:
+            raise exceptions.OdooConnectionError(
+                "ERROR: Please check your parameters and your connection" + " " + str(ex))
+            sys.exit(0)
 
     def login(self):
         try:
@@ -23,8 +29,9 @@ class OdooConnection:
             self.connection.env.context['active_test'] = False  # Show inactive articles
             self.connection.env.context['tracking_disable'] = True
             print('##### Connected to ' + self.database + ' #####')
-        except odoorpc.error.RPCError:
-            raise exceptions.OdooConnectionError("ERROR: Please check your parameters and your connection")
+        except odoorpc.error.RPCError as ex:
+            raise exceptions.OdooConnectionError(
+                "ERROR: Please check your parameters and your connection" + " " + str(ex))
             sys.exit(0)
 
     def map_reports(self, report_list: list):
@@ -56,7 +63,8 @@ class OdooConnection:
                     # Loop over all fields in the list of the current model
                     for field_name in report._fields[model_name]:
                         # Get the field from in Odoo
-                        field_id = IR_MODEL_FIELDS.search([('model_id', '=', model_object.id), ('name', '=', field_name)])
+                        field_id = IR_MODEL_FIELDS.search(
+                            [('model_id', '=', model_object.id), ('name', '=', field_name)])
                         if field_id:
                             field = IR_MODEL_FIELDS.browse(field_id)
                             # Insert the report_id
@@ -80,9 +88,12 @@ class OdooConnection:
         parameters_as_string = parameters_as_string.strip()
         value_dict = {"eq_field_name": field_name, "eq_function_name": function_name,
                       "eq_parameters_name": parameters_as_string}
-        report_id = IR_ACTIONS_REPORT.search([('model', '=', report_model), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['ger']), ('name', '=', report_name['eng'])])
+        report_id = IR_ACTIONS_REPORT.search(
+            [('model', '=', report_model), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['ger']),
+             ('name', '=', report_name['eng'])])
         value_dict["eq_report_id"] = report_id[0]
-        calculated_field_id = REPORT_CALC.search([('eq_report_id', '=', report_id[0]), ('eq_field_name', '=', field_name)])
+        calculated_field_id = REPORT_CALC.search(
+            [('eq_report_id', '=', report_id[0]), ('eq_field_name', '=', field_name)])
         if len(calculated_field_id) == 0:
             REPORT_CALC.create(value_dict)
         else:
@@ -92,7 +103,8 @@ class OdooConnection:
 
     def _search_report(self, model_name, report_name):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name), ('name', '=', report_name + " " + "(PDF)")])
+        report_ids = IR_ACTIONS_REPORT.search(
+            [('model', '=', model_name), '|', ('name', '=ilike', report_name), ('name', '=ilike', report_name + " " + "(PDF)")])
         if len(report_ids) == 0:
             return False
         else:
@@ -125,5 +137,3 @@ class OdooConnection:
                 if not dependency_installed:
                     return False
         return True
-
-

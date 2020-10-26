@@ -6,9 +6,10 @@ from odooreporthelper.report import Report
 
 
 class EqReport(Report):
-    def __init__(self, entry_name: list, report_name: str, report_type: str, model_name: str, eq_export_type="pdf", print_report_name="Report",
-                 attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False, eq_export_complete_html=False,
-                 eq_export_as_sql=True, multi_print=False, attachment_use=False, eq_print_button=False):
+    def __init__(self, entry_name: list, report_name: str, report_type: str, model_name: str, eq_export_type="pdf",
+                 print_report_name="Report",attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False,
+                 eq_export_complete_html=False,eq_export_as_sql=True, multi_print=False, attachment_use=False,
+                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={}):
         self.entry_name = entry_name
         self.report_name = report_name
         self.report_type = report_type
@@ -23,9 +24,9 @@ class EqReport(Report):
         self.multi_print = multi_print
         self.attachment_use = attachment_use
         self.eq_print_button = eq_print_button
-        self._fields = {}
-        self._calculated_fields = {}
-        self._dependencies = []
+        self._fields = model_fields
+        self._calculated_fields = calculated_fields
+        self._dependencies = dependencies
         self._data_dictionary = {}
 
     def self_ensure(self):

@@ -10,7 +10,7 @@ import exceptions
 
 class Report:
     def __init__(self, entry_name: str, report_name: str, report_type: str, model_name: str, print_report_name="Report",
-                 attachment="Report.pdf", attachment_use=False):
+                 attachment="Report.pdf", attachment_use=False, dependencies=[], model_fields={}, calculated_fields={}):
         self.entry_name = entry_name
         self.report_name = report_name
         self.report_type = report_type
@@ -18,9 +18,9 @@ class Report:
         self.print_report_name = print_report_name
         self.attachment = attachment
         self.attachment_use = attachment_use
-        self._fields = {}
-        self._calculated_fields = {}
-        self._dependencies = []
+        self._fields = model_fields
+        self._calculated_fields = calculated_fields
+        self._dependencies = dependencies
         self._data_dictionary = {}
 
     def self_ensure(self):

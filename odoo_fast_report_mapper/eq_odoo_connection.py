@@ -6,6 +6,10 @@ from odooreporthelper.odoo_connection import OdooConnection
 
 
 class EqOdooConnection(OdooConnection):
+    def __init__(self, clean_old_reports, *args, **kwargs):
+        super(EqOdooConnection, self).__init__(*args, **kwargs)
+        self.clean_reports = clean_old_reports
+
     def _search_report(self, model_name, report_name: dict):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['ger']),
@@ -17,3 +21,8 @@ class EqOdooConnection(OdooConnection):
             return False
         else:
             return report_ids[0]
+
+    def clean_reports(self):
+        if self.clean_reports:
+            report_ids = self._get_fast_report_ids()
+            self._delete_report(report_ids)
