@@ -68,10 +68,14 @@ class OdooConnection:
                         if field_id:
                             field = IR_MODEL_FIELDS.browse(field_id)
                             # Insert the report_id
-                            if report.id not in field.eq_report_ids.ids:
+                            if report_object.id not in field.eq_report_ids.ids:
                                 report_ids = field.eq_report_ids.ids
-                                report_ids.append(report.id)
+                                report_ids.append(report_object.id)
                                 field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                if report._calculated_fields:
+                    for field, content in report._calculated_fields.items():
+                        for function_name, parameter in content.items():
+                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model)
                 print(f"!!! ******** END {report.report_name} ******** !!!")
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
@@ -82,6 +86,14 @@ class OdooConnection:
         self._delete_report(report_ids)
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model):
+        """
+            Set calculated fields for the report and clean them:
+            Example:
+            {
+                'field_name': {'function_name': ['parameter1', 'parameter2']},
+                'payment_text': {'eq_get_payment_terms': ['partner_id.lang', 'currency_id']}
+            }
+        """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         REPORT_CALC = self.connection.env['eq_calculated_field_value']
         parameters_as_string = ', '.join(parameters)

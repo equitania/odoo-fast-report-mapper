@@ -22,4 +22,9 @@ def main(server_path, report_path):
     for connection in connections:
         connection.login()
         connection.clean_reports()
+        click.echo("Mapping reports...")
         connection.map_reports(reports)
+    click.echo("##### DONE #####")
+
+
+main()
