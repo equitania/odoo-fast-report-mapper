@@ -24,8 +24,7 @@ data['eq_print_button'] = report.eq_print_report_button
 data['multiprint'] = False
 data['attachment_use'] = True
 
-data['dependencies'] = ['eq_base', 'eq_fr_core', 'eq_res_partner',
-                        ]
+data['dependencies'] = report.dependencies
 
 data['report_fields'] = report.report_fields
 
