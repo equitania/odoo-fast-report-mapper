@@ -74,14 +74,14 @@ def parse_yaml(yaml_file):
 
 def parse_yaml_folder(path):
     """
-        Parse multiples yaml files to list of objects and return them
+        Parse multiple yaml files to list of objects and return them
         :param: yaml_file: path to yaml files
         :return: yaml_objects
     """
-    report_objects = []
+    yaml_objects = []
     for file in os.listdir(path):
         if file.endswith(".yaml"):
-            report_object = parse_yaml(os.path.join(path, file))
-            if report_object:
-                report_objects.append(report_object)
-    return report_objects
+            yaml_object = parse_yaml(os.path.join(path, file))
+            if yaml_object:
+                yaml_objects.append(yaml_object)
+    return yaml_objects

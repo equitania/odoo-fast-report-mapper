@@ -1,0 +1,17 @@
+---
+# Simple variable
+variable: varo
+# Simple dictionary
+dictionary:
+  first: fooo
+  second: baro
+# Simple list
+list:
+  - Helloo
+  - Worldo
+# Nested dictionary
+nested_dictionary:
+  nested_dictionary_1:
+    nested_list_1:
+      - parameter1o
+      - parameter2o
