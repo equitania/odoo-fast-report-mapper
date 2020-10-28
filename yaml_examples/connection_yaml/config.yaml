@@ -4,6 +4,6 @@ Server:
     url: https://dev11.myodoo.io/
     port: 443
     user: admin
-    password: password
-    database: db
+    password: ownerp2020
+    database: v12_test3
     delete_old_reports: True
