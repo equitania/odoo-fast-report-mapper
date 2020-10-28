@@ -47,6 +47,11 @@ def fire_all_functions(function_list: list):
 
 
 def self_clean(input_dictionary: dict) -> dict:
+    """
+        Remove duplicates in dictionary
+        :param: input_dictionary
+        :return: return_dict
+    """
     return_dict = input_dictionary.copy()
     for key, value in input_dictionary.items():
         return_dict[key] = list(dict.fromkeys(value))
@@ -54,6 +59,11 @@ def self_clean(input_dictionary: dict) -> dict:
 
 
 def parse_yaml(yaml_file):
+    """
+        Parse yaml file to object and return it
+        :param: yaml_file: path to yaml file
+        :return: yaml_object
+    """
     with open(yaml_file, 'r') as stream:
         try:
             return yaml.safe_load(stream)
@@ -63,6 +73,11 @@ def parse_yaml(yaml_file):
 
 
 def parse_yaml_folder(path):
+    """
+        Parse multiples yaml files to list of objects and return them
+        :param: yaml_file: path to yaml files
+        :return: yaml_objects
+    """
     report_objects = []
     for file in os.listdir(path):
         if file.endswith(".yaml"):

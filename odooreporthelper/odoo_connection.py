@@ -15,6 +15,7 @@ class OdooConnection:
         self.password = password
         self.database = database
         try:
+            # Build connection
             self.connection = utils.prepare_connection(url, port)
         except urllib.error.URLError as ex:
             raise exceptions.OdooConnectionError(
@@ -22,6 +23,9 @@ class OdooConnection:
             sys.exit(0)
 
     def login(self):
+        """
+            Try to login into the Odoo system and set parameters to optimize the connection
+        """
         try:
             self.connection.login(self.database, self.username, self.password)
             # Change settings to make the connection faster
@@ -35,12 +39,16 @@ class OdooConnection:
             sys.exit(0)
 
     def map_reports(self, report_list: list):
+        """
+            Create/Write reports into the Odoo system with their fields and properties
+            :param: report_list: List of report objects
+        """
         IR_MODEL = self.connection.env['ir.model']
         IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         for report in report_list:
             report.self_ensure()
-            dependencies_installed = self._check_dependencies(report._dependencies)
+            dependencies_installed = self.check_dependencies(report._dependencies)
             if not dependencies_installed:
                 print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
                 continue
@@ -82,8 +90,12 @@ class OdooConnection:
                 print(ex)
 
     def clear_reports(self):
+        """
+            Delete all reports with type "fast_report"
+        """
         report_ids = self._get_fast_report_ids()
-        self._delete_report(report_ids)
+        for report_id in report_ids:
+            self._delete_report(report_id)
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model):
         """
@@ -114,6 +126,12 @@ class OdooConnection:
             calculated_field_object.write(value_dict)
 
     def _search_report(self, model_name, report_name):
+        """
+            Search for a report according to their report_name (non-case-sensitive) and model_name
+            :param: model_name: Name of Odoo model
+            :param: report_name: Name of report
+            :return: First ID of found report(s)
+        """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search(
             [('model', '=', model_name), '|', ('name', '=ilike', report_name), ('name', '=ilike', report_name + " " + "(PDF)")])
@@ -123,18 +141,29 @@ class OdooConnection:
             return report_ids[0]
 
     def _get_fast_report_ids(self):
+        """
+            Returns all report IDs that have report_type = fast_report
+            :return: List of report_ids
+        """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search([('report_type', '=', "fast_report")])
         return report_ids
 
-    def _delete_report(self, report_ids):
+    def _delete_report(self, report_id):
+        """
+            Delete report and remove print_button in Odoo
+            :param: report_id: ID of report in Odoo
+        """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        for report_id in report_ids:
-            report_object = IR_ACTIONS_REPORT.browse(report_id)
-            report_object.unlink_action()
-            report_object.unlink()
+        report_object = IR_ACTIONS_REPORT.browse(report_id)
+        report_object.unlink_action()
+        report_object.unlink()
 
-    def _check_module(self, module_name):
+    def check_module(self, module_name):
+        """
+            Search for module in Odoo and return True when it is installed, else return false
+            :param: module_name: Name of module
+        """
         IR_MODULE_MODULE = self.connection.env['ir.module.module']
         module_id = IR_MODULE_MODULE.search([("state", "=", "installed"), ("name", "=", module_name)])
         if module_id:
@@ -142,10 +171,14 @@ class OdooConnection:
         else:
             return False
 
-    def _check_dependencies(self, dependencies):
+    def check_dependencies(self, dependencies):
+        """
+            Check if all dependencies (modules) are installed, if one isn't, return False
+            :param: dependencies: List of names of modules
+        """
         if dependencies:
             for dependency in dependencies:
-                dependency_installed = self._check_module(dependency)
+                dependency_installed = self.check_module(dependency)
                 if not dependency_installed:
                     return False
         return True

@@ -31,6 +31,6 @@ data['report_fields'] = report.report_fields
 
 data['calculated_fields'] = {}
 
-
+# Write data to yaml
 with io.open(file_name, 'w', encoding='utf8') as outfile:
     yaml.dump(data, outfile, default_flow_style=False, allow_unicode=True, sort_keys=False)

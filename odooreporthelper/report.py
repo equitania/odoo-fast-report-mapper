@@ -47,11 +47,13 @@ class Report:
             }
             :param field_dict: Dictionary of models with their fields e.g.: {model: [field1, field2], model2...}
         """
-        self._fields = utils.self_clean(field_dict)
+        for model, fields in field_dict.items():
+            self._fields[model] = fields
+        self._fields = utils.self_clean(self._fields)
 
     def add_calculated_fields(self, field_dict):
         """
-            Set calculated fields for the report and clean them.
+            Add calculated fields for the report and clean them.
             :param field_dict: Dictionary of calculated fields e.g.:
             Example:
             {
@@ -59,10 +61,17 @@ class Report:
                 'payment_text': {'eq_get_payment_terms': ['partner_id.lang', 'currency_id']}
             }
         """
-        self._calculated_fields = field_dict
+        for field_name, content in field_dict:
+            self._calculated_fields[field_name] = content
+        self._calculated_fields = utils.self_clean(self._calculated_fields)
 
     def add_dependencies(self, dependency_list: list):
-        self._dependencies = dependency_list
+        """
+            Add dependencies to self._dependencies
+        """
+        self._dependencies = self._dependencies + dependency_list
+        # Remove duplicates
+        self._dependencies = list(set(self._dependencies))
 
 
 

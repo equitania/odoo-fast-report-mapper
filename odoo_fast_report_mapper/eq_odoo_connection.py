@@ -11,6 +11,10 @@ class EqOdooConnection(OdooConnection):
         self.do_clean_reports = clean_old_reports
 
     def _search_report(self, model_name, report_name: dict):
+        """
+            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
+            report_type = fast_report
+        """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['ger']),
                                                ('name', '=', report_name['ger'] + " " + "(PDF)")])
@@ -23,6 +27,11 @@ class EqOdooConnection(OdooConnection):
             return report_ids[0]
 
     def clean_reports(self):
+        """
+            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
+            report_type = fast_report
+        """
         if self.do_clean_reports:
             report_ids = self._get_fast_report_ids()
-            self._delete_report(report_ids)
+            for report_id in report_ids:
+                self._delete_report(report_id)
