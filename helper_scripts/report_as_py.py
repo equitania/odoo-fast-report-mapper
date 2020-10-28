@@ -4,7 +4,7 @@
 
 dependencies = [
     'eq_base', 'eq_fr_core', 'eq_res_partner',
-    'account", "eq_account'
+    'account', 'eq_account'
     ]
 
 report_name = {
