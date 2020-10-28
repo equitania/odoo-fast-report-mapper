@@ -3,7 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 import unittest
-import odooreporthelper.utils as utils
+import odoo_report_helper.utils as utils
 
 # Enter your Odoo system parameters
 url = "https://odoo.com/"

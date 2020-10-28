@@ -2,7 +2,7 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odooreporthelper.odoo_connection import OdooConnection
+from odoo_report_helper.odoo_connection import OdooConnection
 
 
 class EqOdooConnection(OdooConnection):

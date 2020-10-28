@@ -5,7 +5,9 @@
 import eq_utils
 import click
 
-click.echo("Welcome to the odoo-fast-report-mapper!")
+
+def welcome():
+    click.echo("Welcome to the odoo-fast-report-mapper!")
 
 
 @click.command()
@@ -13,7 +15,7 @@ click.echo("Welcome to the odoo-fast-report-mapper!")
               prompt='Please enter the path to your configuration folder')
 @click.option('--report_path', help='Reports folder',
               prompt='Please enter the path to your report folder')
-def main(server_path, report_path):
+def start_odoo_fast_report_mapper(server_path, report_path):
     # Collect yaml files and build objects
     connections = eq_utils.collect_all_connections(server_path)
     reports = eq_utils.collect_all_reports(report_path)
@@ -26,4 +28,5 @@ def main(server_path, report_path):
 
 
 if __name__ == "__main__":
-    main()
+    welcome()
+    start_odoo_fast_report_mapper()

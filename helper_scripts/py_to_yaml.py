@@ -38,5 +38,10 @@ class MyDumper(yaml.Dumper):
 
 
 # Write data to yaml
-with io.open(file_name, 'w', encoding='utf8') as outfile:
-    yaml.dump(data, outfile, Dumper=MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
+def write_yaml():
+    with io.open(file_name, 'w', encoding='utf8') as outfile:
+        yaml.dump(data, outfile, Dumper=MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+
+if __name__ == "__main__":
+    write_yaml()

@@ -2,7 +2,7 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odooreporthelper.report import Report
+from odoo_report_helper.report import Report
 
 
 class EqReport(Report):
