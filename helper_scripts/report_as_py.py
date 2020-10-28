@@ -2,6 +2,11 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
+dependencies = [
+    'eq_base', 'eq_fr_core', 'eq_res_partner',
+    'account", "eq_account'
+    ]
+
 report_name = {
         'ger': 'Rechnungen',
         'eng': 'Invoices'
@@ -10,11 +15,6 @@ report_name = {
 eq_print_report_button = True
 report_tmpl_name = 'eq_fr_core_account_invoice'
 report_model = 'account.invoice'
-
-dependencies = [
-    'eq_base', 'eq_fr_core', 'eq_res_partner',
-    'account", "eq_account'
-    ]
 
 report_fields = {'account.invoice': ['id', 'number', 'date_invoice', 'origin', 'name', 'state', 'eq_head_text', 'partner_id',
                                      'partner_shipping_id', 'payment_term_id', 'incoterms_id', 'currency_id',
