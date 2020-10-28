@@ -1,7 +1,7 @@
 ---
 # Server configuration
 Server:
-    url: https://dev12.myodoo.io/
+    url: https://odoo2.com
     port: 443
     user: admin
     password: password

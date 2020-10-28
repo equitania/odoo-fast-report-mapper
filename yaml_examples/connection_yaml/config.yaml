@@ -1,9 +1,9 @@
 ---
 # Server configuration
 Server:
-    url: https://dev11.myodoo.io/
+    url: https://odoo.com
     port: 443
     user: admin
-    password: ownerp2020
-    database: v12_test3
+    password: pw
+    database: db
     delete_old_reports: True
