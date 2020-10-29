@@ -1,15 +1,17 @@
 Odoo-fast-report-mapper
 ============
-This is a simple python library to 
-
-This is a node.js chat application powered by SockJS and Express that provides the main functions you'd expect from a chat, such as emojis, private messages, an admin system, etc.
-
-![Chat Preview](http://i.imgur.com/lgRe8z4.png)
-
+This is a simple python library to create FastReport entries in an Odoo environment.
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+### odoo-fast-report-mapper requires:
+
+- Python (>= 3.6)
+- click (>= 7.1.2)
+- OdooRPC (>= 0.7.0)
+- PyYaml (>= 5.3.1)
+
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install odoo-fast-report-mapper.
 
 ```bash
 pip install odoo-fast-report-mapper

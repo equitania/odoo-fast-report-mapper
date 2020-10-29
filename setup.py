@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="odoo-fast-report-mapper-YOUR-USERNAME-HERE",
+    name="odoo-fast-report-mapper-equitania",
     version="0.0.1",
     author="Lukas von Ehr - Equitania Software GmbH",
     author_email="l.von.ehr@equitania.de",
@@ -19,4 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    install_requires=[
+        'click>=7.1.2',
+        'OdooRPC>=0.7.0',
+        'PyYaml>=5.3.1'
+    ]
 )
