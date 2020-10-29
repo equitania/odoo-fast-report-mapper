@@ -44,6 +44,7 @@ def create_odoo_connection_from_yaml_object(yaml_object):
     """
     eq_odoo_connection = EqOdooConnection(
         yaml_object['Server']['delete_old_reports'],
+        yaml_object['Server']['language'],
         yaml_object['Server']['url'],
         yaml_object['Server']['port'],
         yaml_object['Server']['user'],

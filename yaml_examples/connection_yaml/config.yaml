@@ -7,3 +7,5 @@ Server:
     password: pw
     database: db
     delete_old_reports: True
+    # This entry depends on your report yaml files
+    language: ger
