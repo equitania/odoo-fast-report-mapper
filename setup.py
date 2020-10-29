@@ -19,6 +19,10 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    entry_points='''
+    [console_scripts]
+    odoo-fr-mapper=odoo_fast_report_mapper.odoo_fast_report_mapper:start_odoo_fast_report_mapper
+    ''',
     install_requires=[
         'click>=7.1.2',
         'OdooRPC>=0.7.0',

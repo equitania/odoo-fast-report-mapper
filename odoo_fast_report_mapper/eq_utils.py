@@ -2,10 +2,10 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from eq_report import EqReport
-from eq_odoo_connection import EqOdooConnection
-import utils
-import exceptions
+from . import eq_report
+from . import eq_odoo_connection
+import odoo_report_helper.utils as utils
+import odoo_report_helper.exceptions as exceptions
 
 
 def create_report_object_from_yaml_object(yaml_object):
@@ -14,7 +14,7 @@ def create_report_object_from_yaml_object(yaml_object):
         :param: yaml_object
         :return: EqReport object
     """
-    report = EqReport(
+    report = eq_report.EqReport(
         yaml_object['name'],
         yaml_object['report_name'],
         yaml_object['report_type'],
@@ -42,7 +42,7 @@ def create_odoo_connection_from_yaml_object(yaml_object):
         :param: yaml_object
         :return: EqOdooConnection object
     """
-    eq_odoo_connection = EqOdooConnection(
+    eq_odoo_connection_object = eq_odoo_connection.EqOdooConnection(
         yaml_object['Server']['delete_old_reports'],
         yaml_object['Server']['language'],
         yaml_object['Server']['url'],
@@ -51,7 +51,7 @@ def create_odoo_connection_from_yaml_object(yaml_object):
         yaml_object['Server']['password'],
         yaml_object['Server']['database'],
     )
-    return eq_odoo_connection
+    return eq_odoo_connection_object
 
 
 def convert_all_yaml_objects(yaml_objects: list, converting_function):

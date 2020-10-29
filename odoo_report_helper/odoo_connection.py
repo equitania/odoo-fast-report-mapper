@@ -3,10 +3,10 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 import urllib
-import utils
+from . import utils
 import odoorpc
 import sys
-import exceptions
+from . import exceptions
 
 
 class OdooConnection:
