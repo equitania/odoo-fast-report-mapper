@@ -17,8 +17,8 @@ class EqOdooConnection(OdooConnection):
             report_type = fast_report
         """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['ger']),
-                                               ('name', '=', report_name['ger'] + " " + "(PDF)")])
+        report_ids = IR_ACTIONS_REPORT.search([('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
+                                               ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
         if len(report_ids) == 0:
             report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['eng']),
                                                    ('name', '=', report_name['eng'] + " " + "(PDF)")])

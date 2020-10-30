@@ -15,7 +15,7 @@ setuptools.setup(
     packages=['odoo_fast_report_mapper', 'odoo_report_helper'],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: AGPLv3",
+        "License :: OSI Approved :: GNU Affero General Public License v3",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
