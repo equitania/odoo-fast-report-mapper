@@ -11,11 +11,11 @@ setuptools.setup(
     description="A package to create FastReport entries in Odoo",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/equitania/odoo-fast-report-mapper",
     packages=['odoo_fast_report_mapper', 'odoo_report_helper'],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: AGPLv3",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
@@ -26,6 +26,6 @@ setuptools.setup(
     install_requires=[
         'click>=7.1.2',
         'OdooRPC>=0.7.0',
-        'PyYaml>=5.3.1'
+        'PyYaml>=3.12'
     ]
 )
