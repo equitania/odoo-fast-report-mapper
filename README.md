@@ -1,7 +1,7 @@
 # Odoo-fast-report-mapper
-============
-This is a simple python library to create FastReport entries in an Odoo environment.
-It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-report.
+=========================  
+This is a simple python library to create FastReport entries in an Odoo environment.  
+It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-report.  
 
 ## Installation
 
