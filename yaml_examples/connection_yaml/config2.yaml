@@ -1,10 +1,10 @@
 ---
 # Server configuration
 Server:
-    url: https://odoo2.com
-    port: 443
-    user: admin
-    password: password
+    url: http://localhost
+    port: 8069
+    user: admin@ownerp.io
+    password: pw
     database: db
     delete_old_reports: True
     # This entry depends on your report yaml files
