@@ -9,7 +9,7 @@ class EqReport(Report):
     def __init__(self, entry_name: list, report_name: str, report_type: str, model_name: str, eq_export_type="pdf",
                  print_report_name="Report",attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False,
                  eq_export_complete_html=False,eq_export_as_sql=True, multi_print=False, attachment_use=False,
-                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={}):
+                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={}, eq_merge_data_from_multi=False):
         self.entry_name = entry_name
         self.report_name = report_name
         self.report_type = report_type
@@ -23,6 +23,7 @@ class EqReport(Report):
         self.eq_export_as_sql = eq_export_as_sql
         self.multi_print = multi_print
         self.attachment_use = attachment_use
+        self.eq_merge_data_from_multi = eq_merge_data_from_multi
         self.eq_print_button = eq_print_button
         self._fields = model_fields
         self._calculated_fields = calculated_fields
@@ -44,6 +45,7 @@ class EqReport(Report):
             'eq_ignore_html': self.eq_ignore_html,
             'eq_export_complete_html': self.eq_export_complete_html,
             'eq_export_as_sql': self.eq_export_as_sql,
+            'eq_merge_data_from_multi': self.eq_merge_data_from_multi,
             'multi': self.multi_print,
             'attachment': self.attachment,
             'attachment_use': self.attachment_use,
