@@ -15,7 +15,7 @@ It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-repo
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install odoo-fast-report-mapper.
 
 ```bash
-pip install odoo-fast-report-mapper
+pip install odoo-fast-report-mapper-equitania
 ```
 
 ---
