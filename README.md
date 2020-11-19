@@ -34,6 +34,11 @@ Optional arguments:
 ```
 ---
 
+## example
+```bash
+odoo-fr-mapper --server_path=./connection_yaml --report_path=./reports_yaml 
+```
+
 ## Options
 >You can check out the full license [here](https://github.com/equitania/odoo-fast-report-mapper/blob/master/LICENSE.txt)
 
