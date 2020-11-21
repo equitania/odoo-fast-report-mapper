@@ -37,6 +37,10 @@ Optional arguments:
 ## example
 ```bash
 odoo-fr-mapper --server_path=./connection_yaml --report_path=./reports_yaml 
+# v12 basis dbs
+odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v12-yaml-con --report_path=$HOME/gitbase/fr-core-yaml/v12/yaml
+# v13 basis dbs
+odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v13-yaml-con --report_path=$HOME/gitbase/fr-core-yaml/v13/yaml
 ```
 
 ## Options
