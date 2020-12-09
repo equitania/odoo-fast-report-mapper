@@ -3,6 +3,11 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo_report_helper.odoo_connection import OdooConnection
+from eq_report import EqReport
+from datetime import datetime
+import io
+import yaml
+from MyDumper import MyDumper
 
 
 class EqOdooConnection(OdooConnection):
@@ -88,3 +93,86 @@ class EqOdooConnection(OdooConnection):
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
                 print(ex)
+
+    def collect_all_report_entries(self, output_path):
+        IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
+        all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', '!=', False)])
+        data_dictionary = {}
+        for field_id in all_report_field_ids:
+            # Get object
+            field_object = IR_MODEL_FIELDS.browse(field_id)
+            # Get attributes
+            report_action_ids = field_object.eq_report_ids.ids
+            model_id = field_object.model_id
+            model_name = model_id.model
+            field_name = field_object.name
+            # Add field to dictionary
+            for report_action_id in report_action_ids:
+                data_dictionary = self.add_field_to_report(data_dictionary, report_action_id, model_name, field_name)
+        for report_action_id, fields in data_dictionary.items():
+            eq_report_object = self.create_eq_report_object(report_action_id, fields)
+            eq_yaml_data = eq_report_object.ensure_data_for_yaml()
+            # Get timestamp
+            now = datetime.now()
+            date_now = now.strftime("%m_%d_%Y_%H_%M_%S")
+            output_name = output_path + '/' + eq_report_object.report_name + '_' + date_now + '.yaml'
+            self.write_yaml(output_name, eq_yaml_data)
+
+    def add_field_to_report(self, data_dictionary, report_id, model_name, field_name):
+        if report_id not in data_dictionary:
+            data_dictionary[report_id] = {}
+        if model_name not in data_dictionary[report_id]:
+            data_dictionary[report_id][model_name] = [field_name]
+        else:
+            data_dictionary[report_id][model_name].append(field_name)
+        return data_dictionary
+
+    def collect_calculated_fields(self, eq_calculated_field_ids):
+        """
+            Set calculated fields for the report and clean them:
+            Example:
+            {
+                'field_name': {'function_name': ['parameter1', 'parameter2']},
+            }
+        """
+        eq_calculated_field_dict = {}
+
+        for eq_calculated_field in eq_calculated_field_ids:
+            eq_calculated_field_field_name = eq_calculated_field.eq_field_name
+            eq_calculated_field_func_name = eq_calculated_field.eq_function_name
+            eq_calculated_field_params_name = eq_calculated_field.eq_parameters_name
+            eq_calculated_field_dict[eq_calculated_field_field_name] = {
+                eq_calculated_field_func_name: eq_calculated_field_params_name.replace(" ", "").split(',')
+            }
+
+        return eq_calculated_field_dict
+
+    def create_eq_report_object(self, action_id, field_dictionary):
+        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        action_object = IR_ACTIONS_REPORT.browse(action_id)
+        name = action_object.name
+        report_name = action_object.report_name
+        report_type = action_object.report_type
+        eq_export_type = action_object.eq_export_type
+        print_report_name = action_object.print_report_name
+        model_name = action_object.model
+        eq_ignore_images = action_object.eq_ignore_images
+        eq_ignore_html = action_object.eq_ignore_html
+        eq_export_complete_html = action_object.eq_export_complete_html
+        eq_export_as_sql = action_object.eq_export_as_sql
+        multi_print = action_object.multi
+        attachment_use = action_object.attachment_use
+        eq_print_button = action_object.eq_print_button
+        eq_merge_data_from_multi = action_object.eq_merge_data_from_multi
+        attachment = action_object.attachment
+        # Get calculated fields
+        eq_calculated_field_ids = action_object.eq_calculated_field_ids
+        calculated_fields_dict = self.collect_calculated_fields(eq_calculated_field_ids)
+        eq_report = EqReport(name, report_name, report_type, model_name, eq_export_type, print_report_name, attachment,
+                             eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql, multi_print,
+                             attachment_use, eq_print_button, [], field_dictionary, calculated_fields_dict, eq_merge_data_from_multi)
+        return eq_report
+
+    def write_yaml(self, file_name, data):
+        with io.open(file_name, 'w', encoding='utf8') as outfile:
+            yaml.dump(data, outfile, Dumper=MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
