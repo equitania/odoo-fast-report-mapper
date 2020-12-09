@@ -108,17 +108,19 @@ class EqOdooConnection(OdooConnection):
             field_name = field_object.name
             # Add field to dictionary
             for report_action_id in report_action_ids:
-                data_dictionary = self.add_field_to_report(data_dictionary, report_action_id, model_name, field_name)
+                data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name, field_name)
         for report_action_id, fields in data_dictionary.items():
+            # Create report object
             eq_report_object = self.create_eq_report_object(report_action_id, fields)
             eq_yaml_data = eq_report_object.ensure_data_for_yaml()
             # Get timestamp
             now = datetime.now()
             date_now = now.strftime("%m_%d_%Y_%H_%M_%S")
+            # Set output name
             output_name = output_path + '/' + eq_report_object.report_name + '_' + date_now + '.yaml'
             self.write_yaml(output_name, eq_yaml_data)
 
-    def add_field_to_report(self, data_dictionary, report_id, model_name, field_name):
+    def add_field_to_dictionary(self, data_dictionary, report_id, model_name, field_name):
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
@@ -127,9 +129,9 @@ class EqOdooConnection(OdooConnection):
             data_dictionary[report_id][model_name].append(field_name)
         return data_dictionary
 
-    def collect_calculated_fields(self, eq_calculated_field_ids):
+    def _collect_calculated_fields(self, eq_calculated_field_objects):
         """
-            Set calculated fields for the report and clean them:
+            Get calculated fields from eq_calculated_field model objects:
             Example:
             {
                 'field_name': {'function_name': ['parameter1', 'parameter2']},
@@ -137,19 +139,19 @@ class EqOdooConnection(OdooConnection):
         """
         eq_calculated_field_dict = {}
 
-        for eq_calculated_field in eq_calculated_field_ids:
+        for eq_calculated_field in eq_calculated_field_objects:
             eq_calculated_field_field_name = eq_calculated_field.eq_field_name
             eq_calculated_field_func_name = eq_calculated_field.eq_function_name
             eq_calculated_field_params_name = eq_calculated_field.eq_parameters_name
             eq_calculated_field_dict[eq_calculated_field_field_name] = {
                 eq_calculated_field_func_name: eq_calculated_field_params_name.replace(" ", "").split(',')
             }
-
         return eq_calculated_field_dict
 
     def create_eq_report_object(self, action_id, field_dictionary):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         action_object = IR_ACTIONS_REPORT.browse(action_id)
+        # Collect attributes
         name = action_object.name
         report_name = action_object.report_name
         report_type = action_object.report_type
@@ -167,7 +169,7 @@ class EqOdooConnection(OdooConnection):
         attachment = action_object.attachment
         # Get calculated fields
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
-        calculated_fields_dict = self.collect_calculated_fields(eq_calculated_field_ids)
+        calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
         eq_report = EqReport(name, report_name, report_type, model_name, eq_export_type, print_report_name, attachment,
                              eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql, multi_print,
                              attachment_use, eq_print_button, [], field_dictionary, calculated_fields_dict, eq_merge_data_from_multi)
