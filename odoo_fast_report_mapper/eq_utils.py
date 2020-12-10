@@ -2,12 +2,10 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-import eq_report
-import eq_odoo_connection
+from . import eq_report
+from . import eq_odoo_connection
 import odoo_report_helper.utils as utils
 import odoo_report_helper.exceptions as exceptions
-import yaml
-import io
 
 def create_report_object_from_yaml_object(yaml_object):
     """

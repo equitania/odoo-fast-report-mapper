@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-
+import click
 from odoo_report_helper.odoo_connection import OdooConnection
-from eq_report import EqReport
+from . import eq_report
 from datetime import datetime
 import io
 import yaml
-from MyDumper import MyDumper
+from . import MyDumper
 
 
 class EqOdooConnection(OdooConnection):
@@ -24,7 +24,7 @@ class EqOdooConnection(OdooConnection):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search([('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
                                                ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
-        if len(report_ids) == 0:
+        if len(report_ids) == 0 and 'eng' in report_name:
             report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['eng']),
                                                    ('name', '=', report_name['eng'] + " " + "(PDF)")])
         if len(report_ids) == 0:
@@ -98,17 +98,20 @@ class EqOdooConnection(OdooConnection):
         IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
         all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', '!=', False)])
         data_dictionary = {}
-        for field_id in all_report_field_ids:
-            # Get object
-            field_object = IR_MODEL_FIELDS.browse(field_id)
-            # Get attributes
-            report_action_ids = field_object.eq_report_ids.ids
-            model_id = field_object.model_id
-            model_name = model_id.model
-            field_name = field_object.name
-            # Add field to dictionary
-            for report_action_id in report_action_ids:
-                data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name, field_name)
+        print('Collect fields...')
+        # Progressbar...
+        with click.progressbar(range(len(all_report_field_ids))) as bar:
+            for field_id in all_report_field_ids:
+                # Get object
+                field_object = IR_MODEL_FIELDS.browse(field_id)
+                # Get attributes
+                report_action_ids = field_object.eq_report_ids.ids
+                model_id = field_object.model_id
+                model_name = model_id.model
+                field_name = field_object.name
+                # Add field to dictionary
+                for report_action_id in report_action_ids:
+                    data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name, field_name)
         for report_action_id, fields in data_dictionary.items():
             # Create report object
             eq_report_object = self.create_eq_report_object(report_action_id, fields)
@@ -170,11 +173,11 @@ class EqOdooConnection(OdooConnection):
         # Get calculated fields
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
         calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
-        eq_report = EqReport(name, report_name, report_type, model_name, eq_export_type, print_report_name, attachment,
+        eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, eq_export_type, print_report_name, attachment,
                              eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql, multi_print,
                              attachment_use, eq_print_button, [], field_dictionary, calculated_fields_dict, eq_merge_data_from_multi)
-        return eq_report
+        return eq_report_obj
 
     def write_yaml(self, file_name, data):
         with io.open(file_name, 'w', encoding='utf8') as outfile:
-            yaml.dump(data, outfile, Dumper=MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            yaml.dump(data, outfile, Dumper=MyDumper.MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
