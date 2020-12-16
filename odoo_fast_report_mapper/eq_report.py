@@ -68,7 +68,7 @@ class EqReport(Report):
             'attachment': self.attachment,
             'attachment_use': self.attachment_use,
             'eq_print_button': self.eq_print_button,
-            'dependencies': {},
+            'dependencies': [],
             'report_fields': self._fields,
             'calculated_fields': self._calculated_fields
         }

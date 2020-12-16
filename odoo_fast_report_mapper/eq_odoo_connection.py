@@ -155,7 +155,7 @@ class EqOdooConnection(OdooConnection):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         action_object = IR_ACTIONS_REPORT.browse(action_id)
         # Collect attributes
-        name = action_object.name
+        name = {self.language: action_object.name}
         report_name = action_object.report_name
         report_type = action_object.report_type
         eq_export_type = action_object.eq_export_type
