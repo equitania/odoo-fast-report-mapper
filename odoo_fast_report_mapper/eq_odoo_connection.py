@@ -88,7 +88,7 @@ class EqOdooConnection(OdooConnection):
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
-                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model)
+                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name)
                 print(f"!!! ******** END {report.report_name} ******** !!!")
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
