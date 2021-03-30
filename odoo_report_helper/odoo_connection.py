@@ -14,6 +14,7 @@ class OdooConnection:
         self.username = username
         self.password = password
         self.database = database
+        self.version = ""
         try:
             # Build connection
             self.connection = utils.prepare_connection(url, port)
@@ -32,6 +33,7 @@ class OdooConnection:
             self.connection.config['auto_commit'] = True  # No need for manual commits
             self.connection.env.context['active_test'] = False  # Show inactive articles
             self.connection.env.context['tracking_disable'] = True
+            self.version = self.connection.version.split(".")[0]
             print('##### Connected to ' + self.database + ' #####')
         except odoorpc.error.RPCError as ex:
             raise exceptions.OdooConnectionError(

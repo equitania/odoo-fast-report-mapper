@@ -22,8 +22,9 @@ class EqOdooConnection(OdooConnection):
             report_type = fast_report
         """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        report_ids = IR_ACTIONS_REPORT.search([('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
-                                               ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
+        report_ids = IR_ACTIONS_REPORT.search(
+            [('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
+             ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
         if len(report_ids) == 0 and 'eng' in report_name:
             report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['eng']),
                                                    ('name', '=', report_name['eng'] + " " + "(PDF)")])
@@ -88,7 +89,8 @@ class EqOdooConnection(OdooConnection):
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
-                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name)
+                            self.set_calculated_fields(field, function_name, parameter, report.entry_name,
+                                                       report.model_name)
                 print(f"!!! ******** END {report.report_name} ******** !!!")
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
@@ -111,7 +113,8 @@ class EqOdooConnection(OdooConnection):
                 field_name = field_object.name
                 # Add field to dictionary
                 for report_action_id in report_action_ids:
-                    data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name, field_name)
+                    data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name,
+                                                                   field_name)
         for report_action_id, fields in data_dictionary.items():
             # Create report object
             eq_report_object = self.create_eq_report_object(report_action_id, fields)
@@ -152,7 +155,10 @@ class EqOdooConnection(OdooConnection):
         return eq_calculated_field_dict
 
     def create_eq_report_object(self, action_id, field_dictionary):
-        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        if self.version == "10":
+            IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
+        else:
+            IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         action_object = IR_ACTIONS_REPORT.browse(action_id)
         # Collect attributes
         name = {self.language: action_object.name}
@@ -164,20 +170,44 @@ class EqOdooConnection(OdooConnection):
         eq_ignore_images = action_object.eq_ignore_images
         eq_ignore_html = action_object.eq_ignore_html
         eq_export_complete_html = action_object.eq_export_complete_html
-        eq_export_as_sql = action_object.eq_export_as_sql
         multi_print = action_object.multi
         attachment_use = action_object.attachment_use
-        eq_print_button = action_object.eq_print_button
-        eq_merge_data_from_multi = action_object.eq_merge_data_from_multi
         attachment = action_object.attachment
-        # Get calculated fields
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
+
+        # Special cases => not in every version
+        eq_export_as_sql = action_object.eq_export_as_sql
+        if not self.is_boolean(eq_export_as_sql):
+            eq_export_as_sql = True
         calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
-        eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, eq_export_type, print_report_name, attachment,
-                             eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql, multi_print,
-                             attachment_use, eq_print_button, [], field_dictionary, calculated_fields_dict, eq_merge_data_from_multi)
+        if not self.is_dict(calculated_fields_dict):
+            calculated_fields_dict = {}
+        eq_print_button = action_object.eq_print_button
+        if not self.is_boolean(eq_print_button):
+            eq_print_button = False
+        eq_merge_data_from_multi = action_object.eq_merge_data_from_multi
+        if not self.is_boolean(eq_merge_data_from_multi):
+            eq_merge_data_from_multi = False
+
+        eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, eq_export_type,
+                                           print_report_name, attachment,
+                                           eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql,
+                                           multi_print,
+                                           attachment_use, eq_print_button, [], field_dictionary,
+                                           calculated_fields_dict, eq_merge_data_from_multi)
         return eq_report_obj
 
     def write_yaml(self, file_name, data):
         with io.open(file_name, 'w', encoding='utf8') as outfile:
-            yaml.dump(data, outfile, Dumper=MyDumper.MyDumper, default_flow_style=False, allow_unicode=True, sort_keys=False)
+            yaml.dump(data, outfile, Dumper=MyDumper.MyDumper, default_flow_style=False, allow_unicode=True,
+                      sort_keys=False)
+
+    def is_boolean(self, object_to_be_checked):
+        if isinstance(object_to_be_checked, bool):
+            return True
+        return False
+
+    def is_dict(self, object_to_be_checked):
+        if isinstance(object_to_be_checked, dict):
+            return True
+        return False
