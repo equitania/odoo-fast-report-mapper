@@ -14,6 +14,7 @@ class OdooConnection:
         self.username = username
         self.password = password
         self.database = database
+        self.version = ""
         try:
             # Build connection
             self.connection = utils.prepare_connection(url, port)
@@ -32,6 +33,7 @@ class OdooConnection:
             self.connection.config['auto_commit'] = True  # No need for manual commits
             self.connection.env.context['active_test'] = False  # Show inactive articles
             self.connection.env.context['tracking_disable'] = True
+            self.version = self.connection.version.split(".")[0]
             print('##### Connected to ' + self.database + ' #####')
         except odoorpc.error.RPCError as ex:
             raise exceptions.OdooConnectionError(
@@ -52,6 +54,7 @@ class OdooConnection:
             if not dependencies_installed:
                 print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
                 continue
+            print(f"!!! ******** START {report.report_name} ******** !!!")
             report_id = self._search_report(report.model_name, report.entry_name)
             if not report_id:
                 report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
@@ -61,7 +64,6 @@ class OdooConnection:
                 report_object.write(report._data_dictionary)
             # Add report to print menu
             report_object.create_action()
-            print(f"!!! ******** START {report.report_name} ******** !!!")
             try:
                 # Loop over all models in report fields dictionary
                 for model_name in report._fields:

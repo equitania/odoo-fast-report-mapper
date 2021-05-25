@@ -19,6 +19,7 @@ eq_export_as_sql: True
 eq_print_button: False
 multiprint: False
 attachment_use: True
+eq_merge_data_from_multi: False
 
 dependencies:
   - module_name
