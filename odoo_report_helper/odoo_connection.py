@@ -187,7 +187,7 @@ class OdooConnection:
 
     def disable_qweb(self):
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        report_ids = IR_ACTIONS_REPORT.search([('report_type', '=', 'qweb-pdf'), '|', ('report_type', '=', 'qweb-html'), '|', ('report_type', '=', 'qweb-text')])
+        report_ids = IR_ACTIONS_REPORT.search(['|', ('report_type', '=', 'qweb-pdf'), '|', ('report_type', '=', 'qweb-html'), ('report_type', '=', 'qweb-text')])
         for report_id in report_ids:
             report_object = IR_ACTIONS_REPORT.browse(report_id)
             report_object.unlink_action()
