@@ -24,13 +24,14 @@ pip install odoo-fast-report-mapper-equitania
 
 ```bash
 $ odoo-fr-mapper --help
-usage: odoo-fr-mapper [--help] [--server_path] [--report_path] [--collect_reports]
+usage: odoo-fr-mapper [--help] [--server_path] [--report_path] [--collect_reports] [--disable_qweb]
 ```
 ```bash
 Optional arguments:
   --server_path     Server configuration folder
   --report_path     Reports folder
   --collect_reports Report collection (y/n)  
+  --disable_qweb    Disable QWeb reports in Odoo
   --help            Show this message and exit.
 ```
 ---
@@ -41,7 +42,7 @@ odoo-fr-mapper --server_path=./connection_yaml --report_path=./reports_yaml
 # v12 basis dbs
 odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v12-yaml-con --report_path=$HOME/gitbase/fr-core-yaml/v12/yaml --collect_reports=n
 # v13 basis dbs
-odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v13-yaml-con --report_path=$HOME/gitbase/fr-core-yaml/v13/yaml --collect_reports=y
+odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v13-yaml-con --report_path=$HOME/gitbase/fr-core-yaml/v13/yaml --collect_reports=y --disable_qweb=y
 ```
 
 ## Options

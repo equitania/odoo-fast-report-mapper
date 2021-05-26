@@ -15,13 +15,14 @@ def welcome():
               prompt='Please enter the path to your configuration folder')
 @click.option('--report_path', help='Reports folder',
               prompt='Please enter the path to your report folder')
-@click.option('--collect_reports', help='Report collection',
-              prompt='Enter \"y\" for collection of reports')
-def start_odoo_fast_report_mapper(server_path, report_path, collect_reports):
+@click.option('--collect_reports', help='Report collection - this will disable mapping of reports (y/n)')
+@click.option('--disable_qweb', help='Disable QWeb Reports (y/n)',
+              prompt='Disable QWeb reports? (y/n)')
+def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, disable_qweb):
     # Collect yaml files and build objects
     connections = eq_utils.collect_all_connections(server_path)
     # Collect reports
-    if collect_reports == 'y':
+    if collect_reports == "y":
         for connection in connections:
             connection.login()
             connection.collect_all_report_entries(report_path)
@@ -33,7 +34,11 @@ def start_odoo_fast_report_mapper(server_path, report_path, collect_reports):
             connection.clean_reports()
             click.echo("Mapping reports...")
             connection.map_reports(reports)
-        click.echo("##### DONE #####")
+    if disable_qweb == "y":
+        for connection in connections:
+            connection.disable_qweb()
+
+    click.echo("##### DONE #####")
 
 
 if __name__ == "__main__":
