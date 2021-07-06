@@ -7,6 +7,7 @@ from . import eq_odoo_connection
 import odoo_report_helper.utils as utils
 import odoo_report_helper.exceptions as exceptions
 
+
 def create_report_object_from_yaml_object(yaml_object):
     """
         Create EqReport object from yaml_object
@@ -96,7 +97,8 @@ def collect_all_connections(path):
     """
     try:
         yaml_connection_objects = utils.parse_yaml_folder(path)
-        eq_connection_objects = convert_all_yaml_objects(yaml_connection_objects, create_odoo_connection_from_yaml_object)
+        eq_connection_objects = convert_all_yaml_objects(yaml_connection_objects,
+                                                         create_odoo_connection_from_yaml_object)
         return eq_connection_objects
     except FileNotFoundError as ex:
         raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex))

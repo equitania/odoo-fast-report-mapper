@@ -20,7 +20,10 @@ data['eq_ignore_images'] = True
 data['eq_ignore_html'] = False
 data['eq_export_complete_html'] = False
 data['eq_export_as_sql'] = True
-data['eq_print_button'] = report.eq_print_report_button
+try:
+    data['eq_print_button'] = report.eq_print_report_button
+except Exception as e:
+    data['eq_print_button'] = False
 data['multiprint'] = False
 data['attachment_use'] = True
 

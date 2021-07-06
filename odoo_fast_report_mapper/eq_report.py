@@ -7,9 +7,10 @@ from odoo_report_helper.report import Report
 
 class EqReport(Report):
     def __init__(self, entry_name, report_name: str, report_type: str, model_name: str, eq_export_type="pdf",
-                 print_report_name="Report",attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False,
-                 eq_export_complete_html=False,eq_export_as_sql=True, multi_print=False, attachment_use=False,
-                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={}, eq_merge_data_from_multi=False):
+                 print_report_name="Report", attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False,
+                 eq_export_complete_html=False, eq_export_as_sql=True, multi_print=False, attachment_use=False,
+                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={},
+                 eq_merge_data_from_multi=False):
         self.entry_name = entry_name
         self.report_name = report_name
         self.report_type = report_type
@@ -53,7 +54,8 @@ class EqReport(Report):
         }
 
     def ensure_data_for_yaml(self):
-        yaml_data = {'name': self.entry_name,
+        yaml_data = {
+            'name': self.entry_name,
             'report_name': self.report_name,
             'report_type': self.report_type,
             'print_report_name': self.print_report_name,

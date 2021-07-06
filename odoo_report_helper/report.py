@@ -69,6 +69,3 @@ class Report:
         self._dependencies = self._dependencies + dependency_list
         # Remove duplicates
         self._dependencies = list(set(self._dependencies))
-
-
-

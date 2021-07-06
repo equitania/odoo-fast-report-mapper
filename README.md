@@ -1,7 +1,7 @@
 # Odoo-fast-report-mapper
 ====================================================================================    
 This is a simple python library to create/collect FastReport entries in/from an Odoo environment.  
-It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-report.  
+It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-report.
 
 ## Installation
 
@@ -26,6 +26,7 @@ pip install odoo-fast-report-mapper-equitania
 $ odoo-fr-mapper --help
 usage: odoo-fr-mapper [--help] [--server_path] [--report_path] [--collect_reports] [--disable_qweb]
 ```
+
 ```bash
 Optional arguments:
   --server_path     Server configuration folder
@@ -34,9 +35,11 @@ Optional arguments:
   --disable_qweb    Disable QWeb reports in Odoo
   --help            Show this message and exit.
 ```
+
 ---
 
 ## example
+
 ```bash
 odoo-fr-mapper --server_path=./connection_yaml --report_path=./reports_yaml 
 # v12 basis dbs
@@ -46,6 +49,7 @@ odoo-fr-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v13-yaml-con --repor
 ```
 
 ## Options
->You can check out the full license [here](https://github.com/equitania/odoo-fast-report-mapper/blob/master/LICENSE.txt)
+
+> You can check out the full license [here](https://github.com/equitania/odoo-fast-report-mapper/blob/master/LICENSE.txt)
 
 This project is licensed under the terms of the **AGPLv3** license.

@@ -26,36 +26,36 @@ dependencies:
 
 report_fields:
   model.test1:
-  - id
-  - number
-  - date_invoice
-  - origin
-  - name
-  - state
-  - eq_head_text
-  - incoterms_id
-  - currency_id
-  - comment
-  - amount_total
-  - amount_tax
-  - amount_untaxed
-  - user_id
-  - company_id
-  - type
+    - id
+    - number
+    - date_invoice
+    - origin
+    - name
+    - state
+    - eq_head_text
+    - incoterms_id
+    - currency_id
+    - comment
+    - amount_total
+    - amount_tax
+    - amount_untaxed
+    - user_id
+    - company_id
+    - type
   model.test2:
-  - id
-  - sequence
-  - product_id
-  - delivery_date
-  - discount
-  - price_subtotal
-  - name
-  - uom_id
-  - quantity
-  - price_unit
-  - price_total
-  - display_type
-  - eq_pos
+    - id
+    - sequence
+    - product_id
+    - delivery_date
+    - discount
+    - price_subtotal
+    - name
+    - uom_id
+    - quantity
+    - price_unit
+    - price_total
+    - display_type
+    - eq_pos
 
 calculated_fields:
   field_name:

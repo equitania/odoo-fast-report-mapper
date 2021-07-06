@@ -1,11 +1,11 @@
 ---
 # Server configuration
 Server:
-    url: http://localhost
-    port: 8069
-    user: admin@ownerp.io
-    password: pw
-    database: db
-    delete_old_reports: True
-    # This entry depends on your report yaml files
-    language: eng
+  url: http://localhost
+  port: 8069
+  user: admin@ownerp.io
+  password: pw
+  database: db
+  delete_old_reports: True
+  # This entry depends on your report yaml files
+  language: eng
