@@ -23,10 +23,10 @@ class EqOdooConnection(OdooConnection):
         """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search(
-            [('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
+            [('model', '=ilike', model_name), ('report_type', '=', 'fast_report'), '|', ('name', '=ilike', report_name['ger']),
              ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
         if len(report_ids) == 0 and 'eng' in report_name:
-            report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['eng']),
+            report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['eng']),
                                                    ('name', '=', report_name['eng'] + " " + "(PDF)")])
         if len(report_ids) == 0:
             return False

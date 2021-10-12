@@ -123,9 +123,9 @@ class OdooConnection:
         if len(calculated_field_id) == 0:
             REPORT_CALC.create(value_dict)
         else:
-            calculated_field_id = calculated_field_id[0]
-            calculated_field_object = REPORT_CALC.browse(calculated_field_id)
-            calculated_field_object.write(value_dict)
+            # calculated_field_id = calculated_field_id[0]
+            # calculated_field_object = REPORT_CALC.browse(calculated_field_id)
+            REPORT_CALC.write(calculated_field_id, value_dict)
 
     def _search_report(self, model_name, report_name):
         """
