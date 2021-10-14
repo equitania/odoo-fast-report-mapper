@@ -5,9 +5,9 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="odoo-fast-report-mapper-equitania",
-    version="0.0.13",
-    author="Lukas von Ehr - Equitania Software GmbH",
-    author_email="l.von.ehr@equitania.de",
+    version="0.1.0",
+    author="Equitania Software GmbH",
+    author_email="info@equitania.de",
     description="A package to create FastReport entries in Odoo",
     long_description=long_description,
     long_description_content_type="text/markdown",
