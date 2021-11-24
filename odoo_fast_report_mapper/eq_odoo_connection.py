@@ -8,6 +8,10 @@ from datetime import datetime
 import io
 import yaml
 from . import MyDumper
+import base64
+from random import choice
+import sys
+import logging
 
 
 class EqOdooConnection(OdooConnection):
@@ -211,3 +215,64 @@ class EqOdooConnection(OdooConnection):
         if isinstance(object_to_be_checked, dict):
             return True
         return False
+
+    def test_fast_report_rendering(self, report_list: list):
+        """
+            Test FastReport rendering in the Odoo system
+            :param: report_list: List of report objects
+            IMPORTANT: The FastReport API URL, conection and base report setup must be done before testing.
+        """
+
+        ### Uncomment/comment to display logging to extern log file or to console ###
+        ## Log file
+        #logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO, filename=f"testing_fast_report_rendering_{self.connection._env._db}.log")
+        ## Console
+        logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO)
+
+        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        IR_MODEL = self.connection.env['ir.model']
+        for report in report_list:
+            # Get report action record
+            report_id = self._search_report(report.model_name, report.entry_name)
+            report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
+            # Check if the report has been created and is type Fast Report
+            if not report_id or report_object.report_type != "fast_report": 
+                logging.info(f"!!! ******** REPORT {report.report_name} NOT CREATED OR IS NOT TYPE FAST REPORT ******** !!!")
+                continue
+
+            logging.info(f"!!! ******** TESTING REPORT RENDERING {report.report_name} ******** !!!")
+
+            ## Get module from report model
+            IR_REPORT_MODEL = self.connection.env[report.model_name]
+            
+            ''' This is extra help: display modules from report model and report filename code
+            # Get the report model object
+            model_id = IR_MODEL.search([('model', '=', report.model_name)])
+            report_model_object = IR_MODEL.browse(model_id)
+            report_modules = report_model_object['modules']
+            logging.info(f"MODULES USING MODEL {report.model_name} FROM REPORT {report.report_name} WITH FILENAME {report.print_report_name}")
+            logging.info(report_modules)
+            Can be comented if not necessary '''
+
+            if report_object:
+                # Get all report model records ids 
+                report_model_records_ids = IR_REPORT_MODEL.search([])
+                try:
+                    if not len(report_model_records_ids):
+                        logging.info(f"\033[0;33m!!! ******** NO RECORDS FOR MODEL {report.model_name} ******** !!!\033[0;37m")
+                        logging.info(f"\033[0;33m!!! ******** USING DEMO DATA TO TEST REPORT {report.report_name} ******** !!!\033[0;37m")
+                        # Render Fast Report for demo example databases
+                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
+                    else:
+                        # Render Fast Report for a random report model record, without creating attachment
+                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(report_object.ids, [choice(report_model_records_ids)], create_attachment=False)
+                    # Convert data content to base64
+                    data = base64.encodebytes(res.encode('utf-8')).decode('utf-8')
+                    logging.info(f"\033[0;92m!!! ******** REPORTS RENDERING {report.report_name} OK ******** !!!\033[0;37m")
+                except Exception as ex:
+                    if "No such file or directory" in str(ex):
+                        logging.info(f"\033[0;33m!!! ******** NO DEMO DATA TO TEST REPORT {report.report_name} ******** !!!\033[0;37m ")
+                    else:
+                        logging.info(f"\033[0;31m!!! ******** REPORT \033[1;31m{report.report_name}\033[0;31m NOT RENDERING CORRECLTY ******** !!!\033[0;37m ")
+                        logging.info(f"\033[0;31m!!! ******** EXCEPTION ******** !!!\033[0;37m")
+                        logging.info("\033[0;31m" + str(ex) + "\033[0;37m")
