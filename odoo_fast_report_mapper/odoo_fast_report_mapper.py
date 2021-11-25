@@ -33,11 +33,11 @@ def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, dis
         reports = eq_utils.collect_all_reports(report_path)
         for connection in connections:
             connection.login()
-            connection.clean_reports()
             if testing_only == "y":
                 click.echo(f"\nTesting reports rendering for database: {connection.database}")
                 connection.test_fast_report_rendering(reports)
             else:
+                connection.clean_reports()
                 click.echo("Mapping reports...")
                 connection.map_reports(reports)
                 click.echo(f"\nTesting reports rendering for database: {connection.database}")

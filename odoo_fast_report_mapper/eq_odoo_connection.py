@@ -273,6 +273,6 @@ class EqOdooConnection(OdooConnection):
                     if "No such file or directory" in str(ex):
                         logging.info(f"\033[0;33m!!! ******** NO DEMO DATA TO TEST REPORT {report.report_name} ******** !!!\033[0;37m ")
                     else:
-                        logging.info(f"\033[0;31m!!! ******** REPORT \033[1;31m{report.report_name}\033[0;31m NOT RENDERING CORRECLTY ******** !!!\033[0;37m ")
+                        logging.info(f"\033[0;31m!!! ******** REPORT \033[1;31m{report.report_name}\033[0;31m NOT RENDERING CORRECTLY ******** !!!\033[0;37m ")
                         logging.info(f"\033[0;31m!!! ******** EXCEPTION ******** !!!\033[0;37m")
                         logging.info("\033[0;31m" + str(ex) + "\033[0;37m")
