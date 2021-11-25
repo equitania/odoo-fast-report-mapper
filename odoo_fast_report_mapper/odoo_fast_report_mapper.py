@@ -18,7 +18,9 @@ def welcome():
 @click.option('--collect_reports', help='Report collection - this will disable mapping of reports (y/n)')
 @click.option('--disable_qweb', help='Disable QWeb Reports (y/n)',
               prompt='Disable QWeb reports? (y/n)')
-def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, disable_qweb):
+@click.option('--testing_only', help='Testing only (y) or Mapping & Testing (n). Default:n',
+              prompt='Testing FastReport only? (y/n)')
+def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, disable_qweb, testing_only):
     # Collect yaml files and build objects
     connections = eq_utils.collect_all_connections(server_path)
     # Collect reports
@@ -32,10 +34,14 @@ def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, dis
         for connection in connections:
             connection.login()
             connection.clean_reports()
-            click.echo("Mapping reports...")
-            connection.map_reports(reports)
-            click.echo(f"\nTesting reports rendering for database: {connection.database}")
-            connection.test_fast_report_rendering(reports)
+            if testing_only == "y":
+                click.echo(f"\nTesting reports rendering for database: {connection.database}")
+                connection.test_fast_report_rendering(reports)
+            else:
+                click.echo("Mapping reports...")
+                connection.map_reports(reports)
+                click.echo(f"\nTesting reports rendering for database: {connection.database}")
+                connection.test_fast_report_rendering(reports)
     if disable_qweb == "y":
         for connection in connections:
             connection.disable_qweb()
