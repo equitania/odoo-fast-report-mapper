@@ -6,7 +6,7 @@ from odoo_report_helper.report import Report
 
 
 class EqReport(Report):
-    def __init__(self, entry_name, report_name: str, report_type: str, model_name: str, eq_export_type="pdf",
+    def __init__(self, entry_name, report_name: str, report_type: str, model_name: str, company_id, eq_export_type="pdf",
                  print_report_name="Report", attachment="Report.pdf", eq_ignore_images=True, eq_ignore_html=False,
                  eq_export_complete_html=False, eq_export_as_sql=True, multi_print=False, attachment_use=False,
                  eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={},
@@ -30,6 +30,7 @@ class EqReport(Report):
         self._calculated_fields = calculated_fields
         self._dependencies = dependencies
         self._data_dictionary = {}
+        self.company_id = company_id
 
     def self_ensure(self):
         """
@@ -74,4 +75,6 @@ class EqReport(Report):
             'report_fields': self._fields,
             'calculated_fields': self._calculated_fields
         }
+        if self.company_id:
+            yaml_data = {k: v for k, v in (list(yaml_data.items())[:5] + [('company_id', [self.company_id.id])] + list(yaml_data.items())[5:])}
         return yaml_data

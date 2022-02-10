@@ -178,6 +178,7 @@ class EqOdooConnection(OdooConnection):
         attachment_use = action_object.attachment_use
         attachment = action_object.attachment
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
+        company_id = action_object.company_id
 
         # Special cases => not in every version
         eq_export_as_sql = action_object.eq_export_as_sql
@@ -193,7 +194,7 @@ class EqOdooConnection(OdooConnection):
         if not self.is_boolean(eq_merge_data_from_multi):
             eq_merge_data_from_multi = False
 
-        eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, eq_export_type,
+        eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, company_id, eq_export_type,
                                            print_report_name, attachment,
                                            eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql,
                                            multi_print,
