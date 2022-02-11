@@ -24,6 +24,7 @@ def create_report_object_from_yaml_object(yaml_object):
         yaml_object['report_name'],
         yaml_object['report_type'],
         yaml_object['report_model'],
+        yaml_object['company_id'],
         yaml_object['eq_export_type'],
         yaml_object['print_report_name'],
         yaml_object['attachment'],

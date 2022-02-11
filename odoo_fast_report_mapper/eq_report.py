@@ -42,6 +42,7 @@ class EqReport(Report):
             'report_type': self.report_type,
             'print_report_name': self.print_report_name,
             'model': self.model_name,
+            'company_id': self.company_id[0],
             'eq_export_type': self.eq_export_type,
             'eq_ignore_images': self.eq_ignore_images,
             'eq_ignore_html': self.eq_ignore_html,
@@ -76,5 +77,5 @@ class EqReport(Report):
             'calculated_fields': self._calculated_fields
         }
         if self.company_id:
-            yaml_data = {k: v for k, v in (list(yaml_data.items())[:5] + [('company_id', [self.company_id.id])] + list(yaml_data.items())[5:])}
+            yaml_data = {k: v for k, v in (list(yaml_data.items())[:5] + [('company_id', self.company_id)] + list(yaml_data.items())[5:])}
         return yaml_data

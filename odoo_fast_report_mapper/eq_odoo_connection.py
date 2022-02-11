@@ -101,28 +101,46 @@ class EqOdooConnection(OdooConnection):
                 print(ex)
 
     def collect_all_report_entries(self, output_path):
-        IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
-        all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', '!=', False)])
+        company_ids = self.connection.env.user.company_ids.ids if self.connection.env.user.company_ids else self.connection.env.user.company_id.ids
+        report_name_id_combination = dict()
         data_dictionary = {}
-        print('Collect fields...')
-        # Progressbar...
-        with click.progressbar(range(len(all_report_field_ids))) as bar:
-            for field_id in all_report_field_ids:
-                # Get object
-                field_object = IR_MODEL_FIELDS.browse(field_id)
-                # Get attributes
-                report_action_ids = field_object.eq_report_ids.ids
-                model_id = field_object.model_id
-                model_name = model_id.model
-                field_name = field_object.name
-                # Add field to dictionary
-                for report_action_id in report_action_ids:
-                    data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name,
-                                                                   field_name)
+        for company_id in company_ids:
+            self.connection.env.user.company_id = company_id
+            IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
+            all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', '!=', False)])
+            print('Collect fields...')
+            # Progressbar...
+            with click.progressbar(range(len(all_report_field_ids))) as bar:
+                for field_id in all_report_field_ids:
+                    # Get object
+                    field_object = IR_MODEL_FIELDS.browse(field_id)
+                    # Get attributes
+                    report_action_ids = field_object.eq_report_ids.ids
+                    model_id = field_object.model_id
+                    model_name = model_id.model
+                    field_name = field_object.name
+                    if self.version == "10":
+                        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
+                    else:
+                        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+                    # Add field to dictionary
+                    for report_action_id in report_action_ids:
+                        report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
+                        company_id = report_action_object.company_id.id if report_action_object.company_id else False
+                        if company_id:
+                            if report_action_object.report_name in report_name_id_combination and report_action_id != report_name_id_combination[report_action_object.report_name]:
+                                if 'company_id' in data_dictionary[report_name_id_combination[report_action_object.report_name]]:
+                                    data_dictionary[report_name_id_combination[report_action_object.report_name]]['company_id'].append(company_id)
+                                    continue
+                            else:
+                                report_name_id_combination[report_action_object.report_name] = report_action_id
+                        data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name,
+                                                                    field_name, company_id)
         for report_action_id, fields in data_dictionary.items():
             # Create report object
             eq_report_object = self.create_eq_report_object(report_action_id, fields)
             eq_yaml_data = eq_report_object.ensure_data_for_yaml()
+
             # Get timestamp
             now = datetime.now()
             date_now = now.strftime("%m_%d_%Y_%H_%M_%S")
@@ -130,13 +148,18 @@ class EqOdooConnection(OdooConnection):
             output_name = output_path + '/' + eq_report_object.report_name + '_' + date_now + '.yaml'
             self.write_yaml(output_name, eq_yaml_data)
 
-    def add_field_to_dictionary(self, data_dictionary, report_id, model_name, field_name):
+    def add_field_to_dictionary(self, data_dictionary, report_id, model_name, field_name, company_id):
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
             data_dictionary[report_id][model_name] = [field_name]
         else:
             data_dictionary[report_id][model_name].append(field_name)
+        if company_id:
+            if 'company_id' in data_dictionary[report_id] and company_id not in data_dictionary[report_id]['company_id']:
+                data_dictionary[report_id]['company_id'].append(company_id)
+            else:
+                data_dictionary[report_id]['company_id'] = [company_id]
         return data_dictionary
 
     def _collect_calculated_fields(self, eq_calculated_field_objects):
@@ -163,6 +186,8 @@ class EqOdooConnection(OdooConnection):
             IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
         else:
             IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        if 'company_id' in field_dictionary:
+            self.connection.env.user.company_id = field_dictionary['company_id'][0]
         action_object = IR_ACTIONS_REPORT.browse(action_id)
         # Collect attributes
         name = {self.language: action_object.name}
@@ -178,7 +203,9 @@ class EqOdooConnection(OdooConnection):
         attachment_use = action_object.attachment_use
         attachment = action_object.attachment
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
-        company_id = action_object.company_id
+        company_id = field_dictionary['company_id'] if 'company_id' in field_dictionary else False
+        if 'company_id' in field_dictionary:
+            del field_dictionary['company_id']
 
         # Special cases => not in every version
         eq_export_as_sql = action_object.eq_export_as_sql
