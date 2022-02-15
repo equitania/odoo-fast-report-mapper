@@ -6,6 +6,7 @@ from . import eq_report
 from . import eq_odoo_connection
 import odoo_report_helper.utils as utils
 import odoo_report_helper.exceptions as exceptions
+import copy
 
 
 def create_report_object_from_yaml_object(yaml_object):
@@ -24,7 +25,7 @@ def create_report_object_from_yaml_object(yaml_object):
         yaml_object['report_name'],
         yaml_object['report_type'],
         yaml_object['report_model'],
-        yaml_object['company_id'],
+        yaml_object.get('company_id', False),
         yaml_object['eq_export_type'],
         yaml_object['print_report_name'],
         yaml_object['attachment'],
@@ -83,7 +84,18 @@ def collect_all_reports(path):
     """
     try:
         yaml_report_objects = utils.parse_yaml_folder(path)
-        eq_report_objects = convert_all_yaml_objects(yaml_report_objects, create_report_object_from_yaml_object)
+        filtered_yaml_report_objects = []
+        for yaml_report_object in yaml_report_objects:
+            if yaml_report_object.get('company_id') and len(yaml_report_object.get('company_id')) > 1:
+                company_ids = yaml_report_object.get('company_id')
+                del yaml_report_object['company_id']
+                for company_id in company_ids:
+                    temp_yaml_report_object = copy.deepcopy(yaml_report_object)
+                    temp_yaml_report_object['company_id'] = [company_id]
+                    filtered_yaml_report_objects.append(temp_yaml_report_object)
+            else:
+                filtered_yaml_report_objects.append(yaml_report_object)
+        eq_report_objects = convert_all_yaml_objects(filtered_yaml_report_objects, create_report_object_from_yaml_object)
         return eq_report_objects
     except FileNotFoundError as ex:
         raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex))

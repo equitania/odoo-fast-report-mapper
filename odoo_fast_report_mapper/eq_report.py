@@ -42,7 +42,7 @@ class EqReport(Report):
             'report_type': self.report_type,
             'print_report_name': self.print_report_name,
             'model': self.model_name,
-            'company_id': self.company_id[0],
+            'company_id': self.company_id[0] if self.company_id else False,
             'eq_export_type': self.eq_export_type,
             'eq_ignore_images': self.eq_ignore_images,
             'eq_ignore_html': self.eq_ignore_html,

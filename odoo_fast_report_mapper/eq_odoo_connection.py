@@ -20,12 +20,13 @@ class EqOdooConnection(OdooConnection):
         self.do_clean_reports = clean_old_reports
         self.language = language
 
-    def _search_report(self, model_name, report_name: dict):
+    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False):
         """
             If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
             report_type = fast_report
         """
-        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        if not IR_ACTIONS_REPORT:
+            IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search(
             [('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
              ('name', '=ilike', report_name['ger'] + " " + "(PDF)")])
@@ -42,10 +43,15 @@ class EqOdooConnection(OdooConnection):
             If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
             report_type = fast_report
         """
-        if self.do_clean_reports:
-            report_ids = self._get_fast_report_ids()
-            for report_id in report_ids:
-                self._delete_report(report_id)
+        original_company_yaml_user = self.connection.env.user.company_id.id
+        company_ids = self.connection.env.user.company_ids.ids if self.connection.env.user.company_ids else self.connection.env.user.company_id.ids
+        for company_id in company_ids:
+            self.connection.env.user.company_id = company_id
+            if self.do_clean_reports:
+                report_ids = self._get_fast_report_ids()
+                for report_id in report_ids:
+                    self._delete_report(report_id)
+        self.connection.env.user.company_id = original_company_yaml_user
 
     def map_reports(self, report_list: list):
         """
@@ -55,14 +61,17 @@ class EqOdooConnection(OdooConnection):
         IR_MODEL = self.connection.env['ir.model']
         IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        original_company_yaml_user = IR_ACTIONS_REPORT.env.user.company_id
         for report in report_list:
             report.self_ensure()
             report._data_dictionary['name'] = report.entry_name[self.language]
             dependencies_installed = self.check_dependencies(report._dependencies)
+            if report.company_id:
+                IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
             if not dependencies_installed:
                 print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
                 continue
-            report_id = self._search_report(report.model_name, report.entry_name)
+            report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             if not report_id:
                 report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
                 report_object = IR_ACTIONS_REPORT.browse(report_id)
@@ -72,6 +81,7 @@ class EqOdooConnection(OdooConnection):
             # Add report to print menu
             report_object.create_action()
             print(f"!!! ******** START {report.report_name} ******** !!!")
+            IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
             try:
                 # Loop over all models in report fields dictionary
                 for model_name in report._fields:
@@ -85,11 +95,10 @@ class EqOdooConnection(OdooConnection):
                             [('model_id', '=', model_object.id), ('name', '=', field_name)])
                         if field_id:
                             field = IR_MODEL_FIELDS.browse(field_id)
+                            # using update, write one2Many field with browse is not possible, always error
                             # Insert the report_id
                             if report_object.id not in field.eq_report_ids.ids:
-                                report_ids = field.eq_report_ids.ids
-                                report_ids.append(report_object.id)
-                                field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                                field.update({'eq_report_ids': [(4, report_object.id)]})
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
@@ -129,9 +138,9 @@ class EqOdooConnection(OdooConnection):
                         company_id = report_action_object.company_id.id if report_action_object.company_id else False
                         if company_id:
                             if report_action_object.report_name in report_name_id_combination and report_action_id != report_name_id_combination[report_action_object.report_name]:
-                                if 'company_id' in data_dictionary[report_name_id_combination[report_action_object.report_name]]:
+                                if 'company_id' in data_dictionary[report_name_id_combination[report_action_object.report_name]] and company_id not in data_dictionary[report_name_id_combination[report_action_object.report_name]]['company_id']:
                                     data_dictionary[report_name_id_combination[report_action_object.report_name]]['company_id'].append(company_id)
-                                    continue
+                                continue
                             else:
                                 report_name_id_combination[report_action_object.report_name] = report_action_id
                         data_dictionary = self.add_field_to_dictionary(data_dictionary, report_action_id, model_name,
@@ -256,12 +265,17 @@ class EqOdooConnection(OdooConnection):
         #logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO, filename=f"testing_fast_report_rendering_{self.connection._env._db}.log")
         ## Console
         logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO)
-
-        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        IR_MODEL = self.connection.env['ir.model']
+        original_company_yaml_user = self.connection.env.user.company_id
         for report in report_list:
+            if report.company_id:
+                self.connection.env.user.company_id = report.company_id[0]
+                IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+                IR_MODEL = self.connection.env['ir.model']
+            else:
+                IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+                IR_MODEL = self.connection.env['ir.model']
             # Get report action record
-            report_id = self._search_report(report.model_name, report.entry_name)
+            report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
             # Check if the report has been created and is type Fast Report
             if not report_id or report_object.report_type != "fast_report": 
@@ -304,3 +318,4 @@ class EqOdooConnection(OdooConnection):
                         logging.info(f"\033[0;31m!!! ******** REPORT \033[1;31m{report.report_name}\033[0;31m NOT RENDERING CORRECTLY ******** !!!\033[0;37m ")
                         logging.info(f"\033[0;31m!!! ******** EXCEPTION ******** !!!\033[0;37m")
                         logging.info("\033[0;31m" + str(ex) + "\033[0;37m")
+        self.connection.env.user.company_id = original_company_yaml_user

@@ -15,7 +15,8 @@ def welcome():
               prompt='Please enter the path to your configuration folder')
 @click.option('--report_path', help='Reports folder',
               prompt='Please enter the path to your report folder')
-@click.option('--collect_reports', help='Report collection - this will disable mapping of reports (y/n)')
+@click.option('--collect_reports', help='Report collection - this will disable mapping of reports (y/n)', 
+              prompt='Report collection - this will disable mapping of reports (y/n)')
 @click.option('--disable_qweb', help='Disable QWeb Reports (y/n)',
               prompt='Disable QWeb reports? (y/n)')
 @click.option('--testing_only', help='Testing only (y) or Mapping & Testing (n). Default:n',
