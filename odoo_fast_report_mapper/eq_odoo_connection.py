@@ -20,6 +20,24 @@ class EqOdooConnection(OdooConnection):
         self.do_clean_reports = clean_old_reports
         self.language = language
 
+    def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
+        """
+            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
+            report_type = fast_report
+        """
+        if not IR_ACTIONS_REPORT:
+            IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        report_ids = IR_ACTIONS_REPORT.search(
+            [('model', '=ilike', model_name), '|', ('name', '=ilike', report_name['ger']),
+             ('name', '=ilike', report_name['ger'] + " " + "(PDF)"),'|', ('company_id', '=', company_id), ('company_id', '=', False)])
+        if len(report_ids) == 0 and 'eng' in report_name:
+            report_ids = IR_ACTIONS_REPORT.search([('model', '=', model_name), '|', ('name', '=', report_name['eng']),
+                                                   ('name', '=', report_name['eng'] + " " + "(PDF)"), '|', ('company_id', '=', company_id), ('company_id', '=', False)])
+        if len(report_ids) == 0:
+            return False
+        else:
+            return report_ids[0]
+
     def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False):
         """
             If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
@@ -53,6 +71,21 @@ class EqOdooConnection(OdooConnection):
                     self._delete_report(report_id)
         self.connection.env.user.company_id = original_company_yaml_user
 
+    def check_dependencies(self, dependencies):
+        """
+            Check if all dependencies (modules) are installed, if one isn't, return False
+            :param: dependencies: List of names of modules
+        """
+        not_installed_modules = []
+        if dependencies:
+            for dependency in dependencies:
+                dependency_installed = self.check_module(dependency)
+                if not dependency_installed:
+                    not_installed_modules.append(dependency)
+            if not_installed_modules:
+                return False, not_installed_modules
+        return True, not_installed_modules
+
     def map_reports(self, report_list: list):
         """
             Create/Write reports into the Odoo system with their fields and properties
@@ -65,13 +98,20 @@ class EqOdooConnection(OdooConnection):
         for report in report_list:
             report.self_ensure()
             report._data_dictionary['name'] = report.entry_name[self.language]
-            dependencies_installed = self.check_dependencies(report._dependencies)
+            dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
+            if not dependencies_installed and not_installed_modules:
+                print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
+                for not_installed_module in not_installed_modules:
+                    print(f"!!! ******** MODULE - {not_installed_module} - NOT INSTALLED ******** !!!")
+                continue
             if report.company_id:
                 IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
-            if not dependencies_installed:
-                print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
-                continue
-            report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+                if self.version == '13':
+                    report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
+                else:
+                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+            else:
+                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             if not report_id:
                 report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
                 report_object = IR_ACTIONS_REPORT.browse(report_id)
@@ -95,10 +135,12 @@ class EqOdooConnection(OdooConnection):
                             [('model_id', '=', model_object.id), ('name', '=', field_name)])
                         if field_id:
                             field = IR_MODEL_FIELDS.browse(field_id)
-                            # using update, write one2Many field with browse is not possible, always error
                             # Insert the report_id
                             if report_object.id not in field.eq_report_ids.ids:
-                                field.update({'eq_report_ids': [(4, report_object.id)]})
+                                report_ids = field.eq_report_ids.ids + [report_object.id]
+                                field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                                # field.update({'eq_report_ids': [(6, 0, report_ids)]})
+                                # field.update({'eq_report_ids': [(4, report_object.id)]})
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
@@ -162,7 +204,7 @@ class EqOdooConnection(OdooConnection):
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
             data_dictionary[report_id][model_name] = [field_name]
-        else:
+        if field_name not in data_dictionary[report_id][model_name]:
             data_dictionary[report_id][model_name].append(field_name)
         if company_id:
             if 'company_id' in data_dictionary[report_id] and company_id not in data_dictionary[report_id]['company_id']:
@@ -206,9 +248,8 @@ class EqOdooConnection(OdooConnection):
         print_report_name = action_object.print_report_name
         model_name = action_object.model
         eq_ignore_images = action_object.eq_ignore_images
-        eq_ignore_html = action_object.eq_ignore_html
-        eq_export_complete_html = action_object.eq_export_complete_html
-        multi_print = action_object.multi
+        eq_handling_html_fields = action_object.eq_handling_html_fields
+        multi = action_object.multi
         attachment_use = action_object.attachment_use
         attachment = action_object.attachment
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
@@ -216,26 +257,20 @@ class EqOdooConnection(OdooConnection):
         if 'company_id' in field_dictionary:
             del field_dictionary['company_id']
 
-        # Special cases => not in every version
-        eq_export_as_sql = action_object.eq_export_as_sql
-        if not self.is_boolean(eq_export_as_sql):
-            eq_export_as_sql = True
         calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
         if not self.is_dict(calculated_fields_dict):
             calculated_fields_dict = {}
         eq_print_button = action_object.eq_print_button
         if not self.is_boolean(eq_print_button):
             eq_print_button = False
-        eq_merge_data_from_multi = action_object.eq_merge_data_from_multi
-        if not self.is_boolean(eq_merge_data_from_multi):
-            eq_merge_data_from_multi = False
+        eq_multiprint = action_object.eq_multiprint
 
         eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, company_id, eq_export_type,
                                            print_report_name, attachment,
-                                           eq_ignore_images, eq_ignore_html, eq_export_complete_html, eq_export_as_sql,
-                                           multi_print,
+                                           eq_ignore_images, eq_handling_html_fields,
+                                           multi,
                                            attachment_use, eq_print_button, [], field_dictionary,
-                                           calculated_fields_dict, eq_merge_data_from_multi)
+                                           calculated_fields_dict, eq_multiprint)
         return eq_report_obj
 
     def write_yaml(self, file_name, data):
@@ -271,11 +306,15 @@ class EqOdooConnection(OdooConnection):
                 self.connection.env.user.company_id = report.company_id[0]
                 IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
                 IR_MODEL = self.connection.env['ir.model']
+                if self.version == '13':
+                    report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
+                else:
+                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             else:
                 IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
                 IR_MODEL = self.connection.env['ir.model']
+                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             # Get report action record
-            report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
             # Check if the report has been created and is type Fast Report
             if not report_id or report_object.report_type != "fast_report": 

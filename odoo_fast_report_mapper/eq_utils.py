@@ -16,10 +16,6 @@ def create_report_object_from_yaml_object(yaml_object):
         :return: EqReport object
     """
     # Set this in a try block because not all yaml files are up2date
-    try:
-        eq_merge_data_from_multi = yaml_object['eq_merge_data_from_multi']
-    except KeyError:
-        eq_merge_data_from_multi = False
     report = eq_report.EqReport(
         yaml_object['name'],
         yaml_object['report_name'],
@@ -30,16 +26,14 @@ def create_report_object_from_yaml_object(yaml_object):
         yaml_object['print_report_name'],
         yaml_object['attachment'],
         yaml_object['eq_ignore_images'],
-        yaml_object['eq_ignore_html'],
-        yaml_object['eq_export_complete_html'],
-        yaml_object['eq_export_as_sql'],
-        yaml_object['multiprint'],
+        yaml_object['eq_handling_html_fields'],
+        yaml_object['multi'],
         yaml_object['attachment_use'],
         yaml_object['eq_print_button'],
         yaml_object['dependencies'],
         yaml_object['report_fields'],
         yaml_object['calculated_fields'],
-        eq_merge_data_from_multi
+        yaml_object['eq_multiprint'],
     )
     return report
 
