@@ -13,13 +13,11 @@ print_report_name: ('Report')
 report_type: fast_report
 eq_export_type: pdf
 eq_ignore_images: True
-eq_ignore_html: False
-eq_export_complete_html: False
-eq_export_as_sql: True
+eq_handling_html_fields: standard
+eq_multiprint: create_zip
+multi: false
 eq_print_button: False
-multiprint: False
 attachment_use: True
-eq_merge_data_from_multi: False
 
 dependencies:
   - module_name

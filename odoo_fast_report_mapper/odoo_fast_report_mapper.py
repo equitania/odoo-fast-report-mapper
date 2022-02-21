@@ -13,39 +13,39 @@ def welcome():
 @click.command()
 @click.option('--server_path', help='Server configuration folder',
               prompt='Please enter the path to your configuration folder')
-@click.option('--report_path', help='Reports folder',
-              prompt='Please enter the path to your report folder')
-@click.option('--collect_reports', help='Report collection - this will disable mapping of reports (y/n)', 
-              prompt='Report collection - this will disable mapping of reports (y/n)')
-@click.option('--disable_qweb', help='Disable QWeb Reports (y/n)',
-              prompt='Disable QWeb reports? (y/n)')
-@click.option('--testing_only', help='Testing only (y) or Mapping & Testing (n). Default:n',
-              prompt='Testing FastReport only? (y/n)')
-def start_odoo_fast_report_mapper(server_path, report_path, collect_reports, disable_qweb, testing_only):
-    # Collect yaml files and build objects
+@click.option('--yaml_path', help='Yaml folder',
+              prompt='Please enter the path to your yaml folder')
+def start_odoo_fast_report_mapper(server_path, yaml_path):
+    # Collect yaml files and mapping existing yaml files
     connections = eq_utils.collect_all_connections(server_path)
-    # Collect reports
-    if collect_reports == "y":
-        for connection in connections:
-            connection.login()
-            connection.collect_all_report_entries(report_path)
-    # Set reports
-    else:
-        reports = eq_utils.collect_all_reports(report_path)
-        for connection in connections:
-            connection.login()
-            if testing_only == "y":
+
+    for connection in connections:
+        connection.login()
+
+        # Collect yaml
+        if connection.collect_yaml:
+            connection.collect_all_report_entries(yaml_path)
+        # Yaml Mapping
+        else:
+            reports = eq_utils.collect_all_reports(yaml_path)
+            if connection.workflow == 0:
+                connection.clean_reports()
+                click.echo("Mapping reports...")
+                connection.map_reports(reports)
+            elif connection.workflow == 1:
                 click.echo(f"\nTesting reports rendering for database: {connection.database}")
                 connection.test_fast_report_rendering(reports)
-            else:
+            elif connection.workflow == 2:
                 connection.clean_reports()
                 click.echo("Mapping reports...")
                 connection.map_reports(reports)
                 click.echo(f"\nTesting reports rendering for database: {connection.database}")
                 connection.test_fast_report_rendering(reports)
-    if disable_qweb == "y":
-        for connection in connections:
-            connection.disable_qweb()
+            else:
+                click.echo("The value of the configuration parameter workflow is wrong!")
+
+        if connection.disable_qweb:
+            connection.disable_qweb_reports()
 
     click.echo("##### DONE #####")
 

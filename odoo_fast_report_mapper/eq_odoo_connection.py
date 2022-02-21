@@ -3,11 +3,11 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import click
 from odoo_report_helper.odoo_connection import OdooConnection
-from . import eq_report
+import eq_report
 from datetime import datetime
 import io
 import yaml
-from . import MyDumper
+import MyDumper
 import base64
 from random import choice
 import sys
@@ -15,10 +15,13 @@ import logging
 
 
 class EqOdooConnection(OdooConnection):
-    def __init__(self, clean_old_reports, language, *args, **kwargs):
+    def __init__(self, clean_old_reports, language, collect_yaml, disable_qweb, workflow, *args, **kwargs):
         super(EqOdooConnection, self).__init__(*args, **kwargs)
         self.do_clean_reports = clean_old_reports
         self.language = language
+        self.collect_yaml = collect_yaml
+        self.disable_qweb = disable_qweb
+        self.workflow = workflow
 
     def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
         """
@@ -387,3 +390,13 @@ class EqOdooConnection(OdooConnection):
                         logging.info(f"\033[0;31m!!! ******** EXCEPTION ******** !!!\033[0;37m")
                         logging.info("\033[0;31m" + str(ex) + "\033[0;37m")
         self.connection.env.user.company_id = original_company_yaml_user
+
+    def disable_qweb_reports(self):
+        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        report_ids = IR_ACTIONS_REPORT.search(
+            ['|', ('report_type', '=', 'qweb-pdf'), '|', ('report_type', '=', 'qweb-html'),
+             ('report_type', '=', 'qweb-text')])
+        for report_id in report_ids:
+            report_object = IR_ACTIONS_REPORT.browse(report_id)
+            report_object.unlink_action()
+        print("Disabled QWeb for " + self.database)
