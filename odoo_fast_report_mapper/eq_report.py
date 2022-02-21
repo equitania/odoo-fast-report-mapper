@@ -8,7 +8,7 @@ from odoo_report_helper.report import Report
 class EqReport(Report):
     def __init__(self, entry_name, report_name: str, report_type: str, model_name: str, company_id, eq_export_type="pdf",
                  print_report_name="Report", attachment="Report.pdf", eq_ignore_images=True, eq_handling_html_fields='standard', multi=False, attachment_use=False,
-                 eq_print_button=False, dependencies=[], model_fields={}, calculated_fields={},
+                 eq_print_button=False, dependencies=False, model_fields={}, calculated_fields={},
                  eq_multiprint='standard'):
         self.entry_name = entry_name
         self.report_name = report_name
@@ -65,7 +65,7 @@ class EqReport(Report):
             'attachment': self.attachment,
             'attachment_use': self.attachment_use,
             'eq_print_button': self.eq_print_button,
-            'dependencies': [],
+            'dependencies': self._dependencies,
             'report_fields': self._fields,
             'calculated_fields': self._calculated_fields
         }

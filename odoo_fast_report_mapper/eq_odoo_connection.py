@@ -156,13 +156,26 @@ class EqOdooConnection(OdooConnection):
         report_name_id_combination = dict()
         data_dictionary = {}
         for company_id in company_ids:
+            # Change the current company in the env
             self.connection.env.user.company_id = company_id
+            
+            if self.version == "10":
+                IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
+            else:
+                IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+            data_dictionary_keys = list(data_dictionary.keys())
+            report_ids = IR_ACTIONS_REPORT.search([('report_type', '=', 'fast_report'),('id', 'not in', data_dictionary_keys)])
+
             IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
-            all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', '!=', False)])
-            print('Collect fields...')
+            all_report_field_ids = IR_MODEL_FIELDS.search([('eq_report_ids', 'in', report_ids), ('eq_report_ids', '!=', False)])
+
+            # Get current company name
+            company_name = self.connection.env['res.company'].browse(company_id).name
+            print('Collect fields for %s' %company_name)
+            
             # Progressbar...
-            with click.progressbar(range(len(all_report_field_ids))) as bar:
-                for field_id in all_report_field_ids:
+            with click.progressbar(all_report_field_ids, length=len(all_report_field_ids)) as bar:
+                for field_id in bar:
                     # Get object
                     field_object = IR_MODEL_FIELDS.browse(field_id)
                     # Get attributes
@@ -170,10 +183,8 @@ class EqOdooConnection(OdooConnection):
                     model_id = field_object.model_id
                     model_name = model_id.model
                     field_name = field_object.name
-                    if self.version == "10":
-                        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
-                    else:
-                        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+
+
                     # Add field to dictionary
                     for report_action_id in report_action_ids:
                         report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
@@ -232,6 +243,19 @@ class EqOdooConnection(OdooConnection):
             }
         return eq_calculated_field_dict
 
+    def _collect_modules_dependencies_list(self, list_of_models):
+        IR_MODELS = self.connection.env['ir.model']
+        dependencies = []
+        for model in list_of_models:
+            model_id = IR_MODELS.search([('model','=', model)])
+            model_obj = IR_MODELS.browse(model_id)
+            models_dependencies = model_obj.modules.replace(' ', '').split(',')
+            dependencies.extend(models_dependencies)
+        # using set()
+        # to remove duplicated 
+        # from list
+        return sorted(list(set(dependencies)))
+
     def create_eq_report_object(self, action_id, field_dictionary):
         if self.version == "10":
             IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
@@ -242,6 +266,8 @@ class EqOdooConnection(OdooConnection):
         action_object = IR_ACTIONS_REPORT.browse(action_id)
         # Collect attributes
         name = {self.language: action_object.name}
+        if self.language != 'eng':
+            name['eng'] = action_object.with_context(lang='en_US').name
         report_name = action_object.report_name
         report_type = action_object.report_type
         eq_export_type = action_object.eq_export_type
@@ -264,12 +290,15 @@ class EqOdooConnection(OdooConnection):
         if not self.is_boolean(eq_print_button):
             eq_print_button = False
         eq_multiprint = action_object.eq_multiprint
+        
+        list_of_models = list(field_dictionary.keys())
+        dependencies = self._collect_modules_dependencies_list(list_of_models)
 
         eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, company_id, eq_export_type,
                                            print_report_name, attachment,
                                            eq_ignore_images, eq_handling_html_fields,
                                            multi,
-                                           attachment_use, eq_print_button, [], field_dictionary,
+                                           attachment_use, eq_print_button, dependencies, field_dictionary,
                                            calculated_fields_dict, eq_multiprint)
         return eq_report_obj
 
