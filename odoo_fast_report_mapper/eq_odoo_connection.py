@@ -3,11 +3,11 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 import click
 from odoo_report_helper.odoo_connection import OdooConnection
-import eq_report
+from . import eq_report
 from datetime import datetime
 import io
 import yaml
-import MyDumper
+from . import MyDumper
 import base64
 from random import choice
 import sys
