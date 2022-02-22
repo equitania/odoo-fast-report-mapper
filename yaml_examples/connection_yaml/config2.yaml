@@ -9,3 +9,7 @@ Server:
   delete_old_reports: True
   # This entry depends on your report yaml files
   language: eng
+  # The following configuration parameters are not mandatory, if not included in the configuration then the default values are used
+  collect_yaml: False                               # Yaml collection - this will disable mapping of report. The default is False.
+  disable_qweb: True                                # Disable QWeb reports. The default is True.
+  workflow: 0                                       # Mapper workflow if the parameter collect_yaml is False. 0: Only mapping(default) 1: Only testing 2: Mapping and Testing

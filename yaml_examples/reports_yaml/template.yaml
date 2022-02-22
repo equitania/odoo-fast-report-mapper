@@ -1,28 +1,27 @@
 ---
 # Naming
-name:
+name:                                 # Report name (German and English)
   ger: Deutsch_Report
   eng: english_report
-# .frx name and model
-report_name: eq_fr_core_test_report
-report_model: test.model
-# File naming
-attachment: ('Report.pdf')
-print_report_name: ('Report')
+report_name: eq_fr_core_test_report   # frx name of the report
+report_model: test.model              # Model name
+attachment: ('Report.pdf')            # Save as Attachment prefix. This is the filename of the attachment used to store the printing result.
+print_report_name: ('Report')         # Print Report Name. This is the filename of the report going to download.
 # Properties
-report_type: fast_report
-eq_export_type: pdf
-eq_ignore_images: True
-eq_handling_html_fields: standard
-eq_multiprint: create_zip
-multi: false
-eq_print_button: False
-attachment_use: True
-
-dependencies:
+report_type: fast_report              # The type of the report that will be rendered. Always should be fast_report.
+eq_export_type: pdf                   # Export type for the report. The default is pdf. Possible values: txt, xml, pdf, png, jpg, tiff, ods, odt, xls, doc.
+eq_ignore_images: true                # Ignore images. Disable or enable export of images, the default is False.
+eq_handling_html_fields: standard     # Handling HTML fields. Possible values: standard(default): Include only tags like Bold, Italics etc. plain_text: Convert HTML code to plain text. complete_html: Use complete HTML.
+eq_multiprint: create_zip             # Print multiple selection field. Possible values: standard: Merge all reports in one pdf file. Available for export type PDF, merge_data: Merge all data into one report. Available for export type PDF, create_zip(default): Create a zip with all reports in separate files.Available for all export types.
+multi: false                          # On Multiple Doc.If set to true, the action will not be displayed on the right toolbar of a form view.
+eq_print_button: false                # Report on print button. If the flag is set then this report will be printed on click on the print button in the specified model. The default value is False.
+attachment_use: true                  # Reload from Attachment. If you check this, then the second time the user prints with same attachment name, it returns the previous report. The default is False.
+company_id:                           # The field company id is not a required field and it is used only in multi company databases. The value is the exact company id from the database for which the report is allowed. The field can have one or more company ids depending on the requirements for the report. In case the report should be allowed for all companies then the field should be removed from the YAML file.
+  - 3
+dependencies:                         # List all modules that should be installed in the system when this YAML is used for mapping, if some of the modules are not installed when the mapper is run, there is an error message for the exact module.
   - module_name
 
-report_fields:
+report_fields:                        # The Required report fields for mapping
   model.test1:
     - id
     - number
@@ -55,7 +54,7 @@ report_fields:
     - display_type
     - eq_pos
 
-calculated_fields:
+calculated_fields:                    # Calculated fields, defined in the Report Settings.
   field_name:
     function_name:
       - parameter1
