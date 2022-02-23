@@ -225,6 +225,21 @@ class EqOdooConnection(OdooConnection):
                 data_dictionary[report_id]['company_id'].append(company_id)
             else:
                 data_dictionary[report_id]['company_id'] = [company_id]
+        # Collect dependencies
+        IR_FIELDS = self.connection.env['ir.model.fields']
+        IR_MODEL = self.connection.env['ir.model']
+        model_id = IR_MODEL.search([('model','=', model_name)])
+        field_id = IR_FIELDS.search([('model_id','=', model_id), ('name','=', field_name)])
+        field_obj = IR_FIELDS.browse(field_id)
+        modules_dependencies = field_obj.modules.replace(' ', '').split(',')
+        if 'dependencies' in data_dictionary[report_id]:
+            data_dictionary[report_id]['dependencies'].extend(modules_dependencies)
+            # using set()
+            # to remove duplicated 
+            # from list
+            data_dictionary[report_id]['dependencies'] = list(set(data_dictionary[report_id]['dependencies']))
+        else:
+            data_dictionary[report_id]['dependencies'] = modules_dependencies
         return data_dictionary
 
     def _collect_calculated_fields(self, eq_calculated_field_objects):
@@ -245,19 +260,6 @@ class EqOdooConnection(OdooConnection):
                 eq_calculated_field_func_name: eq_calculated_field_params_name.replace(" ", "").split(',')
             }
         return eq_calculated_field_dict
-
-    def _collect_modules_dependencies_list(self, list_of_models):
-        IR_MODELS = self.connection.env['ir.model']
-        dependencies = []
-        for model in list_of_models:
-            model_id = IR_MODELS.search([('model','=', model)])
-            model_obj = IR_MODELS.browse(model_id)
-            models_dependencies = model_obj.modules.replace(' ', '').split(',')
-            dependencies.extend(models_dependencies)
-        # using set()
-        # to remove duplicated 
-        # from list
-        return sorted(list(set(dependencies)))
 
     def create_eq_report_object(self, action_id, field_dictionary):
         if self.version == "10":
@@ -285,6 +287,9 @@ class EqOdooConnection(OdooConnection):
         company_id = field_dictionary['company_id'] if 'company_id' in field_dictionary else False
         if 'company_id' in field_dictionary:
             del field_dictionary['company_id']
+        dependencies = sorted(field_dictionary['dependencies'])
+        if 'dependencies' in field_dictionary:
+            del field_dictionary['dependencies']
 
         calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
         if not self.is_dict(calculated_fields_dict):
@@ -293,9 +298,6 @@ class EqOdooConnection(OdooConnection):
         if not self.is_boolean(eq_print_button):
             eq_print_button = False
         eq_multiprint = action_object.eq_multiprint
-        
-        list_of_models = list(field_dictionary.keys())
-        dependencies = self._collect_modules_dependencies_list(list_of_models)
 
         eq_report_obj = eq_report.EqReport(name, report_name, report_type, model_name, company_id, eq_export_type,
                                            print_report_name, attachment,
