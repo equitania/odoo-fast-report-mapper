@@ -137,13 +137,22 @@ class EqOdooConnection(OdooConnection):
                         field_id = IR_MODEL_FIELDS.search(
                             [('model_id', '=', model_object.id), ('name', '=', field_name)])
                         if field_id:
-                            field = IR_MODEL_FIELDS.browse(field_id)
-                            # Insert the report_id
-                            if report_object.id not in field.eq_report_ids.ids:
-                                report_ids = field.eq_report_ids.ids + [report_object.id]
-                                field.write({'eq_report_ids': [(6, 0, report_ids)]})
-                                # field.update({'eq_report_ids': [(6, 0, report_ids)]})
-                                # field.update({'eq_report_ids': [(4, report_object.id)]})
+                            if report.company_id:
+                                # Only for Multi company
+                                report_list_ids = IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
+                                field = IR_MODEL_FIELDS.browse(field_id)
+                                # Insert the report_id
+                                if report_object.id not in report_list_ids:
+                                    report_ids = report_list_ids + [report_object.id]
+                                    field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                            else:
+                                field = IR_MODEL_FIELDS.browse(field_id)
+                                # Insert the report_id
+                                if report_object.id not in field.eq_report_ids.ids:
+                                    report_ids = field.eq_report_ids.ids + [report_object.id]
+                                    field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                                    # field.update({'eq_report_ids': [(6, 0, report_ids)]})
+                                    # field.update({'eq_report_ids': [(4, report_object.id)]})
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
@@ -229,7 +238,7 @@ class EqOdooConnection(OdooConnection):
         IR_FIELDS = self.connection.env['ir.model.fields']
         IR_MODEL = self.connection.env['ir.model']
         model_id = IR_MODEL.search([('model','=', model_name)])
-        field_id = IR_FIELDS.search([('model_id','=', model_id), ('name','=', field_name)])
+        field_id = IR_FIELDS.search([('model_id','=', model_id[0]), ('name','=', field_name)])
         field_obj = IR_FIELDS.browse(field_id)
         modules_dependencies = field_obj.modules.replace(' ', '').split(',')
         if 'dependencies' in data_dictionary[report_id]:
