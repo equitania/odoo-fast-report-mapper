@@ -109,7 +109,7 @@ class EqOdooConnection(OdooConnection):
                 continue
             if report.company_id:
                 IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
-                if self.version == '13':
+                if self.version in ['13', '14']:
                     report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
                 else:
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
@@ -170,7 +170,7 @@ class EqOdooConnection(OdooConnection):
         for company_id in company_ids:
             # Change the current company in the env
             self.connection.env.user.company_id = company_id
-            
+
             if self.version == "10":
                 IR_ACTIONS_REPORT = self.connection.env['ir.actions.report.xml']
             else:
@@ -184,7 +184,7 @@ class EqOdooConnection(OdooConnection):
             # Get current company name
             company_name = self.connection.env['res.company'].browse(company_id).name
             print('Collect fields for %s' %company_name)
-            
+
             # Progressbar...
             with click.progressbar(all_report_field_ids, length=len(all_report_field_ids)) as bar:
                 for field_id in bar:
@@ -244,7 +244,7 @@ class EqOdooConnection(OdooConnection):
         if 'dependencies' in data_dictionary[report_id]:
             data_dictionary[report_id]['dependencies'].extend(modules_dependencies)
             # using set()
-            # to remove duplicated 
+            # to remove duplicated
             # from list
             data_dictionary[report_id]['dependencies'] = list(set(data_dictionary[report_id]['dependencies']))
         else:
@@ -349,7 +349,7 @@ class EqOdooConnection(OdooConnection):
                 self.connection.env.user.company_id = report.company_id[0]
                 IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
                 IR_MODEL = self.connection.env['ir.model']
-                if self.version == '13':
+                if self.version in ['13', '14']:
                     report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
                 else:
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
@@ -360,7 +360,7 @@ class EqOdooConnection(OdooConnection):
             # Get report action record
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
             # Check if the report has been created and is type Fast Report
-            if not report_id or report_object.report_type != "fast_report": 
+            if not report_id or report_object.report_type != "fast_report":
                 logging.info(f"!!! ******** REPORT {report.report_name} NOT CREATED OR IS NOT TYPE FAST REPORT ******** !!!")
                 continue
 
@@ -368,7 +368,7 @@ class EqOdooConnection(OdooConnection):
 
             ## Get module from report model
             IR_REPORT_MODEL = self.connection.env[report.model_name]
-            
+
             ''' This is extra help: display modules from report model and report filename code
             # Get the report model object
             model_id = IR_MODEL.search([('model', '=', report.model_name)])
@@ -379,7 +379,7 @@ class EqOdooConnection(OdooConnection):
             Can be comented if not necessary '''
 
             if report_object:
-                # Get all report model records ids 
+                # Get all report model records ids
                 report_model_records_ids = IR_REPORT_MODEL.search([])
                 try:
                     if not len(report_model_records_ids):
