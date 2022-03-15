@@ -154,14 +154,46 @@ class EqOdooConnection(OdooConnection):
                                     # field.update({'eq_report_ids': [(6, 0, report_ids)]})
                                     # field.update({'eq_report_ids': [(4, report_object.id)]})
                 if report._calculated_fields:
+                    report_company_id = report.company_id[0] if report.company_id else False
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
-                            self.set_calculated_fields(field, function_name, parameter, report.entry_name,
-                                                       report.model_name)
+                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name, report_company_id)
                 print(f"!!! ******** END {report.report_name} ******** !!!")
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
                 print(ex)
+
+    def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model, report_company_id):
+        """
+        Set calculated fields for the report and clean them:
+        Example:
+        {
+            'field_name': {'function_name': ['parameter1', 'parameter2']},
+            'payment_text': {'eq_get_payment_terms': ['partner_id.lang', 'currency_id']}
+        }
+        """
+        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
+        IR_ACTIONS_REPORT.env.user.company_id = report_company_id
+        REPORT_CALC = self.connection.env['eq_calculated_field_value']
+        parameters_as_string = ', '.join(parameters)
+        parameters_as_string = parameters_as_string.strip()
+        value_dict = {"eq_field_name": field_name, "eq_function_name": function_name,
+                      "eq_parameters_name": parameters_as_string}
+        if report_company_id:
+            report_id = IR_ACTIONS_REPORT.search(
+                [('model', '=', report_model), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['ger']),
+                ('name', '=', report_name['eng']), '|', ('company_id', '=', report_company_id), ('company_id', '=', False)])
+        else:
+            report_id = IR_ACTIONS_REPORT.search(
+                [('model', '=', report_model), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['ger']),
+                ('name', '=', report_name['eng'])])
+        value_dict["eq_report_id"] = report_id[0]
+        calculated_field_id = REPORT_CALC.search(
+            [('eq_report_id', '=', report_id[0]), ('eq_field_name', '=', field_name)])
+        if len(calculated_field_id) == 0:
+            REPORT_CALC.create(value_dict)
+        else:
+            REPORT_CALC.write(calculated_field_id, value_dict)
 
     def collect_all_report_entries(self, output_path):
         company_ids = self.connection.env.user.company_ids.ids if self.connection.env.user.company_ids else self.connection.env.user.company_id.ids
