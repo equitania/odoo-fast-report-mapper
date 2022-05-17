@@ -173,13 +173,13 @@ class EqOdooConnection(OdooConnection):
         }
         """
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        IR_ACTIONS_REPORT.env.user.company_id = report_company_id
         REPORT_CALC = self.connection.env['eq_calculated_field_value']
         parameters_as_string = ', '.join(parameters)
         parameters_as_string = parameters_as_string.strip()
         value_dict = {"eq_field_name": field_name, "eq_function_name": function_name,
                       "eq_parameters_name": parameters_as_string}
         if report_company_id:
+            IR_ACTIONS_REPORT.env.user.company_id = report_company_id
             report_id = IR_ACTIONS_REPORT.search(
                 [('model', '=', report_model), ('report_type', '=', 'fast_report'), '|', ('name', '=', report_name['ger']),
                 ('name', '=', report_name['eng']), '|', ('company_id', '=', report_company_id), ('company_id', '=', False)])
