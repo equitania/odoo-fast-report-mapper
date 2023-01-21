@@ -7,10 +7,10 @@ It is a helper tool for our Odoo modules. https://www.myodoo.de/myodoo-fast-repo
 
 ### odoo-fast-report-mapper requires:
 
-- Python (>= 3.6)
+- Python (>= 3.8)
 - click (>= 8.1.3)
-- OdooRPC (>= 0.8.0)
-- PyYaml (>= 6.0)
+- OdooRPC (>= 0.9.0)
+- PyYaml (>= 5.4.1)
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install odoo-fast-report-mapper.
 
