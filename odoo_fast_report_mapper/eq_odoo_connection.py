@@ -15,19 +15,14 @@ import logging
 
 
 class EqOdooConnection(OdooConnection):
-    def __init__(self, clean_old_reports, language, collect_yaml, disable_qweb, workflow, *args, **kwargs):
+    def __init__(self, language, collect_yaml, disable_qweb, workflow, *args, **kwargs):
         super(EqOdooConnection, self).__init__(*args, **kwargs)
-        self.do_clean_reports = clean_old_reports
         self.language = language
         self.collect_yaml = collect_yaml
         self.disable_qweb = disable_qweb
         self.workflow = workflow
 
     def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
-        """
-            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
-            report_type = fast_report
-        """
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search(
@@ -42,10 +37,6 @@ class EqOdooConnection(OdooConnection):
             return report_ids[0]
 
     def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False):
-        """
-            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
-            report_type = fast_report
-        """
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search(
@@ -58,21 +49,6 @@ class EqOdooConnection(OdooConnection):
             return False
         else:
             return report_ids[0]
-
-    def clean_reports(self):
-        """
-            If parameter "do_clean_reports" (delete_old_reports in connection yaml) is set, delete all report with
-            report_type = fast_report
-        """
-        original_company_yaml_user = self.connection.env.user.company_id.id
-        company_ids = self.connection.env.user.company_ids.ids if self.connection.env.user.company_ids else self.connection.env.user.company_id.ids
-        for company_id in company_ids:
-            self.connection.env.user.company_id = company_id
-            if self.do_clean_reports:
-                report_ids = self._get_fast_report_ids()
-                for report_id in report_ids:
-                    self._delete_report(report_id)
-        self.connection.env.user.company_id = original_company_yaml_user
 
     def check_dependencies(self, dependencies):
         """

@@ -45,7 +45,6 @@ def create_odoo_connection_from_yaml_object(yaml_object):
         :return: EqOdooConnection object
     """
     eq_odoo_connection_object = eq_odoo_connection.EqOdooConnection(
-        yaml_object['Server']['delete_old_reports'],
         yaml_object['Server']['language'],
         yaml_object['Server']['collect_yaml'] if 'collect_yaml' in yaml_object['Server'] else False,
         yaml_object['Server']['disable_qweb'] if 'disable_qweb' in yaml_object['Server'] else True,

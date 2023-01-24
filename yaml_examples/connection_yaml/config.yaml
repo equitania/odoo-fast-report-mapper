@@ -6,7 +6,6 @@ Server:
   user: admin                                       # Your Odoo admin-user or user with setting rights
   password: pw                                      # Password for the user
   database: db                                      # Name of the Odoo database
-  delete_old_reports: True                          # Cleanup old Fast-Report Settings in Odoo systems
   # This entry depends on your report yaml files
   language: ger                                     # Name settings in Odoo system. With "en" names will be English depends on the YAML-file for reports
   # The following configuration parameters are not mandatory, if not included in the configuration then the default values are used

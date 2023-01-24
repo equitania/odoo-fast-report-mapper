@@ -91,14 +91,6 @@ class OdooConnection:
                 print("!!! ******** EXCEPTION ******** !!!")
                 print(ex)
 
-    def clear_reports(self):
-        """
-            Delete all reports with type "fast_report"
-        """
-        report_ids = self._get_fast_report_ids()
-        for report_id in report_ids:
-            self._delete_report(report_id)
-
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model):
         """
             Set calculated fields for the report and clean them:
@@ -151,16 +143,6 @@ class OdooConnection:
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         report_ids = IR_ACTIONS_REPORT.search([('report_type', '=', "fast_report")])
         return report_ids
-
-    def _delete_report(self, report_id):
-        """
-            Delete report and remove print_button in Odoo
-            :param: report_id: ID of report in Odoo
-        """
-        IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
-        report_object = IR_ACTIONS_REPORT.browse(report_id)
-        report_object.unlink_action()
-        report_object.unlink()
 
     def check_module(self, module_name):
         """
