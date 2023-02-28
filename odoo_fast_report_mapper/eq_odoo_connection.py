@@ -74,6 +74,8 @@ class EqOdooConnection(OdooConnection):
         IR_MODEL_FIELDS = self.connection.env['ir.model.fields']
         IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
         original_company_yaml_user = IR_ACTIONS_REPORT.env.user.company_id
+        models_fields = dict()
+        model_name_ids = dict()
         for report in report_list:
             report.self_ensure()
             report._data_dictionary['name'] = report.entry_name[self.language]
@@ -105,36 +107,61 @@ class EqOdooConnection(OdooConnection):
                 # Loop over all models in report fields dictionary
                 for model_name in report._fields:
                     # Get model object in Odoo
-                    model_id = IR_MODEL.search([('model', '=', model_name)])
-                    model_object = IR_MODEL.browse(model_id)
+                    if model_name in model_name_ids:
+                        model_id =  model_name_ids[model_name]
+                    else:
+                        model_id = IR_MODEL.search([('model', '=', model_name)])
+                        if model_id:
+                            model_name_ids[model_name] = model_id[0]
+                            model_id = model_id[0]
                     # Loop over all fields in the list of the current model
-                    for field_name in report._fields[model_name]:
-                        # Get the field from in Odoo
-                        field_id = IR_MODEL_FIELDS.search(
-                            [('model_id', '=', model_object.id), ('name', '=', field_name)])
-                        if field_id:
-                            if report.company_id:
-                                # Only for Multi company
+                    if model_id:
+                        for field_name in report._fields[model_name]:
+                            # Get the field from Odoo
+                            field_id = IR_MODEL_FIELDS.search(
+                                [('model_id', '=', model_id), ('name', '=', field_name)])
+                            if field_id:
                                 report_list_ids = IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
-                                field = IR_MODEL_FIELDS.browse(field_id)
-                                # Insert the report_id
                                 if report_object.id not in report_list_ids:
+                                    # Create dict of dicts in order to store the ids with the following structure:
+                                    # {model_id: {field_id1: [report_ids], field_id2: [report_ids]}
                                     report_ids = report_list_ids + [report_object.id]
-                                    field.write({'eq_report_ids': [(6, 0, report_ids)]})
+                                    if model_id in models_fields:
+                                        if field_id[0] in models_fields[model_id]:
+                                            new_report_ids = models_fields[model_id][field_id[0]] + report_ids
+                                            models_fields[model_id][field_id[0]] = list(dict.fromkeys(new_report_ids))
+                                        else:
+                                            models_fields[model_id][field_id[0]] = report_ids
+                                    else:
+                                        models_fields[model_id] = dict()
+                                        models_fields[model_id][field_id[0]] = report_ids
                             else:
-                                field = IR_MODEL_FIELDS.browse(field_id)
-                                # Insert the report_id
-                                if report_object.id not in field.eq_report_ids.ids:
-                                    report_ids = field.eq_report_ids.ids + [report_object.id]
-                                    field.write({'eq_report_ids': [(6, 0, report_ids)]})
-                                    # field.update({'eq_report_ids': [(6, 0, report_ids)]})
-                                    # field.update({'eq_report_ids': [(4, report_object.id)]})
+                                print(f"The field with name: {field_name} is not found in the model with name: {model_name}.")
+                    else:
+                        print(f"The model with name: {model_name} is not found in the system.")
                 if report._calculated_fields:
                     report_company_id = report.company_id[0] if report.company_id else False
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
                             self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name, report_company_id)
                 print(f"!!! ******** END {report.report_name} ******** !!!")
+            
+            except Exception as ex:
+                print("!!! ******** EXCEPTION ******** !!!")
+                print(ex)
+        
+        for model in models_fields:
+            try:
+                fields_list = []
+                for field in models_fields[model]:
+                    fields_list.append((1, field, {'eq_report_ids': [(6, 0, models_fields[model][field])]}))
+                if self.version == '16':
+                    # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
+                    IR_MODEL.eq_write_report_ids(model, fields_list)
+                else:
+                    # Write/update the report_ids
+                    model_obj = IR_MODEL.browse(model_id)
+                    model_obj.write({'field_id': fields_list})
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
                 print(ex)
