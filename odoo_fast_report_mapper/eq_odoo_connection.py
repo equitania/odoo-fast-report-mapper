@@ -155,13 +155,8 @@ class EqOdooConnection(OdooConnection):
                 fields_list = []
                 for field in models_fields[model]:
                     fields_list.append((1, field, {'eq_report_ids': [(6, 0, models_fields[model][field])]}))
-                if self.version == '16':
-                    # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
-                    IR_MODEL.eq_write_report_ids(model, fields_list)
-                else:
-                    # Write/update the report_ids
-                    model_obj = IR_MODEL.browse(model_id)
-                    model_obj.write({'field_id': fields_list})
+                # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
+                IR_MODEL.eq_write_report_ids(model, fields_list)
             except Exception as ex:
                 print("!!! ******** EXCEPTION ******** !!!")
                 print(ex)
