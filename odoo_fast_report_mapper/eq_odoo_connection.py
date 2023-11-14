@@ -87,7 +87,7 @@ class EqOdooConnection(OdooConnection):
                 continue
             if report.company_id:
                 IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
-                if self.version in ['13', '14', '16']:
+                if self.version in ['13', '14', '15', '16']:
                     report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
                 else:
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
@@ -379,7 +379,7 @@ class EqOdooConnection(OdooConnection):
                 self.connection.env.user.company_id = report.company_id[0]
                 IR_ACTIONS_REPORT = self.connection.env['ir.actions.report']
                 IR_MODEL = self.connection.env['ir.model']
-                if self.version in ['13', '14', '16']:
+                if self.version in ['13', '14', '15', '16']:
                     report_id = self._search_report_v13(report.model_name, report.entry_name, IR_ACTIONS_REPORT, report.company_id[0])
                 else:
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
