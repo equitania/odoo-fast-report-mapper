@@ -24,7 +24,7 @@ setuptools.setup(
     odoo-fr-mapper=odoo_fast_report_mapper.odoo_fast_report_mapper:start_odoo_fast_report_mapper
     ''',
     install_requires=[
-        'OdooRPC>=0.9.0',
+        'OdooRPC>=0.10.1',
         'click>=8.1.3',
         'PyYaml>=5.4.1'
     ]
