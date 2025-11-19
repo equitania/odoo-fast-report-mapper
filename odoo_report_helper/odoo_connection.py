@@ -7,6 +7,9 @@ from . import utils
 import odoorpc
 import sys
 from . import exceptions
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OdooConnection:
@@ -34,7 +37,7 @@ class OdooConnection:
             self.connection.env.context['active_test'] = False  # Show inactive articles
             self.connection.env.context['tracking_disable'] = True
             self.version = self.connection.version.split(".")[0]
-            print('##### Connected to ' + self.database + ' #####')
+            logger.info(f'Connected to database: {self.database}')
         except odoorpc.error.RPCError as ex:
             raise exceptions.OdooConnectionError(
                 "ERROR: Please check your parameters and your connection" + " " + str(ex))
@@ -52,9 +55,9 @@ class OdooConnection:
             report.self_ensure()
             dependencies_installed = self.check_dependencies(report._dependencies)
             if not dependencies_installed:
-                print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
+                logger.error(f"Dependencies for {report.report_name} not installed")
                 continue
-            print(f"!!! ******** START {report.report_name} ******** !!!")
+            logger.info(f"Processing report: {report.report_name}")
             report_id = self._search_report(report.model_name, report.entry_name)
             if not report_id:
                 report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
@@ -86,10 +89,10 @@ class OdooConnection:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
                             self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model)
-                print(f"!!! ******** END {report.report_name} ******** !!!")
+                logger.info(f"Successfully processed report: {report.report_name}")
             except Exception as ex:
-                print("!!! ******** EXCEPTION ******** !!!")
-                print(ex)
+                logger.error(f"Exception while processing report: {report.report_name}")
+                logger.exception(ex)
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model):
         """

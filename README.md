@@ -79,6 +79,57 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+### Lokales Testen & Paket erstellen / Local Testing & Building
+
+```bash
+# 1. Entwicklungsumgebung aktivieren / Activate development environment
+source .venv/bin/activate  # Linux/macOS
+# oder / or
+.venv\Scripts\activate  # Windows
+
+# 2. Development-Dependencies installieren / Install development dependencies
+pip install -r requirements-dev.txt
+
+# 3. Code-Formatierung prüfen / Check code formatting
+black odoo_fast_report_mapper/ odoo_report_helper/ --check
+flake8 odoo_fast_report_mapper/ odoo_report_helper/
+
+# 4. Tests ausführen / Run tests
+pytest tests/ -v
+
+# 5. Paket lokal bauen / Build package locally
+uv build
+# oder mit setuptools / or with setuptools
+python setup.py sdist bdist_wheel
+
+# 6. Lokales Paket installieren / Install local package
+pip install dist/odoo-fast-report-mapper-equitania-*.tar.gz
+
+# 7. Paket testen / Test the package
+odoo-fast-report-mapper --help
+
+# 8. Paket-Integrität prüfen / Check package integrity
+twine check dist/*
+```
+
+### Version aktualisieren & veröffentlichen / Update Version & Publish
+
+```bash
+# 1. Version in setup.py anpassen / Update version in setup.py
+# version="0.1.25"  # Beispiel / Example
+
+# 2. Changelog aktualisieren / Update changelog
+# Dokumentiere Änderungen / Document changes
+
+# 3. Build & Upload zu PyPI / Build & Upload to PyPI
+uv build
+twine upload dist/*
+
+# 4. Git Tag erstellen / Create git tag
+git tag v0.1.25
+git push origin v0.1.25
+```
+
 ---
 
 ## 🚀 Verwendung / Usage

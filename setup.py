@@ -57,7 +57,8 @@ setuptools.setup(
     install_requires=[
         'OdooRPC>=0.10.1',
         'click>=8.1.3',
-        'PyYaml>=5.4.1'
+        'PyYaml>=5.4.1',
+        'tqdm>=4.65.0'
     ],
     extras_require={
         'dev': [

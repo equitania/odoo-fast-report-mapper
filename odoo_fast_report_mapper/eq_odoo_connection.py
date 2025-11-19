@@ -11,7 +11,10 @@ from . import MyDumper
 import base64
 from random import choice
 import sys
-import logging
+from .logging_config import get_logger
+from .progress import ReportProgress
+
+logger = get_logger(__name__)
 
 
 class EqOdooConnection(OdooConnection):
@@ -81,9 +84,9 @@ class EqOdooConnection(OdooConnection):
             report._data_dictionary['name'] = report.entry_name[self.language]
             dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
             if not dependencies_installed and not_installed_modules:
-                print(f"!!! ******** DEPENDENCIES FOR {report.report_name} NOT INSTALLED ******** !!!")
+                logger.error(f"Dependencies for {report.report_name} not installed")
                 for not_installed_module in not_installed_modules:
-                    print(f"!!! ******** MODULE - {not_installed_module} - NOT INSTALLED ******** !!!")
+                    logger.error(f"  Module '{not_installed_module}' not installed")
                 continue
             if report.company_id:
                 IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
@@ -101,7 +104,7 @@ class EqOdooConnection(OdooConnection):
                 report_object.write(report._data_dictionary)
             # Add report to print menu
             report_object.create_action()
-            print(f"!!! ******** START {report.report_name} ******** !!!")
+            logger.info(f"Processing report: {report.report_name}")
             IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
             try:
                 # Loop over all models in report fields dictionary
@@ -136,19 +139,19 @@ class EqOdooConnection(OdooConnection):
                                         models_fields[model_id] = dict()
                                         models_fields[model_id][field_id[0]] = report_ids
                             else:
-                                print(f"The field with name: {field_name} is not found in the model with name: {model_name}.")
+                                logger.warning(f"Field '{field_name}' not found in model '{model_name}'")
                     else:
-                        print(f"The model with name: {model_name} is not found in the system.")
+                        logger.warning(f"Model '{model_name}' not found in system")
                 if report._calculated_fields:
                     report_company_id = report.company_id[0] if report.company_id else False
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
                             self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name, report_company_id)
-                print(f"!!! ******** END {report.report_name} ******** !!!")
-            
+                logger.info(f"Successfully processed report: {report.report_name}")
+
             except Exception as ex:
-                print("!!! ******** EXCEPTION ******** !!!")
-                print(ex)
+                logger.error(f"Exception while processing report: {report.report_name}")
+                logger.exception(ex)
         
         for model in models_fields:
             try:
@@ -158,8 +161,8 @@ class EqOdooConnection(OdooConnection):
                 # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
                 IR_MODEL.eq_write_report_ids(model, fields_list)
             except Exception as ex:
-                print("!!! ******** EXCEPTION ******** !!!")
-                print(ex)
+                logger.error("Exception while writing report IDs to model")
+                logger.exception(ex)
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model, report_company_id):
         """
@@ -213,7 +216,7 @@ class EqOdooConnection(OdooConnection):
 
             # Get current company name
             company_name = self.connection.env['res.company'].browse(company_id).name
-            print('Collect fields for %s' %company_name)
+            logger.info(f'Collecting fields for company: {company_name}')
 
             # Progressbar...
             with click.progressbar(all_report_field_ids, length=len(all_report_field_ids)) as bar:
@@ -368,11 +371,7 @@ class EqOdooConnection(OdooConnection):
             IMPORTANT: The FastReport API URL, conection and base report setup must be done before testing.
         """
 
-        ### Uncomment/comment to display logging to extern log file or to console ###
-        ## Log file
-        #logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO, filename=f"testing_fast_report_rendering_{self.connection._env._db}.log")
-        ## Console
-        logging.basicConfig(format='%(asctime)s - %(message)s ',  datefmt='%H:%M:%S %d.%m.%Y', level=logging.INFO)
+        # Logging is now centrally configured via logging_config.py
         original_company_yaml_user = self.connection.env.user.company_id
         for report in report_list:
             if report.company_id:
@@ -391,10 +390,10 @@ class EqOdooConnection(OdooConnection):
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
             # Check if the report has been created and is type Fast Report
             if not report_id or report_object.report_type != "fast_report":
-                logging.info(f"!!! ******** REPORT {report.report_name} NOT CREATED OR IS NOT TYPE FAST REPORT ******** !!!")
+                logger.warning(f"Report {report.report_name} not created or is not type FastReport")
                 continue
 
-            logging.info(f"!!! ******** TESTING REPORT RENDERING {report.report_name} ******** !!!")
+            logger.info(f"Testing report rendering: {report.report_name}")
 
             ## Get module from report model
             IR_REPORT_MODEL = self.connection.env[report.model_name]
@@ -404,17 +403,17 @@ class EqOdooConnection(OdooConnection):
             model_id = IR_MODEL.search([('model', '=', report.model_name)])
             report_model_object = IR_MODEL.browse(model_id)
             report_modules = report_model_object['modules']
-            logging.info(f"MODULES USING MODEL {report.model_name} FROM REPORT {report.report_name} WITH FILENAME {report.print_report_name}")
-            logging.info(report_modules)
-            Can be comented if not necessary '''
+            logger.debug(f"Modules using model {report.model_name} from report {report.report_name} with filename {report.print_report_name}")
+            logger.debug(f"Modules: {report_modules}")
+            Can be commented if not necessary '''
 
             if report_object:
                 # Get all report model records ids
                 report_model_records_ids = IR_REPORT_MODEL.search([])
                 try:
                     if not len(report_model_records_ids):
-                        logging.info(f"\033[0;33m!!! ******** NO RECORDS FOR MODEL {report.model_name} ******** !!!\033[0;37m")
-                        logging.info(f"\033[0;33m!!! ******** USING DEMO DATA TO TEST REPORT {report.report_name} ******** !!!\033[0;37m")
+                        logger.warning(f"No records for model {report.model_name}")
+                        logger.info(f"Using demo data to test report: {report.report_name}")
                         # Render Fast Report for demo example databases
                         res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
                     else:
@@ -422,14 +421,14 @@ class EqOdooConnection(OdooConnection):
                         res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(report_object.ids, [choice(report_model_records_ids)], create_attachment=False)
                     # Convert data content to base64
                     data = base64.encodebytes(res.encode('utf-8')).decode('utf-8')
-                    logging.info(f"\033[0;92m!!! ******** REPORTS RENDERING {report.report_name} OK ******** !!!\033[0;37m")
+                    logger.info(f"Report rendering successful: {report.report_name}")
                 except Exception as ex:
                     if "No such file or directory" in str(ex):
-                        logging.info(f"\033[0;33m!!! ******** NO DEMO DATA TO TEST REPORT {report.report_name} ******** !!!\033[0;37m ")
+                        logger.warning(f"No demo data to test report: {report.report_name}")
                     else:
-                        logging.info(f"\033[0;31m!!! ******** REPORT \033[1;31m{report.report_name}\033[0;31m NOT RENDERING CORRECTLY ******** !!!\033[0;37m ")
-                        logging.info(f"\033[0;31m!!! ******** EXCEPTION ******** !!!\033[0;37m")
-                        logging.info("\033[0;31m" + str(ex) + "\033[0;37m")
+                        logger.error(f"Report {report.report_name} not rendering correctly")
+                        logger.error("Exception occurred during rendering")
+                        logger.exception(ex)
         self.connection.env.user.company_id = original_company_yaml_user
 
     def disable_qweb_reports(self):
@@ -440,4 +439,4 @@ class EqOdooConnection(OdooConnection):
         for report_id in report_ids:
             report_object = IR_ACTIONS_REPORT.browse(report_id)
             report_object.unlink_action()
-        print("Disabled QWeb for " + self.database)
+        logger.info(f"Disabled QWeb reports for database: {self.database}")

@@ -9,3 +9,6 @@ click>=8.1.3
 
 # YAML parsing
 PyYAML>=5.4.1
+
+# Progress bars for long operations
+tqdm>=4.65.0

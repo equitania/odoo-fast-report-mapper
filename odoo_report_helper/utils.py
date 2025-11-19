@@ -5,6 +5,9 @@
 import odoorpc
 import yaml
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_connection(url, port):
@@ -68,7 +71,8 @@ def parse_yaml(yaml_file):
         try:
             return yaml.safe_load(stream)
         except yaml.YAMLError as exc:
-            print(exc)
+            logger.error(f"YAML parsing error in file: {yaml_file}")
+            logger.exception(exc)
             return False
 
 
