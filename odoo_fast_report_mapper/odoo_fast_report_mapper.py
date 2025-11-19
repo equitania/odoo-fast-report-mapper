@@ -15,14 +15,26 @@ logger = get_logger(__name__)
 
 def print_banner():
     """Print professional banner with version information"""
+    # Calculate padding for centered alignment
+    box_width = 78  # Total width minus the border characters (║)
+
+    version_line = f"Version: {__version__}"
+    author_line = f"Author:  {__author__}"
+    url_line = f"URL:     {__url__}"
+
+    # Ensure lines don't exceed box width
+    version_padding = ' ' * (box_width - len(version_line) - 2)
+    author_padding = ' ' * (box_width - len(author_line) - 2)
+    url_padding = ' ' * (box_width - len(url_line) - 2)
+
     banner = f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║               ⚡ Odoo FastReport Mapper & Testing Tool ⚡                    ║
 ║                                                                              ║
-║  Version: {__version__:<15}                                                    ║
-║  Author:  {__author__:<63} ║
-║  URL:     {__url__:<63} ║
+║  {version_line}{version_padding}  ║
+║  {author_line}{author_padding}  ║
+║  {url_line}{url_padding}  ║
 ║                                                                              ║
 ║  FastReport Integration for Odoo - Mapping, Testing & Validation            ║
 ║                                                                              ║
@@ -33,11 +45,9 @@ def print_banner():
 
 @click.command()
 @click.version_option(version=__version__, prog_name="odoo-fast-report-mapper")
-@click.option('--server_path', help='Server configuration folder',
-              prompt='Please enter the path to your configuration folder')
-@click.option('--yaml_path', help='Yaml folder',
-              prompt='Please enter the path to your yaml folder')
-def start_odoo_fast_report_mapper(server_path, yaml_path):
+@click.option('--yaml_path', help='Path to YAML report definitions folder',
+              prompt='Please enter the path to your YAML reports folder')
+def start_odoo_fast_report_mapper(yaml_path):
     """
     Odoo FastReport Mapper - Create and test FastReport entries in Odoo.
 
@@ -46,40 +56,54 @@ def start_odoo_fast_report_mapper(server_path, yaml_path):
     - Creating/updating FastReport entries
     - Testing report rendering
     - Managing calculated fields
+
+    Configuration:
+    - Connection settings are read from .env file
+    - Copy .env.example to .env and configure your Odoo connection
+    - Report definitions are read from YAML files in yaml_path
     """
     # Print banner
     print_banner()
-    # Collect yaml files and mapping existing yaml files
-    connections = eq_utils.collect_all_connections(server_path)
 
-    for connection in connections:
-        connection.login()
+    # Create connection from .env file
+    try:
+        connection = eq_utils.create_connection_from_env()
+    except ValueError as e:
+        logger.error(f"Configuration error: {e}")
+        click.echo("\n" + "="*80)
+        click.echo("  ❌ Failed to load connection configuration")
+        click.echo("  💡 Please create a .env file based on .env.example")
+        click.echo("="*80 + "\n")
+        return
 
-        # Collect yaml
-        if connection.collect_yaml:
-            logger.info("Collecting YAML report entries...")
-            connection.collect_all_report_entries(yaml_path)
-        # Yaml Mapping
+    # Login to Odoo
+    connection.login()
+
+    # Collect yaml
+    if connection.collect_yaml:
+        logger.info("Collecting YAML report entries...")
+        connection.collect_all_report_entries(yaml_path)
+    # Yaml Mapping
+    else:
+        reports = eq_utils.collect_all_reports(yaml_path)
+        if connection.workflow == 0:
+            logger.info("Starting report mapping...")
+            connection.map_reports(reports)
+        elif connection.workflow == 1:
+            logger.info(f"Testing report rendering for database: {connection.database}")
+            connection.test_fast_report_rendering(reports)
+        elif connection.workflow == 2:
+            logger.info("Starting report mapping...")
+            connection.map_reports(reports)
+            logger.info(f"Testing report rendering for database: {connection.database}")
+            connection.test_fast_report_rendering(reports)
         else:
-            reports = eq_utils.collect_all_reports(yaml_path)
-            if connection.workflow == 0:
-                logger.info("Starting report mapping...")
-                connection.map_reports(reports)
-            elif connection.workflow == 1:
-                logger.info(f"Testing report rendering for database: {connection.database}")
-                connection.test_fast_report_rendering(reports)
-            elif connection.workflow == 2:
-                logger.info("Starting report mapping...")
-                connection.map_reports(reports)
-                logger.info(f"Testing report rendering for database: {connection.database}")
-                connection.test_fast_report_rendering(reports)
-            else:
-                logger.error("Invalid workflow configuration parameter value!")
-                raise ValueError("Workflow must be 0 (mapping), 1 (testing), or 2 (both)")
+            logger.error("Invalid workflow configuration parameter value!")
+            raise ValueError("Workflow must be 0 (mapping), 1 (testing), or 2 (both)")
 
-        if connection.disable_qweb:
-            logger.info("Disabling QWeb reports...")
-            connection.disable_qweb_reports()
+    if connection.disable_qweb:
+        logger.info("Disabling QWeb reports...")
+        connection.disable_qweb_reports()
 
     logger.info("✅ Processing completed successfully!")
     click.echo("\n" + "="*80)

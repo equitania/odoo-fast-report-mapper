@@ -56,6 +56,8 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 - click (>= 8.1.3)
 - OdooRPC (>= 0.10.1)
 - PyYAML (>= 5.4.1)
+- tqdm (>= 4.65.0)
+- python-dotenv (>= 0.19.0)
 
 ### Mit pip installieren / Install with pip
 
@@ -137,6 +139,31 @@ git push origin v0.1.26
 
 ## 🚀 Verwendung / Usage
 
+### Erste Schritte / Getting Started
+
+**1. Erstelle eine .env Datei / Create a .env file:**
+
+```bash
+# Kopiere die Beispiel-Datei / Copy the example file
+cp .env.example .env
+
+# Bearbeite .env mit deinen Zugangsdaten / Edit .env with your credentials
+nano .env  # oder dein bevorzugter Editor / or your preferred editor
+```
+
+**2. Konfiguriere die Verbindung / Configure the connection:**
+
+```bash
+# .env Datei Beispiel / .env file example
+ODOO_URL=https://your-odoo-instance.com
+ODOO_PORT=443
+ODOO_USER=admin
+ODOO_PASSWORD=your_password
+ODOO_DATABASE=your_database
+ODOO_LANGUAGE=ger
+ODOO_WORKFLOW=0
+```
+
 ### Grundlegende Verwendung / Basic Usage
 
 ```bash
@@ -150,22 +177,23 @@ odoo-fast-report-mapper --help
 # Interaktiver Modus / Interactive mode
 odoo-fast-report-mapper
 
-# Direkter Aufruf mit Parametern / Direct call with parameters
-odoo-fast-report-mapper --server_path=./connection_yaml --yaml_path=./reports_yaml
+# Direkter Aufruf mit YAML-Pfad / Direct call with YAML path
+odoo-fast-report-mapper --yaml_path=./reports_yaml
 ```
 
 ### Erweiterte Beispiele / Advanced Examples
 
 ```bash
 # Odoo v16 Entwicklungsdatenbank / Odoo v16 development database
-odoo-fast-report-mapper \
-  --server_path=$HOME/gitbase/dev-helpers/yaml/v16-yaml-con \
-  --yaml_path=$HOME/gitbase/fr-core-yaml/v16/yaml
+odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v16/yaml
 
 # Odoo v18 Produktionsumgebung / Odoo v18 production environment
-odoo-fast-report-mapper \
-  --server_path=$HOME/gitbase/dev-helpers/yaml/v18-yaml-con \
-  --yaml_path=$HOME/gitbase/fr-core-yaml/v18/yaml
+odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v18/yaml
+
+# Mit spezifischer .env Datei / With specific .env file
+# (platziere .env im aktuellen Verzeichnis / place .env in current directory)
+cd /path/to/project
+odoo-fast-report-mapper --yaml_path=./yaml
 ```
 
 ---
@@ -174,19 +202,39 @@ odoo-fast-report-mapper \
 
 ### Server-Konfiguration / Server Configuration
 
-Erstelle eine `config.yaml` Datei im `connection_yaml` Ordner:
+**WICHTIG / IMPORTANT:** Die Verbindungskonfiguration erfolgt jetzt über eine `.env` Datei für bessere Sicherheit. / Connection configuration is now done via a `.env` file for better security.
 
-```yaml
-Server:
-  url: https://your-odoo-instance.com
-  port: 443
-  user: admin
-  password: your_password
-  database: your_database
-  language: ger                    # ger oder eng / ger or eng
-  collect_yaml: False              # YAML-Sammelmodus / YAML collection mode
-  disable_qweb: True               # QWeb-Berichte deaktivieren / Disable QWeb reports
-  workflow: 0                      # 0=Mapping, 1=Testing, 2=Beides / 0=Mapping, 1=Testing, 2=Both
+**Erstelle eine `.env` Datei / Create a `.env` file:**
+
+```bash
+# Odoo Server Connection (Required)
+ODOO_URL=https://your-odoo-instance.com
+ODOO_PORT=443
+ODOO_USER=admin
+ODOO_PASSWORD=your_password
+ODOO_DATABASE=your_database
+ODOO_LANGUAGE=ger                 # 'ger' or 'eng'
+
+# Optional Configuration (with defaults)
+ODOO_COLLECT_YAML=False           # YAML collection mode
+ODOO_DISABLE_QWEB=True            # Disable QWeb reports
+ODOO_WORKFLOW=0                   # 0=Mapping, 1=Testing, 2=Both
+```
+
+**Sicherheitshinweise / Security Notes:**
+
+- ✅ Die `.env` Datei wird automatisch von `.gitignore` ausgeschlossen
+- ✅ Verwende `.env.example` als Vorlage
+- ⚠️ Teile niemals deine `.env` Datei mit Credentials
+- ⚠️ Nutze unterschiedliche Credentials für Produktion und Entwicklung
+
+**Migration von YAML-Konfiguration / Migration from YAML Configuration:**
+
+Falls du bisher `config.yaml` genutzt hast, kopiere die Werte einfach in die `.env` Datei:
+
+```bash
+# Alt (DEPRECATED): --server_path=./connection_yaml
+# Neu: .env Datei im aktuellen Verzeichnis
 ```
 
 ### Report-Konfiguration / Report Configuration

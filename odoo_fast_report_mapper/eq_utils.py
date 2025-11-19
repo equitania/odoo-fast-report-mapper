@@ -7,6 +7,11 @@ from . import eq_odoo_connection
 import odoo_report_helper.utils as utils
 import odoo_report_helper.exceptions as exceptions
 import copy
+import os
+from dotenv import load_dotenv
+from .logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def create_report_object_from_yaml_object(yaml_object):
@@ -98,12 +103,91 @@ def collect_all_reports(path):
         sys.exit(0)
 
 
+def create_connection_from_env():
+    """
+    Create EqOdooConnection object from environment variables (.env file).
+
+    Required environment variables:
+        ODOO_URL: Odoo server URL (e.g., https://odoo.example.com)
+        ODOO_PORT: Odoo server port (e.g., 443 for HTTPS, 8069 for HTTP)
+        ODOO_USER: Odoo username
+        ODOO_PASSWORD: Odoo password
+        ODOO_DATABASE: Odoo database name
+        ODOO_LANGUAGE: Language for report names ('ger' or 'eng')
+
+    Optional environment variables:
+        ODOO_COLLECT_YAML: Collect YAML from Odoo (default: False)
+        ODOO_DISABLE_QWEB: Disable QWeb reports (default: True)
+        ODOO_WORKFLOW: Workflow mode (0=mapping, 1=testing, 2=both, default: 0)
+
+    :return: EqOdooConnection object
+    :raises: ValueError if required environment variables are missing
+    """
+    # Load .env file from current directory
+    load_dotenv()
+
+    # Required variables
+    required_vars = {
+        'ODOO_URL': 'url',
+        'ODOO_PORT': 'port',
+        'ODOO_USER': 'user',
+        'ODOO_PASSWORD': 'password',
+        'ODOO_DATABASE': 'database',
+        'ODOO_LANGUAGE': 'language'
+    }
+
+    # Check for missing required variables
+    missing_vars = [var for var in required_vars.keys() if not os.getenv(var)]
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        logger.error(error_msg)
+        logger.info("Please create a .env file based on .env.example")
+        raise ValueError(error_msg)
+
+    # Get required values
+    url = os.getenv('ODOO_URL')
+    port = int(os.getenv('ODOO_PORT'))
+    user = os.getenv('ODOO_USER')
+    password = os.getenv('ODOO_PASSWORD')
+    database = os.getenv('ODOO_DATABASE')
+    language = os.getenv('ODOO_LANGUAGE')
+
+    # Get optional values with defaults
+    collect_yaml = os.getenv('ODOO_COLLECT_YAML', 'False').lower() in ('true', '1', 'yes')
+    disable_qweb = os.getenv('ODOO_DISABLE_QWEB', 'True').lower() in ('true', '1', 'yes')
+    workflow = int(os.getenv('ODOO_WORKFLOW', '0'))
+
+    logger.info(f"Creating connection to {database}@{url}:{port}")
+    logger.debug(f"Configuration: language={language}, workflow={workflow}, collect_yaml={collect_yaml}, disable_qweb={disable_qweb}")
+
+    # Create connection object
+    # EqOdooConnection expects: language, collect_yaml, disable_qweb, workflow, url, port, username, password, database
+    connection = eq_odoo_connection.EqOdooConnection(
+        language,
+        collect_yaml,
+        disable_qweb,
+        workflow,
+        url,
+        port,
+        user,  # Will be passed as 'username' to parent class
+        password,
+        database
+    )
+
+    return connection
+
+
 def collect_all_connections(path):
     """
-        Get all yaml objects from path and convert them into connection objects
-        :param: path to yaml files
-        :return: list of connection objects
+    DEPRECATED: Get all yaml objects from path and convert them into connection objects.
+
+    This function is deprecated and maintained only for backwards compatibility.
+    Use create_connection_from_env() instead for better security.
+
+    :param: path to yaml files
+    :return: list of connection objects
     """
+    logger.warning("collect_all_connections() is deprecated. Use create_connection_from_env() instead.")
     try:
         yaml_connection_objects = utils.parse_yaml_folder(path)
         eq_connection_objects = convert_all_yaml_objects(yaml_connection_objects,

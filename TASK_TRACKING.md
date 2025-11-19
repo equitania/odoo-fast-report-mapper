@@ -232,6 +232,9 @@ Die folgenden Punkte wurden aus dem ursprünglichen Plan entfernt:
 - ✅ --version Option für CLI hinzugefügt
 - ✅ Verbessertes User-Experience beim Tool-Start
 - ✅ Code-Cleanup: MyDumper.py inline integriert (reduziert Package-Komplexität)
+- ✅ Sicherheitsverbesserung: .env-basierte Konfiguration statt YAML (verhindert Credential-Leaks)
+- ✅ Vereinfachte CLI: Nur noch --yaml_path Parameter (Connection via .env)
+- ✅ python-dotenv Dependency hinzugefügt
 
 ### Woche 3-4: Phase 2 - Testing-Infrastruktur
 - [ ] Beginn: TBD
