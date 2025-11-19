@@ -115,8 +115,9 @@ twine check dist/*
 ### Version aktualisieren & veröffentlichen / Update Version & Publish
 
 ```bash
-# 1. Version in setup.py anpassen / Update version in setup.py
-# version="0.1.25"  # Beispiel / Example
+# 1. Version in __version__.py anpassen / Update version in __version__.py
+# Editiere: odoo_fast_report_mapper/__version__.py
+# __version__ = "0.1.26"  # Beispiel / Example
 
 # 2. Changelog aktualisieren / Update changelog
 # Dokumentiere Änderungen / Document changes
@@ -126,9 +127,11 @@ uv build
 twine upload dist/*
 
 # 4. Git Tag erstellen / Create git tag
-git tag v0.1.25
-git push origin v0.1.25
+git tag v0.1.26
+git push origin v0.1.26
 ```
+
+**Hinweis:** Die Version wird jetzt zentral in `odoo_fast_report_mapper/__version__.py` verwaltet und automatisch von `setup.py` übernommen.
 
 ---
 
@@ -137,14 +140,18 @@ git push origin v0.1.25
 ### Grundlegende Verwendung / Basic Usage
 
 ```bash
+# Version anzeigen / Show version
+odoo-fast-report-mapper --version
+odoo-fr-mapper --version
+
+# Hilfe anzeigen / Show help
+odoo-fast-report-mapper --help
+
 # Interaktiver Modus / Interactive mode
 odoo-fast-report-mapper
 
 # Direkter Aufruf mit Parametern / Direct call with parameters
 odoo-fast-report-mapper --server_path=./connection_yaml --yaml_path=./reports_yaml
-
-# Hilfe anzeigen / Show help
-odoo-fast-report-mapper --help
 ```
 
 ### Erweiterte Beispiele / Advanced Examples

@@ -7,7 +7,6 @@ from . import eq_report
 from datetime import datetime
 import io
 import yaml
-from . import MyDumper
 import base64
 from random import choice
 import sys
@@ -15,6 +14,12 @@ from .logging_config import get_logger
 from .progress import ReportProgress
 
 logger = get_logger(__name__)
+
+
+class YAMLDumper(yaml.Dumper):
+    """Custom YAML dumper for consistent indentation formatting."""
+    def increase_indent(self, flow=False, indentless=False):
+        return super(YAMLDumper, self).increase_indent(flow, False)
 
 
 class EqOdooConnection(OdooConnection):
@@ -350,8 +355,14 @@ class EqOdooConnection(OdooConnection):
         return eq_report_obj
 
     def write_yaml(self, file_name, data):
+        """
+        Write data to YAML file with UTF-8 encoding and custom formatting.
+
+        :param file_name: Output file path
+        :param data: Dictionary to be written as YAML
+        """
         with io.open(file_name, 'w', encoding='utf8') as outfile:
-            yaml.dump(data, outfile, Dumper=MyDumper.MyDumper, default_flow_style=False, allow_unicode=True,
+            yaml.dump(data, outfile, Dumper=YAMLDumper, default_flow_style=False, allow_unicode=True,
                       sort_keys=False)
 
     def is_boolean(self, object_to_be_checked):

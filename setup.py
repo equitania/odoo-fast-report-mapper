@@ -1,5 +1,15 @@
 import setuptools
 import os
+from pathlib import Path
+
+# Read version from __version__.py
+def get_version():
+    """Read version from __version__.py file"""
+    version_file = Path(__file__).parent / "odoo_fast_report_mapper" / "__version__.py"
+    version_dict = {}
+    with open(version_file, "r", encoding="utf-8") as f:
+        exec(f.read(), version_dict)
+    return version_dict["__version__"]
 
 # Read README file for long description
 def read_readme():
@@ -15,7 +25,7 @@ long_description = read_readme()
 
 setuptools.setup(
     name="odoo-fast-report-mapper-equitania",
-    version="0.1.24",
+    version=get_version(),
     author="Equitania Software GmbH",
     author_email="info@equitania.de",
     description="A Python library for creating, managing, and testing FastReport entries in Odoo environments",
