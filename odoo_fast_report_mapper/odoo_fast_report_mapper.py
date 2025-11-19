@@ -15,32 +15,20 @@ logger = get_logger(__name__)
 
 def print_banner():
     """Print professional banner with version information"""
-    # Calculate padding for centered alignment
-    box_width = 78  # Total width minus the border characters (║)
-
-    version_line = f"Version: {__version__}"
-    author_line = f"Author:  {__author__}"
-    url_line = f"URL:     {__url__}"
-
-    # Ensure lines don't exceed box width
-    version_padding = ' ' * (box_width - len(version_line) - 2)
-    author_padding = ' ' * (box_width - len(author_line) - 2)
-    url_padding = ' ' * (box_width - len(url_line) - 2)
-
-    banner = f"""
+    banner = """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║               ⚡ Odoo FastReport Mapper & Testing Tool ⚡                    ║
-║                                                                              ║
-║  {version_line}{version_padding}  ║
-║  {author_line}{author_padding}  ║
-║  {url_line}{url_padding}  ║
-║                                                                              ║
-║  FastReport Integration for Odoo - Mapping, Testing & Validation            ║
+║              ⚡ Odoo FastReport Mapper & Testing Tool ⚡                     ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
     click.echo(banner)
+    click.echo(f"  Version: {__version__}")
+    click.echo(f"  Author:  {__author__}")
+    click.echo(f"  URL:     {__url__}")
+    click.echo()
+    click.echo("  FastReport Integration for Odoo - Mapping, Testing & Validation")
+    click.echo()
 
 
 @click.command()

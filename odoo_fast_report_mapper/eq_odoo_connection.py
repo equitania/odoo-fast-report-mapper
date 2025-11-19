@@ -84,14 +84,17 @@ class EqOdooConnection(OdooConnection):
         original_company_yaml_user = IR_ACTIONS_REPORT.env.user.company_id
         models_fields = dict()
         model_name_ids = dict()
-        for report in report_list:
+
+        logger.info(f"→ Mapping {len(report_list)} reports to Odoo...")
+        for idx, report in enumerate(report_list, 1):
+            logger.info(f"  [{idx}/{len(report_list)}] {report.report_name}")
             report.self_ensure()
             report._data_dictionary['name'] = report.entry_name[self.language]
             dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
             if not dependencies_installed and not_installed_modules:
-                logger.error(f"Dependencies for {report.report_name} not installed")
+                logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
                 for not_installed_module in not_installed_modules:
-                    logger.error(f"  Module '{not_installed_module}' not installed")
+                    logger.error(f"    - Module '{not_installed_module}' missing")
                 continue
             if report.company_id:
                 IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
@@ -109,8 +112,12 @@ class EqOdooConnection(OdooConnection):
                 report_object.write(report._data_dictionary)
             # Add report to print menu
             report_object.create_action()
-            logger.info(f"Processing report: {report.report_name}")
             IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
+
+            # Count total fields for logging
+            total_fields = sum(len(fields) for fields in report._fields.values())
+            logger.debug(f"    Mapping {total_fields} fields across {len(report._fields)} models...")
+
             try:
                 # Loop over all models in report fields dictionary
                 for model_name in report._fields:
@@ -152,22 +159,32 @@ class EqOdooConnection(OdooConnection):
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
                             self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model_name, report_company_id)
-                logger.info(f"Successfully processed report: {report.report_name}")
+                logger.info(f"  ✓ Completed: {report.report_name}")
 
             except Exception as ex:
-                logger.error(f"Exception while processing report: {report.report_name}")
+                logger.error(f"  ✗ Exception while processing report: {report.report_name}")
                 logger.exception(ex)
-        
-        for model in models_fields:
+
+        # Final step: Write field mappings to Odoo models
+        logger.info(f"→ Writing field mappings to {len(models_fields)} models...")
+        for idx, model in enumerate(models_fields, 1):
             try:
                 fields_list = []
                 for field in models_fields[model]:
                     fields_list.append((1, field, {'eq_report_ids': [(6, 0, models_fields[model][field])]}))
+
+                # Get model name for logging
+                model_obj = IR_MODEL.browse(model)
+                model_name = model_obj.model if model_obj else f"model_id_{model}"
+                logger.info(f"  [{idx}/{len(models_fields)}] Updating {model_name} ({len(fields_list)} fields)...")
+
                 # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
                 IR_MODEL.eq_write_report_ids(model, fields_list)
             except Exception as ex:
-                logger.error("Exception while writing report IDs to model")
+                logger.error(f"  ✗ Exception while writing report IDs to model {model}")
                 logger.exception(ex)
+
+        logger.info("✓ Field mapping completed successfully")
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model, report_company_id):
         """
