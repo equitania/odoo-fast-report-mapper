@@ -1,0 +1,13 @@
+include README.md
+include LICENSE.txt
+include CLAUDE.md
+recursive-include yaml_examples *.yaml
+recursive-include helper_scripts *.py
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.orig
+recursive-exclude * *.rej
+recursive-exclude * .DS_Store
+prune build
+prune dist
+prune *.egg-info
