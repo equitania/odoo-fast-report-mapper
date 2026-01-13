@@ -191,8 +191,13 @@ odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v16/yaml
 odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v18/yaml
 
 # Mit spezifischer .env Datei / With specific .env file
-# (platziere .env im aktuellen Verzeichnis / place .env in current directory)
-cd /path/to/project
+# Option 1: --env_path zeigt auf Verzeichnis / --env_path points to directory
+odoo-fast-report-mapper --yaml_path=./yaml --env_path=/path/to/config/
+
+# Option 2: --env_path zeigt direkt auf Datei / --env_path points directly to file
+odoo-fast-report-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
+
+# Option 3: .env im aktuellen Verzeichnis / .env in current directory (default)
 odoo-fast-report-mapper --yaml_path=./yaml
 ```
 

@@ -103,9 +103,13 @@ def collect_all_reports(path):
         sys.exit(0)
 
 
-def create_connection_from_env():
+def create_connection_from_env(env_path=None):
     """
     Create EqOdooConnection object from environment variables (.env file).
+
+    Args:
+        env_path: Optional path to .env file. If None, searches in current directory.
+                  Can be either a directory path or full path to .env file.
 
     Required environment variables:
         ODOO_URL: Odoo server URL (e.g., https://odoo.example.com)
@@ -123,8 +127,23 @@ def create_connection_from_env():
     :return: EqOdooConnection object
     :raises: ValueError if required environment variables are missing
     """
-    # Load .env file from current directory
-    load_dotenv()
+    # Determine .env file path
+    if env_path:
+        # If env_path is a directory, append .env filename
+        if os.path.isdir(env_path):
+            dotenv_path = os.path.join(env_path, '.env')
+        else:
+            dotenv_path = env_path
+
+        if not os.path.exists(dotenv_path):
+            logger.error(f".env file not found at: {dotenv_path}")
+            raise ValueError(f".env file not found at: {dotenv_path}")
+
+        logger.info(f"Loading .env from: {dotenv_path}")
+        load_dotenv(dotenv_path=dotenv_path)
+    else:
+        # Load .env file from current directory
+        load_dotenv()
 
     # Required variables
     required_vars = {

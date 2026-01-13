@@ -35,7 +35,8 @@ def print_banner():
 @click.version_option(version=__version__, prog_name="odoo-fast-report-mapper")
 @click.option('--yaml_path', help='Path to YAML report definitions folder',
               prompt='Please enter the path to your YAML reports folder')
-def start_odoo_fast_report_mapper(yaml_path):
+@click.option('--env_path', default=None, help='Path to .env file (default: current directory)')
+def start_odoo_fast_report_mapper(yaml_path, env_path):
     """
     Odoo FastReport Mapper - Create and test FastReport entries in Odoo.
 
@@ -55,12 +56,16 @@ def start_odoo_fast_report_mapper(yaml_path):
 
     # Create connection from .env file
     try:
-        connection = eq_utils.create_connection_from_env()
+        connection = eq_utils.create_connection_from_env(env_path=env_path)
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
         click.echo("\n" + "="*80)
         click.echo("  ❌ Failed to load connection configuration")
         click.echo("  💡 Please create a .env file based on .env.example")
+        if env_path:
+            click.echo(f"  📁 Searched in: {env_path}")
+        else:
+            click.echo("  📁 Searched in: current directory")
         click.echo("="*80 + "\n")
         return
 
