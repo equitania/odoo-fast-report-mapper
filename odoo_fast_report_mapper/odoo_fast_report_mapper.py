@@ -3,6 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from . import eq_utils
+import os
 import click
 from .__version__ import __version__, __author__, __url__
 from .logging_config import get_logger, setup_logging
@@ -31,11 +32,38 @@ def print_banner():
     click.echo()
 
 
+def init_callback(ctx, param, value):
+    """Handle --init flag before other prompts."""
+    if not value:
+        return
+    target_dir = os.getcwd()
+    try:
+        env_file = eq_utils.generate_env_template(target_dir)
+        click.echo(f"  Created .env template at: {env_file}")
+        click.echo("  Edit the file with your Odoo connection details")
+    except FileExistsError as e:
+        click.echo(f"  Warning: {e}")
+    ctx.exit()
+
+
 @click.command()
 @click.version_option(version=__version__, prog_name="odoo-fast-report-mapper")
-@click.option('--yaml_path', help='Path to YAML report definitions folder',
-              prompt='Please enter the path to your YAML reports folder')
-@click.option('--env_path', default=None, help='Path to .env file (default: current directory)')
+@click.option(
+    "--init",
+    is_flag=True,
+    callback=init_callback,
+    expose_value=False,
+    is_eager=True,
+    help="Generate .env template in current directory",
+)
+@click.option(
+    "--yaml_path",
+    help="Path to YAML report definitions folder",
+    prompt="Please enter the path to your YAML reports folder",
+)
+@click.option(
+    "--env_path", default=None, help="Path to .env file (default: current directory)"
+)
 def start_odoo_fast_report_mapper(yaml_path, env_path):
     """
     Odoo FastReport Mapper - Create and test FastReport entries in Odoo.
@@ -59,14 +87,14 @@ def start_odoo_fast_report_mapper(yaml_path, env_path):
         connection = eq_utils.create_connection_from_env(env_path=env_path)
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
-        click.echo("\n" + "="*80)
-        click.echo("  ❌ Failed to load connection configuration")
-        click.echo("  💡 Please create a .env file based on .env.example")
+        click.echo("\n" + "=" * 80)
+        click.echo("  Failed to load connection configuration")
+        click.echo("  Run 'odoo-fr-mapper --init' to generate a .env template")
         if env_path:
-            click.echo(f"  📁 Searched in: {env_path}")
+            click.echo(f"  Searched in: {env_path}")
         else:
-            click.echo("  📁 Searched in: current directory")
-        click.echo("="*80 + "\n")
+            click.echo(f"  Searched in: {os.getcwd()}")
+        click.echo("=" * 80 + "\n")
         return
 
     # Login to Odoo
@@ -99,9 +127,9 @@ def start_odoo_fast_report_mapper(yaml_path, env_path):
         connection.disable_qweb_reports()
 
     logger.info("✅ Processing completed successfully!")
-    click.echo("\n" + "="*80)
+    click.echo("\n" + "=" * 80)
     click.echo("  ✅ All operations completed successfully!")
-    click.echo("="*80 + "\n")
+    click.echo("=" * 80 + "\n")
 
 
 if __name__ == "__main__":
