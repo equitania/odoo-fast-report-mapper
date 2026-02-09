@@ -136,3 +136,7 @@ dmypy.json
 
 # Yaml configuration files
 *.yaml
+
+# Allow test fixtures
+!tests/fixtures/*.yaml
+!tests/yaml_test/*.yaml

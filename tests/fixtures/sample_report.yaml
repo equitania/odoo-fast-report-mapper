@@ -1,0 +1,33 @@
+name:
+  ger: Verkaufsauftrag
+  eng: Sales_Order
+report_name: eq_fr_core_sale_order
+report_type: fast_report
+print_report_name: Verkaufsauftrag
+report_model: sale.order
+eq_export_type: pdf
+eq_ignore_images: true
+eq_handling_html_fields: standard
+eq_multiprint: standard
+multi: false
+attachment: Verkaufsauftrag.pdf
+attachment_use: false
+eq_print_button: false
+dependencies:
+  - sale
+  - account
+report_fields:
+  sale.order:
+    - id
+    - name
+    - partner_id
+    - amount_total
+  sale.order.line:
+    - product_id
+    - product_uom_qty
+    - price_unit
+calculated_fields:
+  payment_text:
+    eq_get_payment_terms:
+      - partner_id.lang
+      - currency_id

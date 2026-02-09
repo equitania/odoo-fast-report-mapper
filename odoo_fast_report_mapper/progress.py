@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
@@ -8,9 +7,11 @@ Progress bar utilities for long-running operations.
 Provides progress tracking for report mapping, field processing, and testing operations.
 """
 
-from typing import Optional, Iterable, Any
-from tqdm import tqdm
 import sys
+from collections.abc import Iterable
+from typing import Any
+
+from tqdm import tqdm
 
 
 class ProgressBar:
@@ -22,13 +23,13 @@ class ProgressBar:
 
     def __init__(
         self,
-        total: Optional[int] = None,
+        total: int | None = None,
         desc: str = "Processing",
         unit: str = "item",
         disable: bool = False,
         leave: bool = True,
-        ncols: Optional[int] = None,
-        colour: Optional[str] = None
+        ncols: int | None = None,
+        colour: str | None = None,
     ):
         """
         Initialize progress bar.
@@ -49,9 +50,9 @@ class ProgressBar:
             disable=disable,
             leave=leave,
             ncols=ncols,
-            colour=colour or 'green',
+            colour=colour or "green",
             file=sys.stdout,
-            dynamic_ncols=True
+            dynamic_ncols=True,
         )
 
     def update(self, n: int = 1):
@@ -98,9 +99,9 @@ def progress_bar(
     iterable: Iterable[Any],
     desc: str = "Processing",
     unit: str = "item",
-    total: Optional[int] = None,
+    total: int | None = None,
     disable: bool = False,
-    colour: Optional[str] = None
+    colour: str | None = None,
 ) -> Iterable[Any]:
     """
     Wrap an iterable with a progress bar.
@@ -127,18 +128,14 @@ def progress_bar(
         unit=unit,
         total=total,
         disable=disable,
-        colour=colour or 'green',
+        colour=colour or "green",
         file=sys.stdout,
-        dynamic_ncols=True
+        dynamic_ncols=True,
     )
 
 
 def create_progress_bar(
-    total: int,
-    desc: str = "Processing",
-    unit: str = "item",
-    disable: bool = False,
-    colour: str = "green"
+    total: int, desc: str = "Processing", unit: str = "item", disable: bool = False, colour: str = "green"
 ) -> ProgressBar:
     """
     Create a new progress bar instance.
@@ -159,13 +156,7 @@ def create_progress_bar(
         ...         # Process item
         ...         pbar.update(1)
     """
-    return ProgressBar(
-        total=total,
-        desc=desc,
-        unit=unit,
-        disable=disable,
-        colour=colour
-    )
+    return ProgressBar(total=total, desc=desc, unit=unit, disable=disable, colour=colour)
 
 
 class ReportProgress:
@@ -183,13 +174,7 @@ class ReportProgress:
         Returns:
             ProgressBar instance
         """
-        return ProgressBar(
-            total=total,
-            desc="Mapping reports",
-            unit="report",
-            disable=disable,
-            colour="blue"
-        )
+        return ProgressBar(total=total, desc="Mapping reports", unit="report", disable=disable, colour="blue")
 
     @staticmethod
     def field_progress(total: int, report_name: str, disable: bool = False) -> ProgressBar:
@@ -205,11 +190,7 @@ class ReportProgress:
             ProgressBar instance
         """
         return ProgressBar(
-            total=total,
-            desc=f"Mapping fields for {report_name}",
-            unit="field",
-            disable=disable,
-            colour="cyan"
+            total=total, desc=f"Mapping fields for {report_name}", unit="field", disable=disable, colour="cyan"
         )
 
     @staticmethod
@@ -224,10 +205,4 @@ class ReportProgress:
         Returns:
             ProgressBar instance
         """
-        return ProgressBar(
-            total=total,
-            desc="Testing reports",
-            unit="report",
-            disable=disable,
-            colour="green"
-        )
+        return ProgressBar(total=total, desc="Testing reports", unit="report", disable=disable, colour="green")

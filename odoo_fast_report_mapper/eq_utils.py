@@ -1,14 +1,15 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from . import eq_report
-from . import eq_odoo_connection
-import odoo_report_helper.utils as utils
-import odoo_report_helper.exceptions as exceptions
 import copy
 import os
+
 from dotenv import load_dotenv
+
+import odoo_report_helper.exceptions as exceptions
+import odoo_report_helper.utils as utils
+
+from . import eq_odoo_connection, eq_report
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -105,17 +106,9 @@ def create_odoo_connection_from_yaml_object(yaml_object):
     """
     eq_odoo_connection_object = eq_odoo_connection.EqOdooConnection(
         yaml_object["Server"]["language"],
-        (
-            yaml_object["Server"]["collect_yaml"]
-            if "collect_yaml" in yaml_object["Server"]
-            else False
-        ),
-        (
-            yaml_object["Server"]["disable_qweb"]
-            if "disable_qweb" in yaml_object["Server"]
-            else True
-        ),
-        yaml_object["Server"]["workflow"] if "workflow" in yaml_object["Server"] else 0,
+        (yaml_object["Server"].get("collect_yaml", False)),
+        (yaml_object["Server"].get("disable_qweb", True)),
+        yaml_object["Server"].get("workflow", 0),
         yaml_object["Server"]["url"],
         yaml_object["Server"]["port"],
         yaml_object["Server"]["user"],
@@ -149,10 +142,7 @@ def collect_all_reports(path):
         yaml_report_objects = utils.parse_yaml_folder(path)
         filtered_yaml_report_objects = []
         for yaml_report_object in yaml_report_objects:
-            if (
-                yaml_report_object.get("company_id")
-                and len(yaml_report_object.get("company_id")) > 1
-            ):
+            if yaml_report_object.get("company_id") and len(yaml_report_object.get("company_id")) > 1:
                 company_ids = yaml_report_object.get("company_id")
                 del yaml_report_object["company_id"]
                 for company_id in company_ids:
@@ -166,10 +156,7 @@ def collect_all_reports(path):
         )
         return eq_report_objects
     except FileNotFoundError as ex:
-        raise exceptions.PathDoesNotExitError(
-            "ERROR: Please check your Path" + " " + str(ex)
-        )
-        sys.exit(0)
+        raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex)) from ex
 
 
 def create_connection_from_env(env_path=None):
@@ -232,7 +219,7 @@ def create_connection_from_env(env_path=None):
     }
 
     # Check for missing required variables
-    missing_vars = [var for var in required_vars.keys() if not os.getenv(var)]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
         error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
         logger.error(error_msg)
@@ -292,9 +279,7 @@ def collect_all_connections(path):
     :param: path to yaml files
     :return: list of connection objects
     """
-    logger.warning(
-        "collect_all_connections() is deprecated. Use create_connection_from_env() instead."
-    )
+    logger.warning("collect_all_connections() is deprecated. Use create_connection_from_env() instead.")
     try:
         yaml_connection_objects = utils.parse_yaml_folder(path)
         eq_connection_objects = convert_all_yaml_objects(
@@ -302,7 +287,4 @@ def collect_all_connections(path):
         )
         return eq_connection_objects
     except FileNotFoundError as ex:
-        raise exceptions.PathDoesNotExitError(
-            "ERROR: Please check your Path" + " " + str(ex)
-        )
-        sys.exit(0)
+        raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex)) from ex

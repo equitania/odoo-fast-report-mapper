@@ -1,13 +1,14 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from . import eq_utils
-import os
-import click
-from .__version__ import __version__, __author__, __url__
-from .logging_config import get_logger, setup_logging
 import logging
+import os
+
+import click
+
+from . import eq_utils
+from .__version__ import __author__, __url__, __version__
+from .logging_config import get_logger, setup_logging
 
 # Setup logging
 setup_logging(level=logging.INFO)
@@ -61,9 +62,7 @@ def init_callback(ctx, param, value):
     help="Path to YAML report definitions folder",
     prompt="Please enter the path to your YAML reports folder",
 )
-@click.option(
-    "--env_path", default=None, help="Path to .env file (default: current directory)"
-)
+@click.option("--env_path", default=None, help="Path to .env file (default: current directory)")
 def start_odoo_fast_report_mapper(yaml_path, env_path):
     """
     Odoo FastReport Mapper - Create and test FastReport entries in Odoo.

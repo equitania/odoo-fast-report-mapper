@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
@@ -17,41 +16,41 @@ import logging.handlers
 import sys
 from pathlib import Path
 from typing import Optional
-import os
 
 
 # ANSI color codes for console output
 class LogColors:
     """ANSI escape codes for colored terminal output."""
-    RESET = '\033[0m'
-    BOLD = '\033[1m'
+
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
 
     # Standard colors
-    BLACK = '\033[0;30m'
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[0;33m'
-    BLUE = '\033[0;34m'
-    MAGENTA = '\033[0;35m'
-    CYAN = '\033[0;36m'
-    WHITE = '\033[0;37m'
+    BLACK = "\033[0;30m"
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[0;33m"
+    BLUE = "\033[0;34m"
+    MAGENTA = "\033[0;35m"
+    CYAN = "\033[0;36m"
+    WHITE = "\033[0;37m"
 
     # Bold colors
-    BOLD_RED = '\033[1;31m'
-    BOLD_GREEN = '\033[1;32m'
-    BOLD_YELLOW = '\033[1;33m'
-    BOLD_BLUE = '\033[1;34m'
+    BOLD_RED = "\033[1;31m"
+    BOLD_GREEN = "\033[1;32m"
+    BOLD_YELLOW = "\033[1;33m"
+    BOLD_BLUE = "\033[1;34m"
 
 
 class ColoredFormatter(logging.Formatter):
     """Custom formatter that adds colors to log levels."""
 
     COLORS = {
-        'DEBUG': LogColors.CYAN,
-        'INFO': LogColors.GREEN,
-        'WARNING': LogColors.YELLOW,
-        'ERROR': LogColors.RED,
-        'CRITICAL': LogColors.BOLD_RED,
+        "DEBUG": LogColors.CYAN,
+        "INFO": LogColors.GREEN,
+        "WARNING": LogColors.YELLOW,
+        "ERROR": LogColors.RED,
+        "CRITICAL": LogColors.BOLD_RED,
     }
 
     def format(self, record):
@@ -83,7 +82,7 @@ class LoggerManager:
     - Colored console output
     """
 
-    _instance: Optional['LoggerManager'] = None
+    _instance: Optional["LoggerManager"] = None
     _loggers: dict = {}
 
     def __new__(cls):
@@ -99,20 +98,20 @@ class LoggerManager:
             return
 
         self._initialized = True
-        self._log_dir = Path.home() / '.odoo-fast-report-mapper' / 'logs'
+        self._log_dir = Path.home() / ".odoo-fast-report-mapper" / "logs"
         self._log_level = logging.INFO
         self._console_handler = None
         self._file_handler = None
 
     def setup_logger(
         self,
-        name: str = 'odoo_fast_report_mapper',
+        name: str = "odoo_fast_report_mapper",
         level: int = logging.INFO,
         log_to_file: bool = True,
         log_to_console: bool = True,
         max_bytes: int = 10 * 1024 * 1024,  # 10MB
         backup_count: int = 5,
-        colored_output: bool = True
+        colored_output: bool = True,
     ) -> logging.Logger:
         """
         Setup and configure a logger instance.
@@ -142,9 +141,9 @@ class LoggerManager:
         logger.handlers.clear()
 
         # Create formatters
-        console_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        file_format = '%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
-        date_format = '%H:%M:%S %d.%m.%Y'
+        console_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        file_format = "%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+        date_format = "%H:%M:%S %d.%m.%Y"
 
         # Console handler
         if log_to_console:
@@ -165,12 +164,9 @@ class LoggerManager:
             # Create log directory if it doesn't exist
             self._log_dir.mkdir(parents=True, exist_ok=True)
 
-            log_file = self._log_dir / f'{name}.log'
+            log_file = self._log_dir / f"{name}.log"
             file_handler = logging.handlers.RotatingFileHandler(
-                log_file,
-                maxBytes=max_bytes,
-                backupCount=backup_count,
-                encoding='utf-8'
+                log_file, maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
             )
             file_handler.setLevel(level)
             file_formatter = logging.Formatter(file_format, datefmt=date_format)
@@ -183,7 +179,7 @@ class LoggerManager:
 
         return logger
 
-    def get_logger(self, name: str = 'odoo_fast_report_mapper') -> logging.Logger:
+    def get_logger(self, name: str = "odoo_fast_report_mapper") -> logging.Logger:
         """
         Get or create a logger instance.
 
@@ -212,14 +208,14 @@ class LoggerManager:
 
     def get_log_file_path(self) -> Path:
         """Get the path to the current log file."""
-        return self._log_dir / 'odoo_fast_report_mapper.log'
+        return self._log_dir / "odoo_fast_report_mapper.log"
 
 
 # Singleton instance
 _manager = LoggerManager()
 
 
-def get_logger(name: str = 'odoo_fast_report_mapper') -> logging.Logger:
+def get_logger(name: str = "odoo_fast_report_mapper") -> logging.Logger:
     """
     Get a configured logger instance.
 
@@ -241,10 +237,7 @@ def get_logger(name: str = 'odoo_fast_report_mapper') -> logging.Logger:
 
 
 def setup_logging(
-    level: int = logging.INFO,
-    log_to_file: bool = True,
-    log_to_console: bool = True,
-    colored_output: bool = True
+    level: int = logging.INFO, log_to_file: bool = True, log_to_console: bool = True, colored_output: bool = True
 ) -> logging.Logger:
     """
     Setup logging configuration for the application.
@@ -259,11 +252,11 @@ def setup_logging(
         Root logger instance
     """
     return _manager.setup_logger(
-        'odoo_fast_report_mapper',
+        "odoo_fast_report_mapper",
         level=level,
         log_to_file=log_to_file,
         log_to_console=log_to_console,
-        colored_output=colored_output
+        colored_output=colored_output,
     )
 
 

@@ -1,0 +1,290 @@
+# Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
+
+"""Comprehensive pytest tests for the CLI module odoo_fast_report_mapper."""
+
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
+from click.testing import CliRunner
+
+from odoo_fast_report_mapper.__version__ import __author__, __url__, __version__
+from odoo_fast_report_mapper.odoo_fast_report_mapper import (
+    print_banner,
+    start_odoo_fast_report_mapper,
+)
+
+
+@pytest.fixture
+def cli_runner():
+    """Create a Click CliRunner for invoking CLI commands."""
+    return CliRunner()
+
+
+@pytest.fixture
+def mock_connection():
+    """Create a mock EqOdooConnection with configurable attributes."""
+    conn = MagicMock()
+    conn.collect_yaml = False
+    conn.workflow = 0
+    conn.disable_qweb = False
+    conn.database = "test_db"
+    conn.login.return_value = None
+    conn.map_reports.return_value = None
+    conn.test_fast_report_rendering.return_value = None
+    conn.disable_qweb_reports.return_value = None
+    conn.collect_all_report_entries.return_value = None
+    return conn
+
+
+class TestVersionOption:
+    """Tests for the --version CLI option."""
+
+    def test_version_option(self, cli_runner):
+        """--version should display the program name and current version."""
+        result = cli_runner.invoke(start_odoo_fast_report_mapper, ["--version"])
+        assert result.exit_code == 0
+        assert __version__ in result.output
+        assert "odoo-fast-report-mapper" in result.output
+
+
+class TestInitFlag:
+    """Tests for the --init CLI flag."""
+
+    def test_init_flag_creates_env_template(self, cli_runner, tmp_path):
+        """--init should generate a .env template in the current directory."""
+        with cli_runner.isolated_filesystem(temp_dir=tmp_path):
+            result = cli_runner.invoke(start_odoo_fast_report_mapper, ["--init"])
+            assert result.exit_code == 0
+            assert "Created .env template at:" in result.output
+            assert "Edit the file with your Odoo connection details" in result.output
+            # Verify .env file was actually created
+            assert os.path.exists(".env")
+
+    def test_init_flag_existing_file_shows_warning(self, cli_runner, tmp_path):
+        """--init should show a warning if .env already exists."""
+        with cli_runner.isolated_filesystem(temp_dir=tmp_path):
+            # Create .env file first
+            with open(".env", "w") as f:
+                f.write("EXISTING=true\n")
+            result = cli_runner.invoke(start_odoo_fast_report_mapper, ["--init"])
+            assert result.exit_code == 0
+            assert "Warning:" in result.output
+            assert ".env file already exists" in result.output
+
+    def test_init_flag_does_not_prompt_for_yaml_path(self, cli_runner, tmp_path):
+        """--init is eager and should exit before prompting for yaml_path."""
+        with cli_runner.isolated_filesystem(temp_dir=tmp_path):
+            result = cli_runner.invoke(start_odoo_fast_report_mapper, ["--init"])
+            assert result.exit_code == 0
+            # Should not contain the yaml_path prompt
+            assert "Please enter the path to your YAML reports folder" not in result.output
+
+
+class TestPrintBanner:
+    """Tests for the print_banner() function."""
+
+    def test_banner_output_contains_expected_strings(self):
+        """print_banner should output version, author, and URL information."""
+        import click
+
+        runner = CliRunner()
+
+        @click.command()
+        def _banner_cmd():
+            print_banner()
+
+        result = runner.invoke(_banner_cmd)
+        assert result.exit_code == 0
+        assert __version__ in result.output
+        assert __author__ in result.output
+        assert __url__ in result.output
+        assert "FastReport" in result.output
+        assert "Mapping" in result.output or "Integration" in result.output
+
+
+class TestWorkflow0Mapping:
+    """Tests for workflow 0 (mapping only)."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_workflow_0_calls_map_reports(self, mock_eq_utils, cli_runner, mock_connection):
+        """Workflow 0 should call map_reports and not test_fast_report_rendering."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.login.assert_called_once()
+        mock_eq_utils.collect_all_reports.assert_called_once_with("/tmp/fake_yaml")
+        mock_connection.map_reports.assert_called_once()
+        mock_connection.test_fast_report_rendering.assert_not_called()
+
+
+class TestWorkflow1Testing:
+    """Tests for workflow 1 (testing only)."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_workflow_1_calls_test_fast_report_rendering(self, mock_eq_utils, cli_runner, mock_connection):
+        """Workflow 1 should call test_fast_report_rendering and not map_reports."""
+        mock_connection.workflow = 1
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.login.assert_called_once()
+        mock_connection.test_fast_report_rendering.assert_called_once()
+        mock_connection.map_reports.assert_not_called()
+
+
+class TestWorkflow2Both:
+    """Tests for workflow 2 (mapping and testing)."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_workflow_2_calls_both_map_and_test(self, mock_eq_utils, cli_runner, mock_connection):
+        """Workflow 2 should call both map_reports and test_fast_report_rendering."""
+        mock_connection.workflow = 2
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.login.assert_called_once()
+        mock_connection.map_reports.assert_called_once()
+        mock_connection.test_fast_report_rendering.assert_called_once()
+
+
+class TestEnvError:
+    """Tests for connection configuration errors."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_env_error_shows_failure_message(self, mock_eq_utils, cli_runner):
+        """When create_connection_from_env raises ValueError, the CLI should show an error."""
+        mock_eq_utils.create_connection_from_env.side_effect = ValueError(
+            "Missing required environment variables: ODOO_URL, ODOO_PORT"
+        )
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0  # CLI handles the error gracefully, no exception
+        assert "Failed to load connection configuration" in result.output
+        assert "odoo-fr-mapper --init" in result.output
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_env_error_with_custom_env_path(self, mock_eq_utils, cli_runner):
+        """When env_path is given and config fails, the searched path should be shown."""
+        mock_eq_utils.create_connection_from_env.side_effect = ValueError(".env file not found")
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--env_path", "/custom/path/.env"],
+        )
+
+        assert result.exit_code == 0
+        assert "Failed to load connection configuration" in result.output
+        assert "/custom/path/.env" in result.output
+
+
+class TestDisableQweb:
+    """Tests for the disable_qweb behavior."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_disable_qweb_called_when_enabled(self, mock_eq_utils, cli_runner, mock_connection):
+        """When connection.disable_qweb is True, disable_qweb_reports should be called."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = True
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.disable_qweb_reports.assert_called_once()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_disable_qweb_not_called_when_disabled(self, mock_eq_utils, cli_runner, mock_connection):
+        """When connection.disable_qweb is False, disable_qweb_reports should not be called."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.disable_qweb_reports.assert_not_called()
+
+
+class TestCollectYaml:
+    """Tests for the collect_yaml mode."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_collect_yaml_calls_collect_all_report_entries(self, mock_eq_utils, cli_runner, mock_connection):
+        """When collect_yaml is True, collect_all_report_entries should be called."""
+        mock_connection.collect_yaml = True
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_connection.collect_all_report_entries.assert_called_once_with("/tmp/fake_yaml")
+        # Should not call collect_all_reports or map_reports in collect mode
+        mock_eq_utils.collect_all_reports.assert_not_called()
+        mock_connection.map_reports.assert_not_called()
+        mock_connection.test_fast_report_rendering.assert_not_called()
+
+
+class TestSuccessOutput:
+    """Tests for successful completion output."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_success_message_displayed(self, mock_eq_utils, cli_runner, mock_connection):
+        """On successful completion, the CLI should display a success message."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        assert "All operations completed successfully" in result.output

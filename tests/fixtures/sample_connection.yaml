@@ -1,0 +1,10 @@
+Server:
+  url: https://odoo.example.com
+  port: 443
+  user: admin
+  password: test_password
+  database: test_db
+  language: ger
+  collect_yaml: false
+  disable_qweb: true
+  workflow: 0

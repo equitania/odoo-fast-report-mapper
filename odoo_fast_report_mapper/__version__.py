@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
@@ -8,7 +7,7 @@ Version information for odoo-fast-report-mapper.
 This file contains the version number used across the package.
 """
 
-__version__ = "0.2.6"
+__version__ = "0.3.0"
 __version_info__ = tuple(int(x) for x in __version__.split("."))
 
 # Package metadata

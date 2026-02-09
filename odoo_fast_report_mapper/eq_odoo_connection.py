@@ -1,18 +1,17 @@
-# -*- coding: utf-8 -*-
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-import click
-from odoo_report_helper.odoo_connection import OdooConnection
-from . import eq_report
-from datetime import datetime
-import io
-import os
-import yaml
 import base64
+import os
+from datetime import datetime
 from random import choice
-import sys
+
+import click
+import yaml
+
+from odoo_report_helper.odoo_connection import OdooConnection
+
+from . import eq_report
 from .logging_config import get_logger
-from .progress import ReportProgress
 
 logger = get_logger(__name__)
 
@@ -21,20 +20,18 @@ class YAMLDumper(yaml.Dumper):
     """Custom YAML dumper for consistent indentation formatting."""
 
     def increase_indent(self, flow=False, indentless=False):
-        return super(YAMLDumper, self).increase_indent(flow, False)
+        return super().increase_indent(flow, False)
 
 
 class EqOdooConnection(OdooConnection):
     def __init__(self, language, collect_yaml, disable_qweb, workflow, *args, **kwargs):
-        super(EqOdooConnection, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.language = language
         self.collect_yaml = collect_yaml
         self.disable_qweb = disable_qweb
         self.workflow = workflow
 
-    def _search_report_v13(
-        self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False
-    ):
+    def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         report_ids = IR_ACTIONS_REPORT.search(
@@ -122,9 +119,7 @@ class EqOdooConnection(OdooConnection):
             logger.info(f"  [{idx}/{len(report_list)}] {report.report_name}")
             report.self_ensure()
             report._data_dictionary["name"] = report.entry_name[self.language]
-            dependencies_installed, not_installed_modules = self.check_dependencies(
-                report._dependencies
-            )
+            dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
             if not dependencies_installed and not_installed_modules:
                 logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
                 for not_installed_module in not_installed_modules:
@@ -140,13 +135,9 @@ class EqOdooConnection(OdooConnection):
                         report.company_id[0],
                     )
                 else:
-                    report_id = self._search_report(
-                        report.model_name, report.entry_name, IR_ACTIONS_REPORT
-                    )
+                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             else:
-                report_id = self._search_report(
-                    report.model_name, report.entry_name, IR_ACTIONS_REPORT
-                )
+                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             if not report_id:
                 report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
                 report_object = IR_ACTIONS_REPORT.browse(report_id)
@@ -159,9 +150,7 @@ class EqOdooConnection(OdooConnection):
 
             # Count total fields for logging
             total_fields = sum(len(fields) for fields in report._fields.values())
-            logger.debug(
-                f"    Mapping {total_fields} fields across {len(report._fields)} models..."
-            )
+            logger.debug(f"    Mapping {total_fields} fields across {len(report._fields)} models...")
 
             try:
                 # Loop over all models in report fields dictionary
@@ -178,45 +167,28 @@ class EqOdooConnection(OdooConnection):
                     if model_id:
                         for field_name in report._fields[model_name]:
                             # Get the field from Odoo
-                            field_id = IR_MODEL_FIELDS.search(
-                                [("model_id", "=", model_id), ("name", "=", field_name)]
-                            )
+                            field_id = IR_MODEL_FIELDS.search([("model_id", "=", model_id), ("name", "=", field_name)])
                             if field_id:
-                                report_list_ids = (
-                                    IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
-                                )
+                                report_list_ids = IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
                                 if report_object.id not in report_list_ids:
                                     # Create dict of dicts in order to store the ids with the following structure:
                                     # {model_id: {field_id1: [report_ids], field_id2: [report_ids]}
                                     report_ids = report_list_ids + [report_object.id]
                                     if model_id in models_fields:
                                         if field_id[0] in models_fields[model_id]:
-                                            new_report_ids = (
-                                                models_fields[model_id][field_id[0]]
-                                                + report_ids
-                                            )
-                                            models_fields[model_id][field_id[0]] = list(
-                                                dict.fromkeys(new_report_ids)
-                                            )
+                                            new_report_ids = models_fields[model_id][field_id[0]] + report_ids
+                                            models_fields[model_id][field_id[0]] = list(dict.fromkeys(new_report_ids))
                                         else:
-                                            models_fields[model_id][
-                                                field_id[0]
-                                            ] = report_ids
+                                            models_fields[model_id][field_id[0]] = report_ids
                                     else:
                                         models_fields[model_id] = dict()
-                                        models_fields[model_id][
-                                            field_id[0]
-                                        ] = report_ids
+                                        models_fields[model_id][field_id[0]] = report_ids
                             else:
-                                logger.warning(
-                                    f"Field '{field_name}' not found in model '{model_name}'"
-                                )
+                                logger.warning(f"Field '{field_name}' not found in model '{model_name}'")
                     else:
                         logger.warning(f"Model '{model_name}' not found in system")
                 if report._calculated_fields:
-                    report_company_id = (
-                        report.company_id[0] if report.company_id else False
-                    )
+                    report_company_id = report.company_id[0] if report.company_id else False
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
                             self.set_calculated_fields(
@@ -230,9 +202,7 @@ class EqOdooConnection(OdooConnection):
                 logger.info(f"  ✓ Completed: {report.report_name}")
 
             except Exception as ex:
-                logger.error(
-                    f"  ✗ Exception while processing report: {report.report_name}"
-                )
+                logger.error(f"  ✗ Exception while processing report: {report.report_name}")
                 logger.exception(ex)
 
         # Final step: Write field mappings to Odoo models
@@ -252,9 +222,7 @@ class EqOdooConnection(OdooConnection):
                 # Get model name for logging
                 model_obj = IR_MODEL.browse(model)
                 model_name = model_obj.model if model_obj else f"model_id_{model}"
-                logger.info(
-                    f"  [{idx}/{len(models_fields)}] Updating {model_name} ({len(fields_list)} fields)..."
-                )
+                logger.info(f"  [{idx}/{len(models_fields)}] Updating {model_name} ({len(fields_list)} fields)...")
 
                 # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
                 IR_MODEL.eq_write_report_ids(model, fields_list)
@@ -357,9 +325,7 @@ class EqOdooConnection(OdooConnection):
             logger.info(f"Collecting fields for company: {company_name}")
 
             # Progressbar...
-            with click.progressbar(
-                all_report_field_ids, length=len(all_report_field_ids)
-            ) as bar:
+            with click.progressbar(all_report_field_ids, length=len(all_report_field_ids)) as bar:
                 for field_id in bar:
                     # Get object
                     field_object = IR_MODEL_FIELDS.browse(field_id)
@@ -371,47 +337,27 @@ class EqOdooConnection(OdooConnection):
 
                     # Add field to dictionary
                     for report_action_id in report_action_ids:
-                        report_action_object = IR_ACTIONS_REPORT.browse(
-                            report_action_id
-                        )
-                        company_id = (
-                            report_action_object.company_id.id
-                            if report_action_object.company_id
-                            else False
-                        )
+                        report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
+                        company_id = report_action_object.company_id.id if report_action_object.company_id else False
                         if company_id:
                             if (
-                                report_action_object.report_name
-                                in report_name_id_combination
-                                and report_action_id
-                                != report_name_id_combination[
-                                    report_action_object.report_name
-                                ]
+                                report_action_object.report_name in report_name_id_combination
+                                and report_action_id != report_name_id_combination[report_action_object.report_name]
                             ):
                                 if (
                                     "company_id"
-                                    in data_dictionary[
-                                        report_name_id_combination[
-                                            report_action_object.report_name
-                                        ]
-                                    ]
+                                    in data_dictionary[report_name_id_combination[report_action_object.report_name]]
                                     and company_id
                                     not in data_dictionary[
-                                        report_name_id_combination[
-                                            report_action_object.report_name
-                                        ]
+                                        report_name_id_combination[report_action_object.report_name]
                                     ]["company_id"]
                                 ):
-                                    data_dictionary[
-                                        report_name_id_combination[
-                                            report_action_object.report_name
-                                        ]
-                                    ]["company_id"].append(company_id)
+                                    data_dictionary[report_name_id_combination[report_action_object.report_name]][
+                                        "company_id"
+                                    ].append(company_id)
                                 continue
                             else:
-                                report_name_id_combination[
-                                    report_action_object.report_name
-                                ] = report_action_id
+                                report_name_id_combination[report_action_object.report_name] = report_action_id
                         data_dictionary = self.add_field_to_dictionary(
                             data_dictionary,
                             report_action_id,
@@ -430,26 +376,16 @@ class EqOdooConnection(OdooConnection):
             # Sanitize report_name to prevent path traversal (data comes from Odoo server)
             safe_name = os.path.basename(eq_report_object.report_name).replace("..", "")
             if not safe_name:
-                logger.warning(
-                    f"Skipping report with invalid name: {eq_report_object.report_name!r}"
-                )
+                logger.warning(f"Skipping report with invalid name: {eq_report_object.report_name!r}")
                 continue
-            output_name = os.path.join(
-                output_path, safe_name + "_" + date_now + ".yaml"
-            )
+            output_name = os.path.join(output_path, safe_name + "_" + date_now + ".yaml")
             # Verify resolved path stays within output directory
-            if not os.path.realpath(output_name).startswith(
-                os.path.realpath(output_path)
-            ):
-                logger.error(
-                    f"Path traversal detected, skipping: {eq_report_object.report_name!r}"
-                )
+            if not os.path.realpath(output_name).startswith(os.path.realpath(output_path)):
+                logger.error(f"Path traversal detected, skipping: {eq_report_object.report_name!r}")
                 continue
             self.write_yaml(output_name, eq_yaml_data)
 
-    def add_field_to_dictionary(
-        self, data_dictionary, report_id, model_name, field_name, company_id
-    ):
+    def add_field_to_dictionary(self, data_dictionary, report_id, model_name, field_name, company_id):
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
@@ -468,9 +404,7 @@ class EqOdooConnection(OdooConnection):
         IR_FIELDS = self.connection.env["ir.model.fields"]
         IR_MODEL = self.connection.env["ir.model"]
         model_id = IR_MODEL.search([("model", "=", model_name)])
-        field_id = IR_FIELDS.search(
-            [("model_id", "=", model_id[0]), ("name", "=", field_name)]
-        )
+        field_id = IR_FIELDS.search([("model_id", "=", model_id[0]), ("name", "=", field_name)])
         field_obj = IR_FIELDS.browse(field_id)
         modules_dependencies = field_obj.modules.replace(" ", "").split(",")
         if "dependencies" in data_dictionary[report_id]:
@@ -478,9 +412,7 @@ class EqOdooConnection(OdooConnection):
             # using set()
             # to remove duplicated
             # from list
-            data_dictionary[report_id]["dependencies"] = list(
-                set(data_dictionary[report_id]["dependencies"])
-            )
+            data_dictionary[report_id]["dependencies"] = list(set(data_dictionary[report_id]["dependencies"]))
         else:
             data_dictionary[report_id]["dependencies"] = modules_dependencies
         return data_dictionary
@@ -500,9 +432,7 @@ class EqOdooConnection(OdooConnection):
             eq_calculated_field_func_name = eq_calculated_field.eq_function_name
             eq_calculated_field_params_name = eq_calculated_field.eq_parameters_name
             eq_calculated_field_dict[eq_calculated_field_field_name] = {
-                eq_calculated_field_func_name: eq_calculated_field_params_name.replace(
-                    " ", ""
-                ).split(",")
+                eq_calculated_field_func_name: eq_calculated_field_params_name.replace(" ", "").split(",")
             }
         return eq_calculated_field_dict
 
@@ -529,20 +459,14 @@ class EqOdooConnection(OdooConnection):
         attachment_use = action_object.attachment_use
         attachment = action_object.attachment
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
-        company_id = (
-            field_dictionary["company_id"]
-            if "company_id" in field_dictionary
-            else False
-        )
+        company_id = field_dictionary.get("company_id", False)
         if "company_id" in field_dictionary:
             del field_dictionary["company_id"]
         dependencies = sorted(field_dictionary["dependencies"])
         if "dependencies" in field_dictionary:
             del field_dictionary["dependencies"]
 
-        calculated_fields_dict = self._collect_calculated_fields(
-            eq_calculated_field_ids
-        )
+        calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
         if not self.is_dict(calculated_fields_dict):
             calculated_fields_dict = {}
         eq_print_button = action_object.eq_print_button
@@ -578,7 +502,7 @@ class EqOdooConnection(OdooConnection):
         :param file_name: Output file path
         :param data: Dictionary to be written as YAML
         """
-        with io.open(file_name, "w", encoding="utf8") as outfile:
+        with open(file_name, "w", encoding="utf8") as outfile:
             yaml.dump(
                 data,
                 outfile,
@@ -589,14 +513,10 @@ class EqOdooConnection(OdooConnection):
             )
 
     def is_boolean(self, object_to_be_checked):
-        if isinstance(object_to_be_checked, bool):
-            return True
-        return False
+        return bool(isinstance(object_to_be_checked, bool))
 
     def is_dict(self, object_to_be_checked):
-        if isinstance(object_to_be_checked, dict):
-            return True
-        return False
+        return bool(isinstance(object_to_be_checked, dict))
 
     def test_fast_report_rendering(self, report_list: list):
         """
@@ -611,7 +531,7 @@ class EqOdooConnection(OdooConnection):
             if report.company_id:
                 self.connection.env.user.company_id = report.company_id[0]
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                IR_MODEL = self.connection.env["ir.model"]
+                self.connection.env["ir.model"]
                 if self.version in ["13", "14", "15", "16"]:
                     report_id = self._search_report_v13(
                         report.model_name,
@@ -620,22 +540,16 @@ class EqOdooConnection(OdooConnection):
                         report.company_id[0],
                     )
                 else:
-                    report_id = self._search_report(
-                        report.model_name, report.entry_name, IR_ACTIONS_REPORT
-                    )
+                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             else:
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                IR_MODEL = self.connection.env["ir.model"]
-                report_id = self._search_report(
-                    report.model_name, report.entry_name, IR_ACTIONS_REPORT
-                )
+                self.connection.env["ir.model"]
+                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             # Get report action record
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
             # Check if the report has been created and is type Fast Report
             if not report_id or report_object.report_type != "fast_report":
-                logger.warning(
-                    f"Report {report.report_name} not created or is not type FastReport"
-                )
+                logger.warning(f"Report {report.report_name} not created or is not type FastReport")
                 continue
 
             logger.info(f"Testing report rendering: {report.report_name}")
@@ -658,15 +572,9 @@ class EqOdooConnection(OdooConnection):
                 try:
                     if not len(report_model_records_ids):
                         logger.warning(f"No records for model {report.model_name}")
-                        logger.info(
-                            f"Using demo data to test report: {report.report_name}"
-                        )
+                        logger.info(f"Using demo data to test report: {report.report_name}")
                         # Render Fast Report for demo example databases
-                        res, content_format = (
-                            IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(
-                                report_object.ids
-                            )
-                        )
+                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
                     else:
                         # Render Fast Report for a random report model record, without creating attachment
                         res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(
@@ -675,17 +583,13 @@ class EqOdooConnection(OdooConnection):
                             create_attachment=False,
                         )
                     # Convert data content to base64
-                    data = base64.encodebytes(res.encode("utf-8")).decode("utf-8")
+                    base64.encodebytes(res.encode("utf-8")).decode("utf-8")
                     logger.info(f"Report rendering successful: {report.report_name}")
                 except Exception as ex:
                     if "No such file or directory" in str(ex):
-                        logger.warning(
-                            f"No demo data to test report: {report.report_name}"
-                        )
+                        logger.warning(f"No demo data to test report: {report.report_name}")
                     else:
-                        logger.error(
-                            f"Report {report.report_name} not rendering correctly"
-                        )
+                        logger.error(f"Report {report.report_name} not rendering correctly")
                         logger.error("Exception occurred during rendering")
                         logger.exception(ex)
         self.connection.env.user.company_id = original_company_yaml_user
