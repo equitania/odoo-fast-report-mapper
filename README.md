@@ -1,7 +1,7 @@
 # Odoo Fast Report Mapper
 
 [![PyPI version](https://badge.fury.io/py/odoo-fast-report-mapper-equitania.svg)](https://badge.fury.io/py/odoo-fast-report-mapper-equitania)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 **Deutsch** | [English](#english)
@@ -16,7 +16,7 @@ Eine Python-Bibliothek zur Erstellung, Verwaltung und Testung von FastReport-Ein
 - **Feld-Zuordnung**: Intelligente Zuordnung von Odoo-Modellfeldern zu Berichten
 - **Berechnete Felder**: Unterstützung für benutzerdefinierte Berechnungen mit Parametern
 - **Test-Rendering**: Validierung der FastReport-Dokumente vor der Produktionsfreigabe
-- **Mehrsprachigkeit**: Deutsche und englische Berichtsnamen
+- **Mehrsprachigkeit**: Unbegrenzte Sprachen via Odoo Locale-Codes (de_DE, en_US, fr_FR, etc.) mit automatischer Erkennung installierter Sprachen
 - **Mehrere Exportformate**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow-Optionen
@@ -37,7 +37,7 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 - **Field Mapping**: Intelligent mapping of Odoo model fields to reports
 - **Calculated Fields**: Support for custom calculations with parameters
 - **Test Rendering**: Validation of FastReport documents before production release
-- **Multi-language**: German and English report names
+- **Multi-language**: Unlimited languages via Odoo locale codes (de_DE, en_US, fr_FR, etc.) with automatic detection of installed languages
 - **Multiple Export Formats**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow Options
@@ -52,7 +52,7 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 
 ### Systemanforderungen / System Requirements
 
-- Python (>= 3.8)
+- Python (>= 3.10)
 - click (>= 8.1.3)
 - OdooRPC (>= 0.10.1)
 - PyYAML (>= 5.4.1)
@@ -93,8 +93,8 @@ source .venv/bin/activate  # Linux/macOS
 pip install -r requirements-dev.txt
 
 # 3. Code-Formatierung prüfen / Check code formatting
-black odoo_fast_report_mapper/ odoo_report_helper/ --check
-flake8 odoo_fast_report_mapper/ odoo_report_helper/
+ruff check .
+ruff format --check .
 
 # 4. Tests ausführen / Run tests
 pytest tests/ -v
@@ -133,7 +133,7 @@ git tag v0.1.26
 git push origin v0.1.26
 ```
 
-**Hinweis:** Die Version wird jetzt zentral in `odoo_fast_report_mapper/__version__.py` verwaltet und automatisch von `setup.py` übernommen.
+**Hinweis:** Die Version wird zentral in `odoo_fast_report_mapper/__version__.py` verwaltet und automatisch von `pyproject.toml` übernommen.
 
 ---
 
@@ -160,7 +160,7 @@ ODOO_PORT=443
 ODOO_USER=admin
 ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
-ODOO_LANGUAGE=ger
+ODOO_LANGUAGE=de_DE
 ODOO_WORKFLOW=0
 ```
 
@@ -218,7 +218,8 @@ ODOO_PORT=443
 ODOO_USER=admin
 ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
-ODOO_LANGUAGE=ger                 # 'ger' or 'eng'
+ODOO_LANGUAGE=de_DE               # Odoo locale code (de_DE, en_US, fr_FR, etc.)
+                                  # Legacy codes (ger, eng) are auto-normalized
 
 # Optional Configuration (with defaults)
 ODOO_COLLECT_YAML=False           # YAML collection mode
@@ -247,10 +248,11 @@ Falls du bisher `config.yaml` genutzt hast, kopiere die Werte einfach in die `.e
 Erstelle YAML-Dateien im `reports_yaml` Ordner:
 
 ```yaml
-# Benennung / Naming
+# Benennung / Naming (Odoo locale codes)
 name:
-  ger: Deutscher_Bericht
-  eng: English_Report
+  de_DE: Deutscher_Bericht
+  en_US: English_Report
+  fr_FR: Rapport_Francais              # Additional languages (optional)
 report_name: eq_fr_sales_report
 report_model: sale.order
 attachment: ('Sales_Report.pdf')
@@ -308,12 +310,14 @@ calculated_fields:
 1. **CLI Interface** (`odoo_fast_report_mapper.py`): Befehlszeileninterface mit Click
 2. **Connection Manager** (`odoo_connection.py`): OdooRPC-Integration und Verbindungsmanagement
 3. **Report Processing** (`eq_report.py`): Report-Objekte und Validierung
-4. **Utilities** (`eq_utils.py`): YAML-Verarbeitung und Hilfsfunktionen
+4. **Language Utilities** (`lang_utils.py`): Sprachnormalisierung, Multi-Language-Logik
+5. **Utilities** (`eq_utils.py`): YAML-Verarbeitung und Hilfsfunktionen
 
 ### Datenfluss / Data Flow
 
 ```
-YAML-Konfiguration → Report-Objekte → Odoo-Verbindung → FastReport-Erstellung
+YAML-Konfiguration → Sprachnormalisierung → Report-Objekte → Odoo-Verbindung
+    → FastReport-Erstellung → Multi-Language Translations (via res.lang)
 ```
 
 ---
@@ -367,10 +371,10 @@ twine check dist/*
 
 ```bash
 # Formatierung / Formatting
-black odoo_fast_report_mapper/ odoo_report_helper/
+ruff format .
 
 # Linting
-flake8 odoo_fast_report_mapper/ odoo_report_helper/
+ruff check .
 
 # Typ-Überprüfung / Type checking
 mypy odoo_fast_report_mapper/ odoo_report_helper/

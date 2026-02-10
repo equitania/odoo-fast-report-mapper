@@ -7,7 +7,7 @@ name = "odoo-fast-report-mapper-equitania"
 dynamic = ["version"]
 description = "A Python library for creating, managing, and testing FastReport entries in Odoo environments"
 readme = "README.md"
-license = {text = "AGPL-3.0-or-later"}
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.10"
 authors = [
     { name = "Equitania Software GmbH", email = "info@equitania.de" },
