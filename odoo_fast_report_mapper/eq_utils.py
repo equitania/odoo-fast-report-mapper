@@ -10,6 +10,7 @@ import odoo_report_helper.exceptions as exceptions
 import odoo_report_helper.utils as utils
 
 from . import eq_odoo_connection, eq_report
+from .lang_utils import normalize_language_code, normalize_name_dict
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -26,8 +27,10 @@ ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
 
 # Report Configuration (REQUIRED)
-# Language for report names: 'ger' or 'eng'
-ODOO_LANGUAGE=ger
+# Primary language for report names (Odoo locale code)
+# Examples: de_DE, en_US, fr_FR, de_CH
+# Legacy values 'ger' and 'eng' are still supported
+ODOO_LANGUAGE=de_DE
 
 # Workflow Configuration (OPTIONAL)
 # Collect YAML from Odoo instead of mapping (True/False)
@@ -75,9 +78,10 @@ def create_report_object_from_yaml_object(yaml_object):
     :param: yaml_object
     :return: EqReport object
     """
-    # Set this in a try block because not all yaml files are up2date
+    # Normalize legacy language keys (ger/eng) to Odoo locale codes (de_DE/en_US)
+    name_dict = normalize_name_dict(yaml_object["name"])
     report = eq_report.EqReport(
-        yaml_object["name"],
+        name_dict,
         yaml_object["report_name"],
         yaml_object["report_type"],
         yaml_object["report_model"],
@@ -105,7 +109,7 @@ def create_odoo_connection_from_yaml_object(yaml_object):
     :return: EqOdooConnection object
     """
     eq_odoo_connection_object = eq_odoo_connection.EqOdooConnection(
-        yaml_object["Server"]["language"],
+        normalize_language_code(yaml_object["Server"]["language"]),
         (yaml_object["Server"].get("collect_yaml", False)),
         (yaml_object["Server"].get("disable_qweb", True)),
         yaml_object["Server"].get("workflow", 0),
@@ -173,7 +177,7 @@ def create_connection_from_env(env_path=None):
         ODOO_USER: Odoo username
         ODOO_PASSWORD: Odoo password
         ODOO_DATABASE: Odoo database name
-        ODOO_LANGUAGE: Language for report names ('ger' or 'eng')
+        ODOO_LANGUAGE: Primary language for report names (Odoo locale code, e.g. de_DE, en_US; legacy 'ger'/'eng' supported)
 
     Optional environment variables:
         ODOO_COLLECT_YAML: Collect YAML from Odoo (default: False)
@@ -232,7 +236,7 @@ def create_connection_from_env(env_path=None):
     user = os.getenv("ODOO_USER")
     password = os.getenv("ODOO_PASSWORD")
     database = os.getenv("ODOO_DATABASE")
-    language = os.getenv("ODOO_LANGUAGE")
+    language = normalize_language_code(os.getenv("ODOO_LANGUAGE"))
 
     # Get optional values with defaults
     collect_yaml = os.getenv("ODOO_COLLECT_YAML", "False").lower() in (

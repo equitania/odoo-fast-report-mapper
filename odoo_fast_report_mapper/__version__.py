@@ -7,7 +7,7 @@ Version information for odoo-fast-report-mapper.
 This file contains the version number used across the package.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __version_info__ = tuple(int(x) for x in __version__.split("."))
 
 # Package metadata

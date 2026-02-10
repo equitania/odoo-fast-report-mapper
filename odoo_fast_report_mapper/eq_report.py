@@ -3,6 +3,8 @@
 
 from odoo_report_helper.report import Report
 
+from .lang_utils import get_primary_lang
+
 
 class EqReport(Report):
     def __init__(
@@ -52,8 +54,9 @@ class EqReport(Report):
         """
         Before mapping the fields, the value dictionary for Odoo must be set.
         """
+        primary_lang = get_primary_lang(self.entry_name)
         self._data_dictionary = {
-            "name": self.entry_name["ger"],
+            "name": self.entry_name[primary_lang],
             "report_name": self.report_name,
             "report_type": self.report_type,
             "print_report_name": self.print_report_name,

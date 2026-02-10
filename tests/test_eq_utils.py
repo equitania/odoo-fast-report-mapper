@@ -69,7 +69,7 @@ class TestCreateReportObjectFromYamlObject:
         """EqReport is created with all fields from YAML data."""
         report = eq_utils.create_report_object_from_yaml_object(sample_report_yaml_data)
         assert isinstance(report, EqReport)
-        assert report.entry_name == {"ger": "Verkaufsauftrag", "eng": "Sales_Order"}
+        assert report.entry_name == {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"}
         assert report.report_name == "eq_fr_core_sale_order"
         assert report.report_type == "fast_report"
         assert report.model_name == "sale.order"
@@ -88,6 +88,15 @@ class TestCreateReportObjectFromYamlObject:
         """company_id is correctly assigned when provided in YAML data."""
         report = eq_utils.create_report_object_from_yaml_object(sample_report_yaml_data_with_company)
         assert report.company_id == [1, 3]
+
+    def test_legacy_name_keys_normalized(self, sample_report_yaml_data_legacy):
+        """Legacy ger/eng keys are normalized to de_DE/en_US."""
+        report = eq_utils.create_report_object_from_yaml_object(sample_report_yaml_data_legacy)
+        assert isinstance(report, EqReport)
+        assert "de_DE" in report.entry_name
+        assert "en_US" in report.entry_name
+        assert report.entry_name["de_DE"] == "Verkaufsauftrag"
+        assert report.entry_name["en_US"] == "Sales_Order"
 
     def test_report_fields_and_calculated_fields(self, sample_report_yaml_data):
         """Report fields and calculated fields are passed through correctly."""
@@ -108,7 +117,8 @@ class TestCreateOdooConnectionFromYamlObject:
         """EqOdooConnection is created with correct attributes from YAML."""
         conn = eq_utils.create_odoo_connection_from_yaml_object(sample_connection_yaml_data)
         assert isinstance(conn, EqOdooConnection)
-        assert conn.language == "ger"
+        # Legacy 'ger' is normalized to 'de_DE'
+        assert conn.language == "de_DE"
         assert conn.collect_yaml is False
         assert conn.disable_qweb is True
         assert conn.workflow == 0
@@ -179,7 +189,7 @@ class TestCollectAllReports:
         yaml_dir = tmp_path / "mc_reports"
         yaml_dir.mkdir()
         report_data = {
-            "name": {"ger": "MC_Report", "eng": "MC_Report"},
+            "name": {"de_DE": "MC_Report", "en_US": "MC_Report"},
             "report_name": "eq_fr_mc",
             "report_type": "fast_report",
             "print_report_name": "MC",
@@ -212,7 +222,7 @@ class TestCollectAllReports:
         yaml_dir = tmp_path / "sc_reports"
         yaml_dir.mkdir()
         report_data = {
-            "name": {"ger": "SC_Report", "eng": "SC_Report"},
+            "name": {"de_DE": "SC_Report", "en_US": "SC_Report"},
             "report_name": "eq_fr_sc",
             "report_type": "fast_report",
             "print_report_name": "SC",
@@ -265,7 +275,8 @@ class TestCreateConnectionFromEnv:
         assert isinstance(conn, EqOdooConnection)
         assert conn.database == "test_db"
         assert conn.username == "admin"
-        assert conn.language == "ger"
+        # Legacy 'ger' is normalized to 'de_DE'
+        assert conn.language == "de_DE"
 
     def test_from_directory_path(self, tmp_env_file, mock_odoorpc, monkeypatch):
         """Connection is created when env_path points to a directory containing .env."""
@@ -292,7 +303,7 @@ class TestCreateConnectionFromEnv:
             "ODOO_USER=admin\n"
             "ODOO_PASSWORD=pw\n"
             "ODOO_DATABASE=mydb\n"
-            "ODOO_LANGUAGE=eng\n"
+            "ODOO_LANGUAGE=en_US\n"
         )
         env_file = tmp_path / ".env"
         env_file.write_text(env_content)

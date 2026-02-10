@@ -1,8 +1,8 @@
 ---
 # Naming
-name:                                 # Report name (German and English)
-  ger: Deutsch_Report2
-  eng: english_report2
+name:                                 # Report name (Odoo locale codes, e.g. de_DE, en_US, fr_FR; legacy 'ger'/'eng' still supported)
+  de_DE: Deutsch_Report2
+  en_US: english_report2
 report_name: eq_fr_core_test_report2  # frx name of the report
 report_model: test.model2             # Model name
 attachment: ('Report2.pdf')            # Save as Attachment prefix. This is the filename of the attachment used to store the printing result.

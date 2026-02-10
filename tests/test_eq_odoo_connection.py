@@ -95,7 +95,7 @@ class TestSearchReportV13:
 
         result = conn._search_report_v13(
             model_name="sale.order",
-            report_name={"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             IR_ACTIONS_REPORT=mock_ir_report,
             company_id=False,
         )
@@ -114,7 +114,7 @@ class TestSearchReportV13:
 
         result = conn._search_report_v13(
             model_name="sale.order",
-            report_name={"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             IR_ACTIONS_REPORT=mock_ir_report,
             company_id=3,
         )
@@ -123,22 +123,22 @@ class TestSearchReportV13:
         call_args = mock_ir_report.search.call_args[0][0]
         assert ("company_id", "=", 3) in call_args
 
-    def test_search_report_v13_falls_back_to_english(self):
-        """_search_report_v13 must try English name if German name yields no results."""
+    def test_search_report_v13_searches_all_names_at_once(self):
+        """_search_report_v13 must search all name variants in a single query."""
         conn = _make_eq_connection()
         mock_ir_report = MagicMock()
-        # First search (German) returns nothing, second search (English) returns result
-        mock_ir_report.search.side_effect = [[], [77]]
+        mock_ir_report.search.return_value = [77]
 
         result = conn._search_report_v13(
             model_name="sale.order",
-            report_name={"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             IR_ACTIONS_REPORT=mock_ir_report,
             company_id=False,
         )
 
         assert result == 77
-        assert mock_ir_report.search.call_count == 2
+        # Should only need one search call with OR domain for all names
+        mock_ir_report.search.assert_called_once()
 
     def test_search_report_v13_returns_false_when_not_found(self):
         """_search_report_v13 must return False when no reports are found."""
@@ -148,7 +148,7 @@ class TestSearchReportV13:
 
         result = conn._search_report_v13(
             model_name="sale.order",
-            report_name={"ger": "Nonexistent"},
+            report_name={"de_DE": "Nonexistent"},
             IR_ACTIONS_REPORT=mock_ir_report,
             company_id=False,
         )
@@ -162,46 +162,47 @@ class TestSearchReportV13:
 
 
 class TestSearchReport:
-    """Verify report search with German and English name fallback."""
+    """Verify report search with dynamic name domain."""
 
-    def test_search_report_german_name_found(self):
-        """_search_report must return ID when German name matches."""
+    def test_search_report_found(self):
+        """_search_report must return ID when name matches."""
         conn = _make_eq_connection()
         mock_ir_report = MagicMock()
         mock_ir_report.search.return_value = [10]
 
         result = conn._search_report(
             model_name="sale.order",
-            report_name={"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             IR_ACTIONS_REPORT=mock_ir_report,
         )
 
         assert result == 10
 
-    def test_search_report_english_name_fallback(self):
-        """_search_report must fall back to English name when German yields no results."""
+    def test_search_report_single_query_for_all_names(self):
+        """_search_report must search all name variants in one query."""
         conn = _make_eq_connection()
         mock_ir_report = MagicMock()
-        mock_ir_report.search.side_effect = [[], [20]]
+        mock_ir_report.search.return_value = [20]
 
         result = conn._search_report(
             model_name="sale.order",
-            report_name={"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             IR_ACTIONS_REPORT=mock_ir_report,
         )
 
         assert result == 20
-        assert mock_ir_report.search.call_count == 2
+        # Should only need one search call with all names in OR domain
+        mock_ir_report.search.assert_called_once()
 
     def test_search_report_returns_false_when_not_found(self):
-        """_search_report must return False when neither name yields results."""
+        """_search_report must return False when no names yield results."""
         conn = _make_eq_connection()
         mock_ir_report = MagicMock()
         mock_ir_report.search.return_value = []
 
         result = conn._search_report(
             model_name="sale.order",
-            report_name={"ger": "Nonexistent", "eng": "Nonexistent"},
+            report_name={"de_DE": "Nonexistent", "en_US": "Nonexistent"},
             IR_ACTIONS_REPORT=mock_ir_report,
         )
 
@@ -216,11 +217,31 @@ class TestSearchReport:
 
         result = conn._search_report(
             model_name="sale.order",
-            report_name={"ger": "Test"},
+            report_name={"de_DE": "Test"},
         )
 
         conn.connection.env.__getitem__.assert_called_with("ir.actions.report")
         assert result == 30
+
+    def test_search_report_multi_language(self):
+        """_search_report must handle 3+ languages in one query."""
+        conn = _make_eq_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [40]
+
+        result = conn._search_report(
+            model_name="sale.order",
+            report_name={"de_DE": "Verkauf", "en_US": "Sales", "fr_FR": "Ventes"},
+            IR_ACTIONS_REPORT=mock_ir_report,
+        )
+
+        assert result == 40
+        mock_ir_report.search.assert_called_once()
+        call_args = mock_ir_report.search.call_args[0][0]
+        # Should contain all name variants including PDF suffix
+        assert ("name", "=ilike", "Verkauf") in call_args
+        assert ("name", "=ilike", "Sales") in call_args
+        assert ("name", "=ilike", "Ventes") in call_args
 
 
 # ---------------------------------------------------------------------------
@@ -337,7 +358,7 @@ class TestWriteYaml:
         conn = _make_eq_connection()
         output_file = tmp_path / "test_output.yaml"
         data = {
-            "name": {"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+            "name": {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
             "report_name": "eq_fr_core_sale_order",
             "report_type": "fast_report",
         }
@@ -347,7 +368,7 @@ class TestWriteYaml:
         assert output_file.exists()
         with open(output_file, encoding="utf8") as f:
             loaded = yaml.safe_load(f)
-        assert loaded["name"] == {"ger": "Verkaufsauftrag", "eng": "Sales_Order"}
+        assert loaded["name"] == {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"}
         assert loaded["report_name"] == "eq_fr_core_sale_order"
         assert loaded["report_type"] == "fast_report"
 
@@ -588,3 +609,65 @@ class TestDisableQwebReports:
         conn.disable_qweb_reports()
 
         mock_ir_report.browse.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# get_installed_languages() tests
+# ---------------------------------------------------------------------------
+
+
+class TestGetInstalledLanguages:
+    """Verify installed language retrieval from res.lang."""
+
+    def test_returns_installed_languages(self):
+        """get_installed_languages must return list of active language dicts."""
+        conn = _make_eq_connection()
+        mock_res_lang = MagicMock()
+        mock_res_lang.search.return_value = [1, 2]
+
+        mock_lang_de = MagicMock()
+        mock_lang_de.code = "de_DE"
+        mock_lang_de.iso_code = "de"
+        mock_lang_de.name = "German / Deutsch"
+
+        mock_lang_en = MagicMock()
+        mock_lang_en.code = "en_US"
+        mock_lang_en.iso_code = "en"
+        mock_lang_en.name = "English (US)"
+
+        mock_res_lang.browse.side_effect = [mock_lang_de, mock_lang_en]
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+
+        result = conn.get_installed_languages()
+
+        assert len(result) == 2
+        assert result[0]["code"] == "de_DE"
+        assert result[0]["iso_code"] == "de"
+        assert result[1]["code"] == "en_US"
+        assert result[1]["iso_code"] == "en"
+
+    def test_returns_empty_list_when_no_languages(self):
+        """get_installed_languages must return empty list when no languages found."""
+        conn = _make_eq_connection()
+        mock_res_lang = MagicMock()
+        mock_res_lang.search.return_value = []
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+
+        result = conn.get_installed_languages()
+
+        assert result == []
+
+    def test_queries_active_languages_only(self):
+        """get_installed_languages must filter for active=True."""
+        conn = _make_eq_connection()
+        mock_res_lang = MagicMock()
+        mock_res_lang.search.return_value = []
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+
+        conn.get_installed_languages()
+
+        call_args = mock_res_lang.search.call_args[0][0]
+        assert ("active", "=", True) in call_args

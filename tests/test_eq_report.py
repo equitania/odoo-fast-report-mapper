@@ -3,7 +3,6 @@
 
 """Comprehensive tests for EqReport class in odoo_fast_report_mapper/eq_report.py."""
 
-
 from odoo_fast_report_mapper.eq_report import EqReport
 
 # ---------------------------------------------------------------------------
@@ -14,7 +13,7 @@ from odoo_fast_report_mapper.eq_report import EqReport
 def _make_report(**overrides):
     """Create an EqReport with sensible defaults, allowing per-test overrides."""
     defaults = {
-        "entry_name": {"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
+        "entry_name": {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
         "report_name": "eq_fr_core_sale_order",
         "report_type": "fast_report",
         "model_name": "sale.order",
@@ -35,7 +34,7 @@ class TestEqReportConstructorDefaults:
     def test_all_default_values(self):
         report = _make_report()
 
-        assert report.entry_name == {"ger": "Verkaufsauftrag", "eng": "Sales_Order"}
+        assert report.entry_name == {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"}
         assert report.report_name == "eq_fr_core_sale_order"
         assert report.report_type == "fast_report"
         assert report.model_name == "sale.order"
@@ -184,11 +183,23 @@ class TestSelfEnsure:
         report.self_ensure()
         assert report._data_dictionary["company_id"] is False
 
-    def test_name_uses_german_entry(self):
-        """self_ensure() should use entry_name['ger'] for the 'name' key."""
-        report = _make_report(entry_name={"ger": "Deutsche_Bezeichnung", "eng": "English_Name"})
+    def test_name_uses_primary_lang_entry(self):
+        """self_ensure() should use primary language (de_DE) for the 'name' key."""
+        report = _make_report(entry_name={"de_DE": "Deutsche_Bezeichnung", "en_US": "English_Name"})
         report.self_ensure()
         assert report._data_dictionary["name"] == "Deutsche_Bezeichnung"
+
+    def test_name_uses_de_CH_as_fallback(self):
+        """self_ensure() should use de_CH when de_DE is not present."""
+        report = _make_report(entry_name={"de_CH": "Schweizer_Name", "en_US": "English_Name"})
+        report.self_ensure()
+        assert report._data_dictionary["name"] == "Schweizer_Name"
+
+    def test_name_uses_first_key_when_no_german(self):
+        """self_ensure() should use first key when no German variant exists."""
+        report = _make_report(entry_name={"en_US": "English_Name", "fr_FR": "French_Name"})
+        report.self_ensure()
+        assert report._data_dictionary["name"] == "English_Name"
 
 
 # ---------------------------------------------------------------------------
@@ -262,12 +273,12 @@ class TestEnsureDataForYaml:
             "report_model",
         ]
 
-    def test_yaml_data_uses_entry_name_dict_not_ger(self):
-        """ensure_data_for_yaml() should store the full bilingual entry_name dict,
-        not just the German string (which is what self_ensure() does)."""
-        report = _make_report(entry_name={"ger": "Test_DE", "eng": "Test_EN"})
+    def test_yaml_data_uses_entry_name_dict_not_single_value(self):
+        """ensure_data_for_yaml() should store the full multilingual entry_name dict,
+        not just the primary language string (which is what self_ensure() does)."""
+        report = _make_report(entry_name={"de_DE": "Test_DE", "en_US": "Test_EN"})
         result = report.ensure_data_for_yaml()
-        assert result["name"] == {"ger": "Test_DE", "eng": "Test_EN"}
+        assert result["name"] == {"de_DE": "Test_DE", "en_US": "Test_EN"}
 
     def test_yaml_data_key_order_without_company(self):
         """Verify the full key ordering when company_id is absent."""

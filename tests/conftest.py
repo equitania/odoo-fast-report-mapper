@@ -21,7 +21,37 @@ def yaml_test_dir():
 
 @pytest.fixture
 def sample_report_yaml_data():
-    """Complete report YAML data as a dictionary."""
+    """Complete report YAML data as a dictionary (modern locale codes)."""
+    return {
+        "name": {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
+        "report_name": "eq_fr_core_sale_order",
+        "report_type": "fast_report",
+        "print_report_name": "Verkaufsauftrag",
+        "report_model": "sale.order",
+        "eq_export_type": "pdf",
+        "eq_ignore_images": True,
+        "eq_handling_html_fields": "standard",
+        "eq_multiprint": "standard",
+        "multi": False,
+        "attachment": "Verkaufsauftrag.pdf",
+        "attachment_use": False,
+        "eq_print_button": False,
+        "dependencies": ["sale", "account"],
+        "report_fields": {
+            "sale.order": ["id", "name", "partner_id", "amount_total"],
+            "sale.order.line": ["product_id", "product_uom_qty", "price_unit"],
+        },
+        "calculated_fields": {
+            "payment_text": {
+                "eq_get_payment_terms": ["partner_id.lang", "currency_id"],
+            },
+        },
+    }
+
+
+@pytest.fixture
+def sample_report_yaml_data_legacy():
+    """Complete report YAML data with legacy language keys for backward compatibility testing."""
     return {
         "name": {"ger": "Verkaufsauftrag", "eng": "Sales_Order"},
         "report_name": "eq_fr_core_sale_order",
@@ -53,7 +83,7 @@ def sample_report_yaml_data():
 def sample_report_yaml_data_with_company():
     """Report YAML data with multi-company configuration."""
     return {
-        "name": {"ger": "Rechnung_MC", "eng": "Invoice_MC"},
+        "name": {"de_DE": "Rechnung_MC", "en_US": "Invoice_MC"},
         "report_name": "eq_fr_core_account_move",
         "report_type": "fast_report",
         "print_report_name": "Rechnung",
@@ -132,12 +162,31 @@ def mock_odoo_env(mock_odoorpc):
     mock_ir_module = MagicMock()
     mock_ir_module.search.return_value = [1]
 
+    # Mock res.lang for multi-language support
+    mock_res_lang = MagicMock()
+    mock_res_lang.search.return_value = [1, 2]
+    mock_lang_de = MagicMock()
+    mock_lang_de.code = "de_DE"
+    mock_lang_de.iso_code = "de"
+    mock_lang_de.name = "German / Deutsch"
+    mock_lang_en = MagicMock()
+    mock_lang_en.code = "en_US"
+    mock_lang_en.iso_code = "en"
+    mock_lang_en.name = "English (US)"
+    mock_res_lang.browse.side_effect = lambda x: {
+        "1": mock_lang_de,
+        "2": mock_lang_en,
+        1: mock_lang_de,
+        2: mock_lang_en,
+    }.get(x, MagicMock())
+
     def mock_env_getitem(key):
         env_map = {
             "ir.model": mock_ir_model,
             "ir.model.fields": mock_ir_model_fields,
             "ir.actions.report": mock_ir_actions_report,
             "ir.module.module": mock_ir_module,
+            "res.lang": mock_res_lang,
         }
         return env_map.get(key, MagicMock())
 
@@ -149,6 +198,7 @@ def mock_odoo_env(mock_odoorpc):
         "ir.model.fields": mock_ir_model_fields,
         "ir.actions.report": mock_ir_actions_report,
         "ir.module.module": mock_ir_module,
+        "res.lang": mock_res_lang,
     }
 
 
@@ -159,7 +209,7 @@ def tmp_yaml_dir(tmp_path):
     yaml_dir.mkdir()
 
     report_data = {
-        "name": {"ger": "Test_Report", "eng": "Test_Report"},
+        "name": {"de_DE": "Test_Report", "en_US": "Test_Report"},
         "report_name": "eq_fr_test",
         "report_type": "fast_report",
         "print_report_name": "Test",

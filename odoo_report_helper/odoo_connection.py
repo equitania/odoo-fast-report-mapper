@@ -6,6 +6,8 @@ import urllib
 
 import odoorpc
 
+from odoo_fast_report_mapper.lang_utils import build_name_search_domain
+
 from . import exceptions, utils
 
 logger = logging.getLogger(__name__)
@@ -112,14 +114,9 @@ class OdooConnection:
             "eq_function_name": function_name,
             "eq_parameters_name": parameters_as_string,
         }
+        name_domain = build_name_search_domain(report_name)
         report_id = IR_ACTIONS_REPORT.search(
-            [
-                ("model", "=", report_model),
-                ("report_type", "=", "fast_report"),
-                "|",
-                ("name", "=", report_name["ger"]),
-                ("name", "=", report_name["eng"]),
-            ]
+            [("model", "=", report_model), ("report_type", "=", "fast_report")] + name_domain
         )
         value_dict["eq_report_id"] = report_id[0]
         calculated_field_id = REPORT_CALC.search(

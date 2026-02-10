@@ -11,6 +11,7 @@ import yaml
 from odoo_report_helper.odoo_connection import OdooConnection
 
 from . import eq_report
+from .lang_utils import build_name_search_domain, get_primary_lang
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -31,61 +32,45 @@ class EqOdooConnection(OdooConnection):
         self.disable_qweb = disable_qweb
         self.workflow = workflow
 
+    def get_installed_languages(self):
+        """Query res.lang for all active languages in Odoo.
+
+        Returns:
+            list of dicts with 'code' (e.g. 'de_DE'), 'iso_code' (e.g. 'de'), 'name'.
+        """
+        RES_LANG = self.connection.env["res.lang"]
+        lang_ids = RES_LANG.search([("active", "=", True)])
+        languages = []
+        for lang_id in lang_ids:
+            lang_obj = RES_LANG.browse(lang_id)
+            languages.append(
+                {
+                    "code": lang_obj.code,
+                    "iso_code": lang_obj.iso_code,
+                    "name": lang_obj.name,
+                }
+            )
+        logger.info(f"Installed languages: {[lang['code'] for lang in languages]}")
+        return languages
+
     def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-        report_ids = IR_ACTIONS_REPORT.search(
-            [
-                ("model", "=ilike", model_name),
-                "|",
-                ("name", "=ilike", report_name["ger"]),
-                ("name", "=ilike", report_name["ger"] + " " + "(PDF)"),
-                "|",
-                ("company_id", "=", company_id),
-                ("company_id", "=", False),
-            ]
-        )
-        if len(report_ids) == 0 and "eng" in report_name:
-            report_ids = IR_ACTIONS_REPORT.search(
-                [
-                    ("model", "=", model_name),
-                    "|",
-                    ("name", "=", report_name["eng"]),
-                    ("name", "=", report_name["eng"] + " " + "(PDF)"),
-                    "|",
-                    ("company_id", "=", company_id),
-                    ("company_id", "=", False),
-                ]
-            )
+        name_domain = build_name_search_domain(report_name)
+        company_domain = ["|", ("company_id", "=", company_id), ("company_id", "=", False)]
+        report_ids = IR_ACTIONS_REPORT.search([("model", "=ilike", model_name)] + name_domain + company_domain)
         if len(report_ids) == 0:
             return False
-        else:
-            return report_ids[0]
+        return report_ids[0]
 
     def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-        report_ids = IR_ACTIONS_REPORT.search(
-            [
-                ("model", "=ilike", model_name),
-                "|",
-                ("name", "=ilike", report_name["ger"]),
-                ("name", "=ilike", report_name["ger"] + " " + "(PDF)"),
-            ]
-        )
-        if len(report_ids) == 0 and "eng" in report_name:
-            report_ids = IR_ACTIONS_REPORT.search(
-                [
-                    ("model", "=", model_name),
-                    "|",
-                    ("name", "=", report_name["eng"]),
-                    ("name", "=", report_name["eng"] + " " + "(PDF)"),
-                ]
-            )
+        name_domain = build_name_search_domain(report_name)
+        report_ids = IR_ACTIONS_REPORT.search([("model", "=ilike", model_name)] + name_domain)
         if len(report_ids) == 0:
             return False
-        else:
-            return report_ids[0]
+        return report_ids[0]
 
     def check_dependencies(self, dependencies):
         """
@@ -114,11 +99,17 @@ class EqOdooConnection(OdooConnection):
         models_fields = dict()
         model_name_ids = dict()
 
+        # Fetch installed languages once for multi-language translation
+        installed_langs = self.get_installed_languages()
+        installed_lang_codes = {lang["code"] for lang in installed_langs}
+
         logger.info(f"→ Mapping {len(report_list)} reports to Odoo...")
         for idx, report in enumerate(report_list, 1):
             logger.info(f"  [{idx}/{len(report_list)}] {report.report_name}")
             report.self_ensure()
-            report._data_dictionary["name"] = report.entry_name[self.language]
+            # Use primary language from name dict for default report name
+            primary_lang = get_primary_lang(report.entry_name)
+            report._data_dictionary["name"] = report.entry_name[primary_lang]
             dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
             if not dependencies_installed and not_installed_modules:
                 logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
@@ -146,6 +137,13 @@ class EqOdooConnection(OdooConnection):
                 report_object.write(report._data_dictionary)
             # Add report to print menu
             report_object.create_action()
+
+            # Set translations for all installed languages
+            for lang_code, translated_name in report.entry_name.items():
+                if lang_code in installed_lang_codes:
+                    report_object.with_context(lang=lang_code).write({"name": translated_name})
+                    logger.debug(f"    Set name [{lang_code}]: {translated_name}")
+
             IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
 
             # Count total fields for logging
@@ -258,30 +256,14 @@ class EqOdooConnection(OdooConnection):
             "eq_function_name": function_name,
             "eq_parameters_name": parameters_as_string,
         }
+        name_domain = build_name_search_domain(report_name)
+        base_domain = [("model", "=", report_model), ("report_type", "=", "fast_report")]
         if report_company_id:
             IR_ACTIONS_REPORT.env.user.company_id = report_company_id
-            report_id = IR_ACTIONS_REPORT.search(
-                [
-                    ("model", "=", report_model),
-                    ("report_type", "=", "fast_report"),
-                    "|",
-                    ("name", "=", report_name["ger"]),
-                    ("name", "=", report_name["eng"]),
-                    "|",
-                    ("company_id", "=", report_company_id),
-                    ("company_id", "=", False),
-                ]
-            )
+            company_domain = ["|", ("company_id", "=", report_company_id), ("company_id", "=", False)]
+            report_id = IR_ACTIONS_REPORT.search(base_domain + name_domain + company_domain)
         else:
-            report_id = IR_ACTIONS_REPORT.search(
-                [
-                    ("model", "=", report_model),
-                    ("report_type", "=", "fast_report"),
-                    "|",
-                    ("name", "=", report_name["ger"]),
-                    ("name", "=", report_name["eng"]),
-                ]
-            )
+            report_id = IR_ACTIONS_REPORT.search(base_domain + name_domain)
         value_dict["eq_report_id"] = report_id[0]
         calculated_field_id = REPORT_CALC.search(
             [("eq_report_id", "=", report_id[0]), ("eq_field_name", "=", field_name)]
@@ -444,10 +426,17 @@ class EqOdooConnection(OdooConnection):
         if "company_id" in field_dictionary:
             self.connection.env.user.company_id = field_dictionary["company_id"][0]
         action_object = IR_ACTIONS_REPORT.browse(action_id)
-        # Collect attributes
-        name = {self.language: action_object.name}
-        if self.language != "eng":
-            name["eng"] = action_object.with_context(lang="en_US").name
+        # Collect name in all installed languages
+        installed_langs = self.get_installed_languages()
+        name = {}
+        for lang in installed_langs:
+            lang_code = lang["code"]
+            translated_name = action_object.with_context(lang=lang_code).name
+            if translated_name:
+                name[lang_code] = translated_name
+        # Fallback: ensure at least primary language is present
+        if not name:
+            name = {self.language: action_object.name}
         report_name = action_object.report_name
         report_type = action_object.report_type
         eq_export_type = action_object.eq_export_type
