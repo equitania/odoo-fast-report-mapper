@@ -89,3 +89,33 @@ def build_name_search_domain(name_dict: dict) -> list:
         return all_variants
     or_operators = ["|"] * (len(all_variants) - 1)
     return or_operators + all_variants
+
+
+def resolve_attachment_value(attachment, company_lang, fallback_lang=None):
+    """Resolve per-language attachment dict to single string value.
+
+    Unlike print_report_name (translatable, written per language via with_context),
+    attachment is a plain Char field — NOT translatable. Only one value is written,
+    resolved based on the company's language.
+
+    Fallback chain: company_lang -> fallback_lang -> get_primary_lang() -> first value.
+    Strings pass through unchanged (backward compatibility).
+
+    Args:
+        attachment: Either a string (legacy) or dict mapping locale codes to values.
+        company_lang: Odoo locale code from res.company.partner_id.lang (e.g. 'de_DE').
+        fallback_lang: Optional fallback locale code (e.g. connection language).
+
+    Returns:
+        Single string value for the attachment field.
+    """
+    if not isinstance(attachment, dict):
+        return attachment
+    if company_lang in attachment:
+        return attachment[company_lang]
+    if fallback_lang and fallback_lang in attachment:
+        return attachment[fallback_lang]
+    primary = get_primary_lang(attachment)
+    if primary in attachment:
+        return attachment[primary]
+    return next(iter(attachment.values()))

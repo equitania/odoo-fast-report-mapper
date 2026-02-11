@@ -616,6 +616,193 @@ class TestDisableQwebReports:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# map_reports() tests — print_report_name multi-language
+# ---------------------------------------------------------------------------
+
+
+class TestMapReportsPrintReportName:
+    """Verify print_report_name is written for all installed languages."""
+
+    def _setup_map_reports(self, conn, report):
+        """Helper to set up mocks for map_reports tests."""
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [42]
+        mock_report_obj = MagicMock()
+        mock_report_obj.id = 42
+        mock_ir_report.browse.return_value = mock_report_obj
+
+        mock_ctx_obj = MagicMock()
+        mock_report_obj.with_context = MagicMock(return_value=mock_ctx_obj)
+
+        mock_ir_model = MagicMock()
+        mock_ir_model_fields = MagicMock()
+
+        def mock_env_getitem(key):
+            mapping = {
+                "ir.actions.report": mock_ir_report,
+                "ir.model": mock_ir_model,
+                "ir.model.fields": mock_ir_model_fields,
+            }
+            return mapping.get(key, MagicMock())
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+        conn.connection.env.user.company_id = 1
+
+        return mock_report_obj, mock_ctx_obj
+
+    def _make_report_mock(self, print_report_name):
+        """Helper to create a minimal report mock."""
+        report = MagicMock()
+        report.entry_name = {"de_DE": "Angebot", "en_US": "Quotation"}
+        report.report_name = "eq_fr_sale_order"
+        report.model_name = "sale.order"
+        report.company_id = False
+        report._dependencies = []
+        report._fields = {}
+        report._calculated_fields = {}
+        report._data_dictionary = {}
+        report.print_report_name = print_report_name
+        return report
+
+    def test_map_reports_dict_print_report_name_per_language(self):
+        """Dict print_report_name: each language gets its own expression via with_context."""
+        conn = _make_eq_connection()
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+            {"code": "sr@latin", "iso_code": "sr", "name": "Serbian (Latin)"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        prn_dict = {
+            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
+            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
+        }
+        report = self._make_report_mock(prn_dict)
+
+        mock_report_obj, mock_ctx_obj = self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        # Collect write payloads
+        write_calls = mock_ctx_obj.write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+
+        # Only de_DE and en_US are in the dict — sr@latin is NOT, so only 2 writes
+        assert len(prn_writes) == 2, f"Expected 2 print_report_name writes (one per dict key), got {len(prn_writes)}"
+
+    def test_map_reports_dict_print_report_name_correct_values(self):
+        """Dict print_report_name: each language gets its correct expression value."""
+        conn = _make_eq_connection()
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        prn_dict = {
+            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
+            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
+        }
+        report = self._make_report_mock(prn_dict)
+
+        mock_report_obj, mock_ctx_obj = self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        # Collect (lang_code, prn_value) from with_context/write calls
+        ctx_calls = mock_report_obj.with_context.call_args_list
+        write_calls = mock_ctx_obj.write.call_args_list
+
+        prn_lang_values = {}
+        for ctx_call, write_call in zip(ctx_calls, write_calls, strict=False):
+            if "print_report_name" in write_call[0][0]:
+                lang = ctx_call[1].get("lang") if ctx_call[1] else ctx_call[0][0]
+                prn_lang_values[lang] = write_call[0][0]["print_report_name"]
+
+        assert prn_lang_values.get("de_DE") == prn_dict["de_DE"]
+        assert prn_lang_values.get("en_US") == prn_dict["en_US"]
+
+    def test_map_reports_string_print_report_name_all_languages(self):
+        """String print_report_name (legacy): same value written for ALL installed languages."""
+        conn = _make_eq_connection()
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+            {"code": "sr@latin", "iso_code": "sr", "name": "Serbian (Latin)"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        prn_string = "('Angebot-' + (object.name or '').replace('/','')"
+        report = self._make_report_mock(prn_string)
+
+        _, mock_ctx_obj = self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        write_calls = mock_ctx_obj.write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+
+        # String fallback: one write per installed language (3 languages)
+        assert len(prn_writes) == 3, (
+            f"Expected 3 print_report_name writes (one per installed lang), got {len(prn_writes)}"
+        )
+
+        # All writes should contain the same expression
+        for write_call in prn_writes:
+            assert write_call[0][0]["print_report_name"] == prn_string
+
+    def test_map_reports_skips_print_report_name_when_empty(self):
+        """print_report_name should not be written when it is empty/falsy."""
+        conn = _make_eq_connection()
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        report = self._make_report_mock("")  # Empty — should skip
+
+        _, mock_ctx_obj = self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        write_calls = mock_ctx_obj.write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+
+        assert len(prn_writes) == 0, "print_report_name should not be written when empty"
+
+    def test_map_reports_dict_skips_uninstalled_languages(self):
+        """Dict print_report_name: languages not installed in Odoo should be skipped."""
+        conn = _make_eq_connection()
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        prn_dict = {
+            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
+            "fr_FR": "('Devis-' + (object.name or '').replace('/','')",  # Not installed
+        }
+        report = self._make_report_mock(prn_dict)
+
+        _, mock_ctx_obj = self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        write_calls = mock_ctx_obj.write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+
+        # Only de_DE should be written, fr_FR is not installed
+        assert len(prn_writes) == 1
+
+
 class TestGetInstalledLanguages:
     """Verify installed language retrieval from res.lang."""
 
@@ -671,3 +858,224 @@ class TestGetInstalledLanguages:
 
         call_args = mock_res_lang.search.call_args[0][0]
         assert ("active", "=", True) in call_args
+
+
+# ---------------------------------------------------------------------------
+# get_company_language() tests
+# ---------------------------------------------------------------------------
+
+
+class TestGetCompanyLanguage:
+    """Verify company language lookup from res.company.partner_id.lang."""
+
+    def test_returns_partner_lang(self):
+        """get_company_language must return partner_id.lang value."""
+        conn = _make_eq_connection(language="de_DE")
+        mock_company = MagicMock()
+        mock_company.partner_id.lang = "en_US"
+        mock_res_company = MagicMock()
+        mock_res_company.browse.return_value = mock_company
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+
+        result = conn.get_company_language(1)
+
+        assert result == "en_US"
+
+    def test_fallback_when_partner_lang_empty(self):
+        """get_company_language must fall back to self.language when partner_id.lang is empty."""
+        conn = _make_eq_connection(language="de_DE")
+        mock_company = MagicMock()
+        mock_company.partner_id.lang = ""
+        mock_res_company = MagicMock()
+        mock_res_company.browse.return_value = mock_company
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+
+        result = conn.get_company_language(1)
+
+        assert result == "de_DE"
+
+    def test_fallback_on_exception(self):
+        """get_company_language must fall back to self.language on RPC exception."""
+        conn = _make_eq_connection(language="de_DE")
+        mock_res_company = MagicMock()
+        mock_res_company.browse.side_effect = Exception("RPC error")
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+
+        result = conn.get_company_language(1)
+
+        assert result == "de_DE"
+
+    def test_cache_prevents_second_rpc(self):
+        """get_company_language must cache result — second call should not hit RPC."""
+        conn = _make_eq_connection(language="de_DE")
+        mock_company = MagicMock()
+        mock_company.partner_id.lang = "fr_FR"
+        mock_res_company = MagicMock()
+        mock_res_company.browse.return_value = mock_company
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+
+        result1 = conn.get_company_language(1)
+        result2 = conn.get_company_language(1)
+
+        assert result1 == "fr_FR"
+        assert result2 == "fr_FR"
+        # browse should only be called once due to caching
+        mock_res_company.browse.assert_called_once_with(1)
+
+    def test_different_company_ids_cached_separately(self):
+        """get_company_language must cache per company_id."""
+        conn = _make_eq_connection(language="de_DE")
+
+        mock_company_1 = MagicMock()
+        mock_company_1.partner_id.lang = "en_US"
+        mock_company_2 = MagicMock()
+        mock_company_2.partner_id.lang = "fr_FR"
+
+        mock_res_company = MagicMock()
+        mock_res_company.browse.side_effect = [mock_company_1, mock_company_2]
+
+        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+
+        result1 = conn.get_company_language(1)
+        result2 = conn.get_company_language(2)
+
+        assert result1 == "en_US"
+        assert result2 == "fr_FR"
+        assert mock_res_company.browse.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# map_reports() tests — attachment dict resolution
+# ---------------------------------------------------------------------------
+
+
+class TestMapReportsAttachment:
+    """Verify attachment dict is resolved based on company language."""
+
+    def _setup_map_reports(self, conn, report):
+        """Helper to set up mocks for map_reports tests."""
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [42]
+        mock_report_obj = MagicMock()
+        mock_report_obj.id = 42
+        mock_ir_report.browse.return_value = mock_report_obj
+
+        mock_ctx_obj = MagicMock()
+        mock_report_obj.with_context = MagicMock(return_value=mock_ctx_obj)
+
+        mock_ir_model = MagicMock()
+        mock_ir_model_fields = MagicMock()
+
+        def mock_env_getitem(key):
+            mapping = {
+                "ir.actions.report": mock_ir_report,
+                "ir.model": mock_ir_model,
+                "ir.model.fields": mock_ir_model_fields,
+            }
+            return mapping.get(key, MagicMock())
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+        conn.connection.env.user.company_id = 1
+
+        return mock_ir_report, mock_report_obj
+
+    def _make_report_mock(self, attachment, company_id=False):
+        """Helper to create a minimal report mock with attachment."""
+        report = MagicMock()
+        report.entry_name = {"de_DE": "Angebot", "en_US": "Quotation"}
+        report.report_name = "eq_fr_sale_order"
+        report.model_name = "sale.order"
+        report.company_id = company_id
+        report._dependencies = []
+        report._fields = {}
+        report._calculated_fields = {}
+        report._data_dictionary = {}
+        report.print_report_name = ""
+        report.attachment = attachment
+
+        # Make self_ensure() populate _data_dictionary like the real implementation
+        def mock_self_ensure():
+            report._data_dictionary = {
+                "name": "Angebot",
+                "report_name": report.report_name,
+                "report_type": "fast_report",
+                "print_report_name": "",
+                "model": report.model_name,
+                "company_id": report.company_id[0] if report.company_id else False,
+                "eq_export_type": "pdf",
+                "eq_ignore_images": True,
+                "eq_handling_html_fields": "standard",
+                "eq_multiprint": "standard",
+                "multi": False,
+                "attachment": attachment if not isinstance(attachment, dict) else "Angebot.pdf",
+                "attachment_use": False,
+                "eq_print_button": False,
+            }
+
+        report.self_ensure = mock_self_ensure
+        return report
+
+    def test_dict_attachment_resolved_by_company_lang(self):
+        """Dict attachment must be resolved to company language value."""
+        conn = _make_eq_connection(language="de_DE")
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        # Mock company language lookup to return en_US
+        conn.get_company_language = MagicMock(return_value="en_US")
+
+        attachment_dict = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        report = self._make_report_mock(attachment_dict, company_id=[5])
+
+        self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        # The data_dictionary should have the en_US value since company speaks English
+        assert report._data_dictionary["attachment"] == "Quotation.pdf"
+
+    def test_string_attachment_unchanged(self):
+        """String attachment must pass through unchanged."""
+        conn = _make_eq_connection(language="de_DE")
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        report = self._make_report_mock("Report.pdf")
+
+        self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        # String attachment is set by self_ensure() and should stay unchanged
+        assert report._data_dictionary["attachment"] == "Report.pdf"
+
+    def test_dict_attachment_without_company_id_uses_connection_language(self):
+        """Dict attachment without company_id must use self.language as fallback."""
+        conn = _make_eq_connection(language="de_DE")
+
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+        ]
+        conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+        attachment_dict = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        report = self._make_report_mock(attachment_dict, company_id=False)
+
+        self._setup_map_reports(conn, report)
+
+        conn.map_reports([report])
+
+        # No company_id -> should use self.language (de_DE)
+        assert report._data_dictionary["attachment"] == "Angebot.pdf"

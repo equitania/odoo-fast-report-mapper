@@ -10,6 +10,7 @@ from odoo_fast_report_mapper.lang_utils import (
     get_primary_lang,
     normalize_language_code,
     normalize_name_dict,
+    resolve_attachment_value,
 )
 
 # ---------------------------------------------------------------------------
@@ -191,3 +192,67 @@ class TestMappingConstants:
     def test_bidirectional_mapping(self):
         for legacy, locale in LEGACY_LANG_MAP.items():
             assert LOCALE_TO_LEGACY[locale] == legacy
+
+
+# ---------------------------------------------------------------------------
+# resolve_attachment_value() tests
+# ---------------------------------------------------------------------------
+
+
+class TestResolveAttachmentValue:
+    """Verify attachment dict resolution to single string value."""
+
+    def test_string_passthrough(self):
+        """String attachment passes through unchanged (backward compatibility)."""
+        assert resolve_attachment_value("Report.pdf", "de_DE") == "Report.pdf"
+
+    def test_none_passthrough(self):
+        """None/falsy attachment passes through unchanged."""
+        assert resolve_attachment_value(None, "de_DE") is None
+        assert resolve_attachment_value("", "de_DE") == ""
+        assert resolve_attachment_value(False, "de_DE") is False
+
+    def test_dict_company_lang_match(self):
+        """Dict attachment resolves to company_lang when present."""
+        attachment = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        assert resolve_attachment_value(attachment, "de_DE") == "Angebot.pdf"
+
+    def test_dict_company_lang_en_US(self):
+        """Dict attachment resolves to en_US when company speaks English."""
+        attachment = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        assert resolve_attachment_value(attachment, "en_US") == "Quotation.pdf"
+
+    def test_dict_fallback_lang(self):
+        """Dict attachment falls back to fallback_lang when company_lang not in dict."""
+        attachment = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        assert resolve_attachment_value(attachment, "fr_FR", fallback_lang="en_US") == "Quotation.pdf"
+
+    def test_dict_primary_lang_fallback(self):
+        """Dict attachment falls back to primary_lang (de_DE priority) when no match."""
+        attachment = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        assert resolve_attachment_value(attachment, "fr_FR") == "Angebot.pdf"
+
+    def test_dict_first_value_fallback(self):
+        """Dict attachment falls back to first value when nothing else matches."""
+        attachment = {"fr_FR": "Devis.pdf", "it_IT": "Preventivo.pdf"}
+        assert resolve_attachment_value(attachment, "ja_JP") == "Devis.pdf"
+
+    def test_complex_odoo_expression(self):
+        """Dict attachment with complex Odoo conditional expressions."""
+        attachment = {
+            "de_DE": "(object.state in ('draft','sent')) and ('Angebot-' + (object.name or '').replace('/','') + '.pdf')",
+            "en_US": "(object.state in ('draft','sent')) and ('Quotation-' + (object.name or '').replace('/','') + '.pdf')",
+        }
+        result = resolve_attachment_value(attachment, "en_US")
+        assert "Quotation" in result
+        assert "object.state" in result
+
+    def test_fallback_lang_not_used_when_company_lang_matches(self):
+        """Fallback_lang is not used when company_lang is present in dict."""
+        attachment = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
+        assert resolve_attachment_value(attachment, "de_DE", fallback_lang="en_US") == "Angebot.pdf"
+
+    def test_single_language_dict(self):
+        """Single-language dict always returns that value."""
+        attachment = {"de_DE": "Bericht.pdf"}
+        assert resolve_attachment_value(attachment, "en_US") == "Bericht.pdf"

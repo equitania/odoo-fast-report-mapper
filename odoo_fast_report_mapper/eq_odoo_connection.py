@@ -11,7 +11,7 @@ import yaml
 from odoo_report_helper.odoo_connection import OdooConnection
 
 from . import eq_report
-from .lang_utils import build_name_search_domain, get_primary_lang
+from .lang_utils import build_name_search_domain, get_primary_lang, resolve_attachment_value
 from .logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -52,6 +52,30 @@ class EqOdooConnection(OdooConnection):
             )
         logger.info(f"Installed languages: {[lang['code'] for lang in languages]}")
         return languages
+
+    def get_company_language(self, company_id):
+        """Look up company language from res.company.partner_id.lang.
+
+        Cached per company_id. Falls back to self.language when the partner
+        language is empty or an RPC error occurs.
+
+        Args:
+            company_id: Odoo res.company ID (integer).
+
+        Returns:
+            Odoo locale code string (e.g. 'de_DE').
+        """
+        if not hasattr(self, "_company_lang_cache"):
+            self._company_lang_cache = {}
+        if company_id in self._company_lang_cache:
+            return self._company_lang_cache[company_id]
+        try:
+            company_obj = self.connection.env["res.company"].browse(company_id)
+            lang = company_obj.partner_id.lang or self.language
+        except Exception:
+            lang = self.language
+        self._company_lang_cache[company_id] = lang
+        return lang
 
     def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
         if not IR_ACTIONS_REPORT:
@@ -110,6 +134,17 @@ class EqOdooConnection(OdooConnection):
             # Use primary language from name dict for default report name
             primary_lang = get_primary_lang(report.entry_name)
             report._data_dictionary["name"] = report.entry_name[primary_lang]
+            # Resolve attachment dict to single value based on company language
+            if isinstance(report.attachment, dict):
+                company_id_val = report.company_id[0] if report.company_id else False
+                if company_id_val:
+                    company_lang = self.get_company_language(company_id_val)
+                else:
+                    company_lang = self.language
+                report._data_dictionary["attachment"] = resolve_attachment_value(
+                    report.attachment, company_lang, fallback_lang=self.language
+                )
+                logger.debug(f"    Resolved attachment for company lang [{company_lang}]")
             dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
             if not dependencies_installed and not_installed_modules:
                 logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
@@ -143,6 +178,22 @@ class EqOdooConnection(OdooConnection):
                 if lang_code in installed_lang_codes:
                     report_object.with_context(lang=lang_code).write({"name": translated_name})
                     logger.debug(f"    Set name [{lang_code}]: {translated_name}")
+
+            # Set print_report_name translations
+            if report.print_report_name:
+                if isinstance(report.print_report_name, dict):
+                    # Per-language dict: write each language's expression
+                    for lang_code, prn_value in report.print_report_name.items():
+                        if lang_code in installed_lang_codes:
+                            report_object.with_context(lang=lang_code).write({"print_report_name": prn_value})
+                            logger.debug(f"    Set print_report_name [{lang_code}]")
+                else:
+                    # Legacy single string: write to all installed languages
+                    for lang_code in installed_lang_codes:
+                        report_object.with_context(lang=lang_code).write(
+                            {"print_report_name": report.print_report_name}
+                        )
+                logger.debug("    print_report_name configured")
 
             IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
 
@@ -440,7 +491,15 @@ class EqOdooConnection(OdooConnection):
         report_name = action_object.report_name
         report_type = action_object.report_type
         eq_export_type = action_object.eq_export_type
-        print_report_name = action_object.print_report_name
+        # Collect print_report_name in all installed languages (same pattern as name)
+        print_report_name = {}
+        for lang in installed_langs:
+            lang_code = lang["code"]
+            translated_prn = action_object.with_context(lang=lang_code).print_report_name
+            if translated_prn:
+                print_report_name[lang_code] = translated_prn
+        if not print_report_name:
+            print_report_name = action_object.print_report_name or ""
         model_name = action_object.model
         eq_ignore_images = action_object.eq_ignore_images
         eq_handling_html_fields = action_object.eq_handling_html_fields

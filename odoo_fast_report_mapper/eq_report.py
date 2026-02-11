@@ -59,7 +59,11 @@ class EqReport(Report):
             "name": self.entry_name[primary_lang],
             "report_name": self.report_name,
             "report_type": self.report_type,
-            "print_report_name": self.print_report_name,
+            "print_report_name": (
+                self.print_report_name[get_primary_lang(self.print_report_name)]
+                if isinstance(self.print_report_name, dict)
+                else self.print_report_name
+            ),
             "model": self.model_name,
             "company_id": self.company_id[0] if self.company_id else False,
             "eq_export_type": self.eq_export_type,
@@ -67,7 +71,11 @@ class EqReport(Report):
             "eq_handling_html_fields": self.eq_handling_html_fields,
             "eq_multiprint": self.eq_multiprint,
             "multi": self.multi,
-            "attachment": self.attachment,
+            "attachment": (
+                self.attachment[get_primary_lang(self.attachment)]
+                if isinstance(self.attachment, dict)
+                else self.attachment
+            ),
             "attachment_use": self.attachment_use,
             "eq_print_button": self.eq_print_button,
         }

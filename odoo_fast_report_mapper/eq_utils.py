@@ -80,6 +80,14 @@ def create_report_object_from_yaml_object(yaml_object):
     """
     # Normalize legacy language keys (ger/eng) to Odoo locale codes (de_DE/en_US)
     name_dict = normalize_name_dict(yaml_object["name"])
+    # Normalize print_report_name dict keys if it's a per-language dict
+    print_report_name = yaml_object["print_report_name"]
+    if isinstance(print_report_name, dict):
+        print_report_name = normalize_name_dict(print_report_name)
+    # Normalize attachment dict keys if it's a per-language dict
+    attachment = yaml_object["attachment"]
+    if isinstance(attachment, dict):
+        attachment = normalize_name_dict(attachment)
     report = eq_report.EqReport(
         name_dict,
         yaml_object["report_name"],
@@ -87,8 +95,8 @@ def create_report_object_from_yaml_object(yaml_object):
         yaml_object["report_model"],
         yaml_object.get("company_id", False),
         yaml_object["eq_export_type"],
-        yaml_object["print_report_name"],
-        yaml_object["attachment"],
+        print_report_name,
+        attachment,
         yaml_object["eq_ignore_images"],
         yaml_object["eq_handling_html_fields"],
         yaml_object["multi"],

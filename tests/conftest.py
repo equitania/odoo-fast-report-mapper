@@ -106,6 +106,65 @@ def sample_report_yaml_data_with_company():
 
 
 @pytest.fixture
+def sample_report_yaml_data_dict_prn():
+    """Report YAML data with per-language dict print_report_name (new format)."""
+    return {
+        "name": {"de_DE": "Angebot", "en_US": "Quotation"},
+        "report_name": "eq_fr_sale_order",
+        "report_type": "fast_report",
+        "print_report_name": {
+            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
+            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
+        },
+        "report_model": "sale.order",
+        "eq_export_type": "pdf",
+        "eq_ignore_images": True,
+        "eq_handling_html_fields": "standard",
+        "eq_multiprint": "standard",
+        "multi": False,
+        "attachment": "Report.pdf",
+        "attachment_use": False,
+        "eq_print_button": False,
+        "dependencies": ["sale"],
+        "report_fields": {
+            "sale.order": ["id", "name", "partner_id"],
+        },
+        "calculated_fields": {},
+    }
+
+
+@pytest.fixture
+def sample_report_yaml_data_dict_attachment():
+    """Report YAML data with per-language dict attachment (new format)."""
+    return {
+        "name": {"de_DE": "Angebot", "en_US": "Quotation"},
+        "report_name": "eq_fr_sale_order",
+        "report_type": "fast_report",
+        "print_report_name": {
+            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
+            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
+        },
+        "report_model": "sale.order",
+        "eq_export_type": "pdf",
+        "eq_ignore_images": True,
+        "eq_handling_html_fields": "standard",
+        "eq_multiprint": "standard",
+        "multi": False,
+        "attachment": {
+            "de_DE": "(object.state in ('draft','sent')) and ('Angebot-' + (object.name or '').replace('/','') + '.pdf') or ('Auftrag-' + (object.name or '').replace('/','') + '.pdf')",
+            "en_US": "(object.state in ('draft','sent')) and ('Quotation-' + (object.name or '').replace('/','') + '.pdf') or ('Order-' + (object.name or '').replace('/','') + '.pdf')",
+        },
+        "attachment_use": True,
+        "eq_print_button": False,
+        "dependencies": ["sale"],
+        "report_fields": {
+            "sale.order": ["id", "name", "partner_id"],
+        },
+        "calculated_fields": {},
+    }
+
+
+@pytest.fixture
 def sample_connection_yaml_data():
     """Server connection YAML data as a dictionary."""
     return {
