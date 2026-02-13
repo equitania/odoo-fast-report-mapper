@@ -1,0 +1,10 @@
+# odoo-fast-report-mapper | python/uv
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▸ Setup:     uv venv && venv+ && uvpip
+▸ Dev:       uv pip install -e ".[dev]"
+▸ Run:       odoo-fr-mapper --yaml_path=./reports_yaml
+▸ Test:      pytest
+▸ Lint:      ruff check . && ruff format --check .
+▸ Build:     uv build
+▸ Types:     mypy odoo_fast_report_mapper odoo_report_helper
+▸ Docs:      https://www.ownerp.com/odoo-fastreport

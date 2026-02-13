@@ -129,8 +129,7 @@ odoo-fast-report-mapper/
 │   ├── connection_yaml/             # Server config examples
 │   └── reports_yaml/                # Report config examples
 ├── tests/                           # Unit tests
-├── helper_scripts/                  # Development tools
-└── setup.py                        # Package configuration
+└── pyproject.toml                  # Package configuration & build system
 ```
 
 ## Dependencies

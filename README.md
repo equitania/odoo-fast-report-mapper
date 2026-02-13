@@ -59,6 +59,12 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 - tqdm (>= 4.65.0)
 - python-dotenv (>= 0.19.0)
 
+### Mit uv installieren (empfohlen) / Install with uv (recommended)
+
+```bash
+uv pip install odoo-fast-report-mapper-equitania
+```
+
 ### Mit pip installieren / Install with pip
 
 ```bash
@@ -71,14 +77,11 @@ pip install odoo-fast-report-mapper-equitania
 # Virtuelles Environment erstellen / Create virtual environment
 uv venv && source .venv/bin/activate
 
-# oder mit traditionellem pip / or with traditional pip
-python -m venv .venv && source .venv/bin/activate
+# Abhängigkeiten + Paket im Entwicklungsmodus installieren / Install dependencies + package in dev mode
+uv pip install -e .
 
-# Abhängigkeiten installieren / Install dependencies
-pip install -r requirements.txt
-
-# Paket im Entwicklungsmodus installieren / Install package in development mode
-pip install -e .
+# Mit Development-Tools (Linting, Testing, Type-Checking) / With development tools
+uv pip install -e ".[dev]"
 ```
 
 ### Lokales Testen & Paket erstellen / Local Testing & Building
@@ -90,7 +93,7 @@ source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate  # Windows
 
 # 2. Development-Dependencies installieren / Install development dependencies
-pip install -r requirements-dev.txt
+uv pip install -e ".[dev]"
 
 # 3. Code-Formatierung prüfen / Check code formatting
 ruff check .
@@ -101,17 +104,15 @@ pytest tests/ -v
 
 # 5. Paket lokal bauen / Build package locally
 uv build
-# oder mit setuptools / or with setuptools
-python setup.py sdist bdist_wheel
 
 # 6. Lokales Paket installieren / Install local package
-pip install dist/odoo-fast-report-mapper-equitania-*.tar.gz
+uv pip install dist/odoo-fast-report-mapper-equitania-*.tar.gz
 
 # 7. Paket testen / Test the package
 odoo-fast-report-mapper --help
 
-# 8. Paket-Integrität prüfen / Check package integrity
-twine check dist/*
+# 8. Paket-Integrität prüfen (optional) / Check package integrity (optional)
+twine check dist/*  # Requires: uv pip install twine
 ```
 
 ### Version aktualisieren & veröffentlichen / Update Version & Publish
@@ -119,7 +120,7 @@ twine check dist/*
 ```bash
 # 1. Version in __version__.py anpassen / Update version in __version__.py
 # Editiere: odoo_fast_report_mapper/__version__.py
-# __version__ = "0.1.26"  # Beispiel / Example
+# __version__ = "0.6.1"  # Beispiel / Example
 
 # 2. Changelog aktualisieren / Update changelog
 # Dokumentiere Änderungen / Document changes
@@ -129,8 +130,8 @@ uv build
 twine upload dist/*
 
 # 4. Git Tag erstellen / Create git tag
-git tag v0.1.26
-git push origin v0.1.26
+git tag v0.6.1
+git push origin v0.6.1
 ```
 
 **Hinweis:** Die Version wird zentral in `odoo_fast_report_mapper/__version__.py` verwaltet und automatisch von `pyproject.toml` übernommen.
@@ -144,7 +145,10 @@ git push origin v0.1.26
 **1. Erstelle eine .env Datei / Create a .env file:**
 
 ```bash
-# Kopiere die Beispiel-Datei / Copy the example file
+# Option A: Automatisch generieren / Auto-generate template
+odoo-fr-mapper --init
+
+# Option B: Manuell kopieren / Copy manually
 cp .env.example .env
 
 # Bearbeite .env mit deinen Zugangsdaten / Edit .env with your credentials
@@ -173,6 +177,9 @@ odoo-fr-mapper --version
 
 # Hilfe anzeigen / Show help
 odoo-fast-report-mapper --help
+
+# .env Template generieren / Generate .env template
+odoo-fr-mapper --init
 
 # Interaktiver Modus / Interactive mode
 odoo-fast-report-mapper
@@ -255,7 +262,15 @@ name:
   fr_FR: Rapport_Francais              # Additional languages (optional)
 report_name: eq_fr_sales_report
 report_model: sale.order
+
+# Attachment - einfacher String oder sprachabhängig per Dict
+# Simple string or company-language-aware dict
 attachment: ('Sales_Report.pdf')
+# Oder / Or (resolved per company language with fallback chain):
+# attachment:
+#   de_DE: "('Angebot-' + (object.name or '').replace('/','') + '.pdf')"
+#   en_US: "('Quotation-' + (object.name or '').replace('/','') + '.pdf')"
+
 print_report_name: ('Sales Report')
 
 # Eigenschaften / Properties
@@ -310,8 +325,10 @@ calculated_fields:
 1. **CLI Interface** (`odoo_fast_report_mapper.py`): Befehlszeileninterface mit Click
 2. **Connection Manager** (`odoo_connection.py`): OdooRPC-Integration und Verbindungsmanagement
 3. **Report Processing** (`eq_report.py`): Report-Objekte und Validierung
-4. **Language Utilities** (`lang_utils.py`): Sprachnormalisierung, Multi-Language-Logik
+4. **Language Utilities** (`lang_utils.py`): Sprachnormalisierung, Multi-Language-Logik, Attachment-Auflösung
 5. **Utilities** (`eq_utils.py`): YAML-Verarbeitung und Hilfsfunktionen
+6. **Logging** (`logging_config.py`): Zentrales Logging mit farbiger Konsolenausgabe und Rotation
+7. **Progress Tracking** (`progress.py`): tqdm-basierte Fortschrittsanzeige für Mapping-Operationen
 
 ### Datenfluss / Data Flow
 
@@ -343,11 +360,14 @@ python -m pytest tests/ --cov=odoo_fast_report_mapper
 ### Manuelle Tests / Manual Testing
 
 ```bash
-# Verbindung testen / Test connection
-python -c "from odoo_report_helper import utils; print(utils.prepare_connection('https://demo.odoo.com', 443))"
+# .env-basierte Verbindung testen / Test .env-based connection
+python -c "from odoo_fast_report_mapper import eq_utils; conn = eq_utils.create_connection_from_env(); print(conn)"
 
 # YAML-Parsing testen / Test YAML parsing
 python -c "from odoo_report_helper import utils; print(utils.parse_yaml('yaml_examples/reports_yaml/template.yaml'))"
+
+# CLI-Hilfe prüfen / Check CLI help
+odoo-fr-mapper --help
 ```
 
 ---
@@ -357,14 +377,11 @@ python -c "from odoo_report_helper import utils; print(utils.parse_yaml('yaml_ex
 ### Paket erstellen / Build Package
 
 ```bash
-# Mit setuptools / With setuptools
-python setup.py sdist bdist_wheel
-
 # Mit UV (empfohlen / recommended)
 uv build
 
-# Paket prüfen / Check package
-twine check dist/*
+# Paket prüfen (optional) / Check package (optional)
+twine check dist/*  # Requires: uv pip install twine
 ```
 
 ### Code-Qualität / Code Quality
@@ -399,7 +416,7 @@ export HTTPS_PROXY=https://proxy.company.com:8080
 #### Modul-Abhängigkeiten / Module Dependencies
 ```bash
 # Fehlende Module prüfen / Check missing modules
-odoo-fast-report-mapper --server_path=./config --yaml_path=./reports 2>&1 | grep "NOT INSTALLED"
+odoo-fr-mapper --yaml_path=./reports 2>&1 | grep "NOT INSTALLED"
 ```
 
 #### YAML-Syntaxfehler / YAML Syntax Errors
