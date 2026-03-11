@@ -949,6 +949,240 @@ class TestGetCompanyLanguage:
 
 
 # ---------------------------------------------------------------------------
+# list_fast_reports() tests
+# ---------------------------------------------------------------------------
+
+
+class TestListFastReports:
+    """Verify listing of FastReport entries across companies."""
+
+    def _setup_connection_with_reports(self, conn, reports_per_company):
+        """Helper to set up mocked Odoo env with FastReport entries.
+
+        Args:
+            conn: EqOdooConnection instance
+            reports_per_company: dict mapping company_id to list of report dicts
+                Each report dict has: id, report_name, name, model, eq_export_type
+        """
+        all_company_ids = list(reports_per_company.keys())
+        conn.connection.env.user.company_ids.ids = all_company_ids
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+        conn.connection.env.user.company_id = MagicMock()
+        conn.connection.env.user.company_id.ids = all_company_ids
+
+        mock_ir_report = MagicMock()
+        mock_res_company = MagicMock()
+
+        # Track which company is currently set to return correct reports
+        current_company = {"id": all_company_ids[0]}
+
+        def set_company(val):
+            current_company["id"] = val
+
+        type(conn.connection.env.user).company_id = property(
+            lambda self: current_company["id"],
+            lambda self, val: set_company(val),
+        )
+
+        def search_side_effect(domain):
+            cid = current_company["id"]
+            reports = reports_per_company.get(cid, [])
+            return [r["id"] for r in reports]
+
+        mock_ir_report.search = MagicMock(side_effect=search_side_effect)
+
+        report_objs = {}
+        for reports in reports_per_company.values():
+            for r in reports:
+                obj = MagicMock()
+                obj.report_name = r["report_name"]
+                obj.name = r["name"]
+                obj.model = r["model"]
+                obj.eq_export_type = r.get("eq_export_type", "pdf")
+                report_objs[r["id"]] = obj
+
+        mock_ir_report.browse = MagicMock(side_effect=lambda rid: report_objs[rid])
+
+        company_names = {1: "Company A", 2: "Company B", 3: "Company C"}
+
+        def browse_company(cid):
+            obj = MagicMock()
+            obj.name = company_names.get(cid, f"Company {cid}")
+            return obj
+
+        mock_res_company.browse = MagicMock(side_effect=browse_company)
+
+        def mock_env_getitem(key):
+            if key == "ir.actions.report":
+                return mock_ir_report
+            if key == "res.company":
+                return mock_res_company
+            return MagicMock()
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+
+        return mock_ir_report
+
+    def test_returns_correct_structure(self):
+        """list_fast_reports must return list of dicts with expected keys."""
+        conn = _make_eq_connection()
+        self._setup_connection_with_reports(
+            conn,
+            {
+                1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales Order", "model": "sale.order"}],
+            },
+        )
+
+        result = conn.list_fast_reports()
+
+        assert len(result) == 1
+        r = result[0]
+        assert r["id"] == 10
+        assert r["report_name"] == "eq_fr_sale"
+        assert r["name"] == "Sales Order"
+        assert r["model"] == "sale.order"
+        assert r["company"] == "Company A"
+        assert "export_type" in r
+
+    def test_deduplicates_by_report_name(self):
+        """list_fast_reports must deduplicate reports with the same report_name."""
+        conn = _make_eq_connection()
+        self._setup_connection_with_reports(
+            conn,
+            {
+                1: [
+                    {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
+                ],
+                2: [
+                    {"id": 20, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
+                ],
+            },
+        )
+
+        result = conn.list_fast_reports()
+
+        assert len(result) == 1
+        assert result[0]["id"] == 10
+
+    def test_multiple_reports_across_companies(self):
+        """list_fast_reports must collect unique reports from all companies."""
+        conn = _make_eq_connection()
+        self._setup_connection_with_reports(
+            conn,
+            {
+                1: [
+                    {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
+                ],
+                2: [
+                    {"id": 20, "report_name": "eq_fr_invoice", "name": "Invoice", "model": "account.move"},
+                ],
+            },
+        )
+
+        result = conn.list_fast_reports()
+
+        assert len(result) == 2
+        names = {r["report_name"] for r in result}
+        assert names == {"eq_fr_sale", "eq_fr_invoice"}
+
+    def test_empty_database(self):
+        """list_fast_reports must return empty list when no FastReports exist."""
+        conn = _make_eq_connection()
+        self._setup_connection_with_reports(conn, {1: []})
+
+        result = conn.list_fast_reports()
+
+        assert result == []
+
+
+# ---------------------------------------------------------------------------
+# collect_report_entries() with filter tests
+# ---------------------------------------------------------------------------
+
+
+class TestCollectReportEntries:
+    """Verify collect_report_entries with optional report_ids filter."""
+
+    def test_collect_all_report_entries_delegates(self):
+        """collect_all_report_entries must delegate to collect_report_entries."""
+        conn = _make_eq_connection()
+        conn.collect_report_entries = MagicMock()
+
+        conn.collect_all_report_entries("/tmp/output")
+
+        conn.collect_report_entries.assert_called_once_with("/tmp/output")
+
+    def test_collect_report_entries_with_filter_adds_domain(self):
+        """collect_report_entries with report_ids must add ID filter to search domain."""
+        conn = _make_eq_connection()
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+        mock_ir_model_fields = MagicMock()
+        mock_ir_model_fields.search.return_value = []
+
+        conn.connection.env.user.company_ids.ids = [1]
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+
+        mock_res_company = MagicMock()
+        mock_company_obj = MagicMock()
+        mock_company_obj.name = "Test Co"
+        mock_res_company.browse.return_value = mock_company_obj
+
+        def mock_env_getitem(key):
+            if key in ("ir.actions.report",):
+                return mock_ir_report
+            if key == "ir.model.fields":
+                return mock_ir_model_fields
+            if key == "res.company":
+                return mock_res_company
+            return MagicMock()
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+
+        conn.collect_report_entries("/tmp/output", report_ids=[10, 20])
+
+        # Verify the search domain includes the ID filter
+        search_call = mock_ir_report.search.call_args[0][0]
+        assert ("id", "in", [10, 20]) in search_call
+
+    def test_collect_report_entries_without_filter_no_id_domain(self):
+        """collect_report_entries without report_ids must not add ID filter."""
+        conn = _make_eq_connection()
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+        mock_ir_model_fields = MagicMock()
+        mock_ir_model_fields.search.return_value = []
+
+        conn.connection.env.user.company_ids.ids = [1]
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+
+        mock_res_company = MagicMock()
+        mock_company_obj = MagicMock()
+        mock_company_obj.name = "Test Co"
+        mock_res_company.browse.return_value = mock_company_obj
+
+        def mock_env_getitem(key):
+            if key in ("ir.actions.report",):
+                return mock_ir_report
+            if key == "ir.model.fields":
+                return mock_ir_model_fields
+            if key == "res.company":
+                return mock_res_company
+            return MagicMock()
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+
+        conn.collect_report_entries("/tmp/output")
+
+        # Verify the search domain does NOT include ID filter
+        search_call = mock_ir_report.search.call_args[0][0]
+        id_filters = [d for d in search_call if len(d) == 3 and d[0] == "id" and d[1] == "in"]
+        assert len(id_filters) == 0
+
+
+# ---------------------------------------------------------------------------
 # map_reports() tests — attachment dict resolution
 # ---------------------------------------------------------------------------
 

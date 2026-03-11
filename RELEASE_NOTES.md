@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 0.8.0 (11.03.2026)
+
+### Added
+- Interactive report selection for `collect_yaml` mode — lists all FastReports in a table before export
+- New `list_fast_reports()` method to query available FastReport entries across all companies
+- New `collect_report_entries()` method with optional `report_ids` filter parameter
+- Users can select specific reports (e.g. `1,3,5`) or export all (`all`, default)
+- 12 new tests for interactive selection, report listing, and filtered collection
+
+### Changed
+- `collect_all_report_entries()` refactored as wrapper around `collect_report_entries()` for backward compatibility
+
 ## Version 0.7.2 (11.03.2026)
 
 ### Changed

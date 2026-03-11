@@ -247,13 +247,92 @@ class TestDisableQweb:
 
 
 class TestCollectYaml:
-    """Tests for the collect_yaml mode."""
+    """Tests for the collect_yaml mode with interactive report selection."""
 
     @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
-    def test_collect_yaml_calls_collect_all_report_entries(self, mock_eq_utils, cli_runner, mock_connection):
-        """When collect_yaml is True, collect_all_report_entries should be called."""
+    def test_collect_yaml_interactive_select_specific(self, mock_eq_utils, cli_runner, mock_connection):
+        """When collect_yaml is True, user can select specific reports interactively."""
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
+        mock_connection.list_fast_reports.return_value = [
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 20,
+                "report_name": "eq_fr_invoice",
+                "name": "Invoice",
+                "model": "account.move",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 30,
+                "report_name": "eq_fr_picking",
+                "name": "Picking",
+                "model": "stock.picking",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+        ]
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="1,3\n",
+        )
+
+        assert result.exit_code == 0
+        mock_connection.collect_report_entries.assert_called_once_with("/tmp/fake_yaml", report_ids=[10, 30])
+        mock_eq_utils.collect_all_reports.assert_not_called()
+        mock_connection.map_reports.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_collect_yaml_interactive_select_all(self, mock_eq_utils, cli_runner, mock_connection):
+        """When collect_yaml is True and user selects 'all', all report IDs are passed."""
+        mock_connection.collect_yaml = True
+        mock_connection.disable_qweb = False
+        mock_connection.list_fast_reports.return_value = [
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 20,
+                "report_name": "eq_fr_invoice",
+                "name": "Invoice",
+                "model": "account.move",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+        ]
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="all\n",
+        )
+
+        assert result.exit_code == 0
+        mock_connection.collect_report_entries.assert_called_once_with("/tmp/fake_yaml", report_ids=[10, 20])
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_collect_yaml_no_reports_found(self, mock_eq_utils, cli_runner, mock_connection):
+        """When no FastReports exist, should show message and return."""
+        mock_connection.collect_yaml = True
+        mock_connection.disable_qweb = False
+        mock_connection.list_fast_reports.return_value = []
         mock_eq_utils.create_connection_from_env.return_value = mock_connection
 
         result = cli_runner.invoke(
@@ -262,11 +341,63 @@ class TestCollectYaml:
         )
 
         assert result.exit_code == 0
-        mock_connection.collect_all_report_entries.assert_called_once_with("/tmp/fake_yaml")
-        # Should not call collect_all_reports or map_reports in collect mode
-        mock_eq_utils.collect_all_reports.assert_not_called()
-        mock_connection.map_reports.assert_not_called()
-        mock_connection.test_fast_report_rendering.assert_not_called()
+        assert "No FastReport entries found" in result.output
+        mock_connection.collect_report_entries.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_collect_yaml_shows_table(self, mock_eq_utils, cli_runner, mock_connection):
+        """collect_yaml mode should display a table of available reports."""
+        mock_connection.collect_yaml = True
+        mock_connection.disable_qweb = False
+        mock_connection.list_fast_reports.return_value = [
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale_order",
+                "name": "Sales Order",
+                "model": "sale.order",
+                "company": "My Company",
+                "export_type": "pdf",
+            },
+        ]
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="all\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Found 1 FastReport(s)" in result.output
+        assert "eq_fr_sale_order" in result.output
+        assert "sale.order" in result.output
+        assert "My Company" in result.output
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_collect_yaml_default_is_all(self, mock_eq_utils, cli_runner, mock_connection):
+        """Pressing Enter without input should default to 'all'."""
+        mock_connection.collect_yaml = True
+        mock_connection.disable_qweb = False
+        mock_connection.list_fast_reports.return_value = [
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+        ]
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="\n",
+        )
+
+        assert result.exit_code == 0
+        mock_connection.collect_report_entries.assert_called_once_with("/tmp/fake_yaml", report_ids=[10])
 
 
 class TestSuccessOutput:

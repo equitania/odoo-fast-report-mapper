@@ -324,7 +324,65 @@ class EqOdooConnection(OdooConnection):
         else:
             REPORT_CALC.write(calculated_field_id, value_dict)
 
+    def list_fast_reports(self):
+        """List all FastReport entries across all user companies.
+
+        Returns:
+            list of dicts: [{id, report_name, name, model, company, export_type}, ...]
+            Deduplicated by report_name (same logic as collect_all_report_entries).
+        """
+        company_ids = (
+            self.connection.env.user.company_ids.ids
+            if self.connection.env.user.company_ids
+            else self.connection.env.user.company_id.ids
+        )
+        seen_report_names = {}
+        results = []
+
+        for company_id in company_ids:
+            self.connection.env.user.company_id = company_id
+
+            if self.version == "10":
+                IR_ACTIONS_REPORT = self.connection.env["ir.actions.report.xml"]
+            else:
+                IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
+
+            company_name = self.connection.env["res.company"].browse(company_id).name
+
+            report_ids = IR_ACTIONS_REPORT.search([("report_type", "=", "fast_report")])
+
+            for report_id in report_ids:
+                report_obj = IR_ACTIONS_REPORT.browse(report_id)
+                rname = report_obj.report_name
+
+                if rname in seen_report_names:
+                    continue
+                seen_report_names[rname] = report_id
+
+                results.append(
+                    {
+                        "id": report_id,
+                        "report_name": rname,
+                        "name": report_obj.name,
+                        "model": report_obj.model,
+                        "company": company_name,
+                        "export_type": report_obj.eq_export_type,
+                    }
+                )
+
+        return results
+
     def collect_all_report_entries(self, output_path):
+        """Backward-compatible wrapper for collect_report_entries."""
+        self.collect_report_entries(output_path)
+
+    def collect_report_entries(self, output_path, report_ids=None):
+        """Collect FastReport entries from Odoo and write them as YAML files.
+
+        Args:
+            output_path: Directory path to write YAML files to.
+            report_ids: Optional list of report IDs to filter. If None, collects all.
+        """
         company_ids = (
             self.connection.env.user.company_ids.ids
             if self.connection.env.user.company_ids
@@ -341,16 +399,17 @@ class EqOdooConnection(OdooConnection):
             else:
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
             data_dictionary_keys = list(data_dictionary.keys())
-            report_ids = IR_ACTIONS_REPORT.search(
-                [
-                    ("report_type", "=", "fast_report"),
-                    ("id", "not in", data_dictionary_keys),
-                ]
-            )
+            search_domain = [
+                ("report_type", "=", "fast_report"),
+                ("id", "not in", data_dictionary_keys),
+            ]
+            if report_ids is not None:
+                search_domain.append(("id", "in", report_ids))
+            found_ids = IR_ACTIONS_REPORT.search(search_domain)
 
             IR_MODEL_FIELDS = self.connection.env["ir.model.fields"]
             all_report_field_ids = IR_MODEL_FIELDS.search(
-                [("eq_report_ids", "in", report_ids), ("eq_report_ids", "!=", False)]
+                [("eq_report_ids", "in", found_ids), ("eq_report_ids", "!=", False)]
             )
 
             # Get current company name

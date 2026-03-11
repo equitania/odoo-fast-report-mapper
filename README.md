@@ -17,6 +17,7 @@ Eine Python-Bibliothek zur Erstellung, Verwaltung und Testung von FastReport-Ein
 - **Berechnete Felder**: Unterstützung für benutzerdefinierte Berechnungen mit Parametern
 - **Test-Rendering**: Validierung der FastReport-Dokumente vor der Produktionsfreigabe
 - **Mehrsprachigkeit**: Unbegrenzte Sprachen via Odoo Locale-Codes (de_DE, en_US, fr_FR, etc.) mit automatischer Erkennung installierter Sprachen
+- **Interaktive YAML-Sammlung**: Bei `ODOO_COLLECT_YAML=True` werden alle verfügbaren FastReports tabellarisch angezeigt — gezielte Auswahl einzelner Reports oder Export aller
 - **Mehrere Exportformate**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow-Optionen
@@ -38,6 +39,7 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 - **Calculated Fields**: Support for custom calculations with parameters
 - **Test Rendering**: Validation of FastReport documents before production release
 - **Multi-language**: Unlimited languages via Odoo locale codes (de_DE, en_US, fr_FR, etc.) with automatic detection of installed languages
+- **Interactive YAML Collection**: With `ODOO_COLLECT_YAML=True`, all available FastReports are displayed in a table — select specific reports or export all
 - **Multiple Export Formats**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow Options
@@ -205,6 +207,13 @@ odoo-fast-report-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
 
 # Option 3: .env im aktuellen Verzeichnis / .env in current directory (default)
 odoo-fast-report-mapper --yaml_path=./yaml
+
+# YAML-Sammlung mit interaktiver Auswahl / YAML collection with interactive selection
+# (ODOO_COLLECT_YAML=True in .env setzen / set in .env)
+odoo-fr-mapper --yaml_path=./output
+#   → Tabelle mit allen FastReports / Table of all FastReports
+#   → Auswahl: "1,3,5" oder "all" / Select: "1,3,5" or "all"
+#   → Nur ausgewählte Reports werden exportiert / Only selected reports are exported
 ```
 
 ---
@@ -228,7 +237,7 @@ ODOO_LANGUAGE=de_DE               # Odoo locale code (de_DE, en_US, fr_FR, etc.)
                                   # Legacy codes (ger, eng) are auto-normalized
 
 # Optional Configuration (with defaults)
-ODOO_COLLECT_YAML=False           # YAML collection mode
+ODOO_COLLECT_YAML=False           # YAML collection mode (interactive report selection)
 ODOO_DISABLE_QWEB=True            # Disable QWeb reports
 ODOO_WORKFLOW=0                   # 0=Mapping, 1=Testing, 2=Both
 ```

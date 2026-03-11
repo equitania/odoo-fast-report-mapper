@@ -102,7 +102,42 @@ def start_odoo_fast_report_mapper(yaml_path, env_path):
     # Collect yaml
     if connection.collect_yaml:
         logger.info("Collecting YAML report entries...")
-        connection.collect_all_report_entries(yaml_path)
+
+        # List available reports for interactive selection
+        available_reports = connection.list_fast_reports()
+        if not available_reports:
+            click.echo("  No FastReport entries found in database.")
+            return
+
+        click.echo(f"\n  Found {len(available_reports)} FastReport(s):\n")
+        click.echo(f"  {'#':>3}  {'Report Name':<40} {'Model':<25} {'Company':<20}")
+        click.echo(f"  {'---':>3}  {'─' * 40} {'─' * 25} {'─' * 20}")
+        for i, r in enumerate(available_reports, 1):
+            click.echo(f"  {i:>3}  {r['report_name']:<40} {r['model']:<25} {r['company']:<20}")
+
+        click.echo()
+        selection = click.prompt(
+            "  Select reports (e.g. 1,3,5 or 'all')",
+            type=str,
+            default="all",
+        )
+
+        if selection.strip().lower() == "all":
+            selected_ids = [r["id"] for r in available_reports]
+        else:
+            try:
+                indices = [int(x.strip()) for x in selection.split(",")]
+                selected_ids = [available_reports[i - 1]["id"] for i in indices if 1 <= i <= len(available_reports)]
+            except (ValueError, IndexError):
+                click.echo("  Invalid selection. Aborting.")
+                return
+
+        if not selected_ids:
+            click.echo("  No reports selected. Aborting.")
+            return
+
+        logger.info(f"Collecting {len(selected_ids)} selected report(s)...")
+        connection.collect_report_entries(yaml_path, report_ids=selected_ids)
     # Yaml Mapping
     else:
         reports = eq_utils.collect_all_reports(yaml_path)
