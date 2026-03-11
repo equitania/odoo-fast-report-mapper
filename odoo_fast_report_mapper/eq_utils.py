@@ -240,7 +240,12 @@ def create_connection_from_env(env_path=None):
 
     # Get required values
     url = os.getenv("ODOO_URL")
-    port = int(os.getenv("ODOO_PORT"))
+    try:
+        port = int(os.getenv("ODOO_PORT"))
+        if port < 1 or port > 65535:
+            raise ValueError(f"Port must be between 1 and 65535, got: {port}")
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid ODOO_PORT value: {os.getenv('ODOO_PORT')} — {e}") from e
     user = os.getenv("ODOO_USER")
     password = os.getenv("ODOO_PASSWORD")
     database = os.getenv("ODOO_DATABASE")

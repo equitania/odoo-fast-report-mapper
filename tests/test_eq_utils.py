@@ -339,6 +339,38 @@ class TestCreateConnectionFromEnv:
         assert conn.disable_qweb is False
         assert conn.workflow == 2
 
+    def test_invalid_port_non_numeric_raises_value_error(self, tmp_path, mock_odoorpc, monkeypatch):
+        """ValueError is raised when ODOO_PORT is not a valid number."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_content = (
+            "ODOO_URL=https://test.com\n"
+            "ODOO_PORT=abc\n"
+            "ODOO_USER=admin\n"
+            "ODOO_PASSWORD=pw\n"
+            "ODOO_DATABASE=db\n"
+            "ODOO_LANGUAGE=en_US\n"
+        )
+        env_file = tmp_path / ".env"
+        env_file.write_text(env_content)
+        with pytest.raises(ValueError, match="Invalid ODOO_PORT"):
+            eq_utils.create_connection_from_env(env_path=str(env_file))
+
+    def test_invalid_port_out_of_range_raises_value_error(self, tmp_path, mock_odoorpc, monkeypatch):
+        """ValueError is raised when ODOO_PORT is outside valid range."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_content = (
+            "ODOO_URL=https://test.com\n"
+            "ODOO_PORT=99999\n"
+            "ODOO_USER=admin\n"
+            "ODOO_PASSWORD=pw\n"
+            "ODOO_DATABASE=db\n"
+            "ODOO_LANGUAGE=en_US\n"
+        )
+        env_file = tmp_path / ".env"
+        env_file.write_text(env_content)
+        with pytest.raises(ValueError, match="Invalid ODOO_PORT"):
+            eq_utils.create_connection_from_env(env_path=str(env_file))
+
 
 # ---------------------------------------------------------------------------
 # collect_all_connections (deprecated)

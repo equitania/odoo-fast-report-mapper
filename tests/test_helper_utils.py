@@ -219,6 +219,18 @@ class TestParseYamlFolder:
         assert len(results) == 1
         assert results[0]["status"] == "ok"
 
+    def test_nonexistent_directory_raises(self):
+        """A nonexistent directory should raise FileNotFoundError."""
+        with pytest.raises(FileNotFoundError, match="Directory not found"):
+            utils.parse_yaml_folder("/nonexistent/directory/path")
+
+    def test_file_path_raises(self, tmp_path):
+        """A file path (not directory) should raise FileNotFoundError."""
+        f = tmp_path / "not_a_dir.txt"
+        f.write_text("hello")
+        with pytest.raises(FileNotFoundError, match="Directory not found"):
+            utils.parse_yaml_folder(str(f))
+
     def test_non_yaml_files_ignored(self, tmp_path):
         """Files without .yaml extension should be ignored."""
         txt_file = tmp_path / "notes.txt"

@@ -1,13 +1,19 @@
 # Release Notes
 
-## Version 0.7.1 (11.03.2026)
+## Version 0.7.2 (11.03.2026)
 
 ### Changed
 - Migrate dependency from OdooRPC to odoorpc-toolbox (>= 0.7.0) — API-compatible, internalized OdooRPC
-- Remove explicit PyYAML dependency (now transitive via odoorpc-toolbox)
 - Update import paths: `odoorpc.ODOO` → `odoorpc_toolbox.ODOO`, `odoorpc.error.RPCError` → `odoorpc_toolbox.RPCError`
 - Update all test mocks to match new import paths
+- Add PyYAML as explicit dependency (>= 6.0.1) instead of relying on transitive
+- Raise python-dotenv minimum to >= 1.0.0
+- Raise pytest to >= 8.0, pytest-cov to >= 5.0 in dev dependencies
 - Update README.md and CLAUDE.md documentation references
+
+### Fixed
+- Path traversal protection in `parse_yaml_folder()` — validates resolved paths stay within target directory
+- Port validation in `create_connection_from_env()` — validates numeric value and range (1-65535)
 
 ## Version 0.6.0 (2025)
 
