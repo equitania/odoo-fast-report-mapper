@@ -90,10 +90,10 @@ class TestOdooConnectionLogin:
     @patch("odoo_report_helper.odoo_connection.utils.prepare_connection")
     def test_login_raises_odoo_connection_error_on_rpc_error(self, mock_prepare):
         """login() must raise OdooConnectionError when RPCError occurs."""
-        import odoorpc.error
+        from odoorpc_toolbox import RPCError
 
         mock_connection = MagicMock()
-        mock_connection.login.side_effect = odoorpc.error.RPCError("Invalid credentials")
+        mock_connection.login.side_effect = RPCError("Invalid credentials")
         mock_prepare.return_value = mock_connection
 
         conn = OdooConnection(

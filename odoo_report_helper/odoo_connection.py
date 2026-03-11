@@ -4,7 +4,7 @@
 import logging
 import urllib
 
-import odoorpc
+from odoorpc_toolbox import RPCError
 
 from odoo_fast_report_mapper.lang_utils import build_name_search_domain
 
@@ -39,7 +39,7 @@ class OdooConnection:
             self.connection.env.context["tracking_disable"] = True
             self.version = self.connection.version.split(".")[0]
             logger.info(f"Connected to database: {self.database}")
-        except odoorpc.error.RPCError as ex:
+        except RPCError as ex:
             raise exceptions.OdooConnectionError(
                 "ERROR: Please check your parameters and your connection" + " " + str(ex)
             ) from ex

@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - Orchestrates the mapping workflow
 
 2. **Connection Management** (`odoo_report_helper/odoo_connection.py`):
-   - `OdooConnection` class for OdooRPC integration
+   - `OdooConnection` class for odoorpc-toolbox integration
    - Handles login, report mapping, and dependency validation
    - Manages calculated fields and report testing
 
@@ -135,7 +135,7 @@ odoo-fast-report-mapper/
 ## Dependencies
 
 ### Core Dependencies
-- **OdooRPC** (>=0.10.1): Odoo XML-RPC client
+- **odoorpc-toolbox** (>=0.7.0): Odoo RPC client with internalized OdooRPC
 - **Click** (>=8.1.3): Command-line interface framework
 - **PyYAML** (>=5.4.1): YAML parsing and processing
 

@@ -54,8 +54,7 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 
 - Python (>= 3.10)
 - click (>= 8.1.3)
-- OdooRPC (>= 0.10.1)
-- PyYAML (>= 5.4.1)
+- odoorpc-toolbox (>= 0.7.0)
 - tqdm (>= 4.65.0)
 - python-dotenv (>= 0.19.0)
 
@@ -323,7 +322,7 @@ calculated_fields:
 ### Komponenten / Components
 
 1. **CLI Interface** (`odoo_fast_report_mapper.py`): Befehlszeileninterface mit Click
-2. **Connection Manager** (`odoo_connection.py`): OdooRPC-Integration und Verbindungsmanagement
+2. **Connection Manager** (`odoo_connection.py`): odoorpc-toolbox-Integration und Verbindungsmanagement
 3. **Report Processing** (`eq_report.py`): Report-Objekte und Validierung
 4. **Language Utilities** (`lang_utils.py`): Sprachnormalisierung, Multi-Language-Logik, Attachment-Auflösung
 5. **Utilities** (`eq_utils.py`): YAML-Verarbeitung und Hilfsfunktionen

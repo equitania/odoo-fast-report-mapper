@@ -41,49 +41,49 @@ def yaml_test_dir():
 class TestPrepareConnection:
     """Tests for prepare_connection(url, port)."""
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_https_url(self, mock_odoo):
         """HTTPS URL should use jsonrpc+ssl protocol and strip the scheme."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("https://odoo.example.com", 443)
         mock_odoo.assert_called_once_with("odoo.example.com", port=443, protocol="jsonrpc+ssl")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_http_url(self, mock_odoo):
         """HTTP URL should use jsonrpc protocol and strip the scheme."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("http://odoo.example.com", 8069)
         mock_odoo.assert_called_once_with("odoo.example.com", port=8069, protocol="jsonrpc")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_url_with_trailing_slashes(self, mock_odoo):
         """Trailing forward slashes in URL should be stripped."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("https://odoo.example.com///", 443)
         mock_odoo.assert_called_once_with("odoo.example.com", port=443, protocol="jsonrpc+ssl")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_url_with_trailing_backslashes(self, mock_odoo):
         """Trailing backslashes in URL should be stripped."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("https://odoo.example.com\\\\", 443)
         mock_odoo.assert_called_once_with("odoo.example.com", port=443, protocol="jsonrpc+ssl")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_https_port_zero_defaults_to_443(self, mock_odoo):
         """Port <= 0 with HTTPS should default to 443."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("https://odoo.example.com", 0)
         mock_odoo.assert_called_once_with("odoo.example.com", port=443, protocol="jsonrpc+ssl")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_port_string_is_cast_to_int(self, mock_odoo):
         """Port supplied as string should be cast to int."""
         mock_odoo.return_value = MagicMock()
         utils.prepare_connection("http://odoo.example.com", "8069")
         mock_odoo.assert_called_once_with("odoo.example.com", port=8069, protocol="jsonrpc")
 
-    @patch("odoo_report_helper.utils.odoorpc.ODOO")
+    @patch("odoo_report_helper.utils.ODOO")
     def test_no_protocol_uses_ssl_default(self, mock_odoo):
         """URL without explicit protocol should default to jsonrpc+ssl."""
         mock_odoo.return_value = MagicMock()

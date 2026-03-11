@@ -4,8 +4,8 @@
 import logging
 import os
 
-import odoorpc
 import yaml
+from odoorpc_toolbox import ODOO
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def prepare_connection(url, port):
     while url and url.endswith("\\"):
         url = url[:-1]
 
-    connection = odoorpc.ODOO(url, port=port, protocol=_protocol)
+    connection = ODOO(url, port=port, protocol=_protocol)
     return connection
 
 
