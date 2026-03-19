@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 0.9.1 (19.03.2026)
+
+### Changed
+- Comprehensive CLI `--help` documentation: workflows, .env variables, quick start guide, `--select` usage
+- Python minimum version raised to >= 3.12 (pyproject.toml, classifiers, ruff, mypy)
+- README updated with Python >= 3.12 prerequisite, UV tool install instructions, `--select` feature docs
+- Updated `.project-tips` with current commands
+
 ## Version 0.9.0 (19.03.2026)
 
 ### Added
