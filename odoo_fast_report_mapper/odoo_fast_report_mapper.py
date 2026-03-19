@@ -55,29 +55,65 @@ def init_callback(ctx, param, value):
     callback=init_callback,
     expose_value=False,
     is_eager=True,
-    help="Generate .env template in current directory",
+    help="Generate .env template in current directory and exit.",
 )
 @click.option(
     "--yaml_path",
-    help="Path to YAML report definitions folder",
+    help="Path to folder containing YAML report definition files.",
     prompt="Please enter the path to your YAML reports folder",
 )
-@click.option("--env_path", default=None, help="Path to .env file (default: current directory)")
-@click.option("--select", is_flag=True, default=False, help="Interactively select which YAML reports to process")
+@click.option(
+    "--env_path",
+    default=None,
+    help="Path to .env file or directory containing it. Default: current directory.",
+)
+@click.option(
+    "--select",
+    is_flag=True,
+    default=False,
+    help="Show interactive table of YAML files and select which to process (e.g. 1,3,5 or 'all').",
+)
 def start_odoo_fast_report_mapper(yaml_path, env_path, select):
-    """
-    Odoo FastReport Mapper - Create and test FastReport entries in Odoo.
+    """Odoo FastReport Mapper - Map, test and manage FastReport entries in Odoo.
 
-    This tool helps you manage FastReport configurations by:
-    - Mapping report fields to Odoo models
-    - Creating/updating FastReport entries
-    - Testing report rendering
-    - Managing calculated fields
+    \b
+    WORKFLOWS (configured via ODOO_WORKFLOW in .env):
+      0 = Mapping only (default) - Create/update ir.actions.report records
+      1 = Testing only           - Test FastReport rendering via API
+      2 = Mapping + Testing      - Both operations sequentially
 
-    Configuration:
-    - Connection settings are read from .env file
-    - Copy .env.example to .env and configure your Odoo connection
-    - Report definitions are read from YAML files in yaml_path
+    \b
+    QUICK START:
+      1. Generate config:  odoo-fr-mapper --init
+      2. Edit .env with your Odoo connection credentials
+      3. Map all reports:  odoo-fr-mapper --yaml_path=./reports_yaml
+      4. Map selected:     odoo-fr-mapper --yaml_path=./reports_yaml --select
+
+    \b
+    .ENV CONFIGURATION (required variables):
+      ODOO_URL          Odoo server URL (e.g. https://odoo.example.com)
+      ODOO_PORT         Server port (443 for HTTPS, 8069 for HTTP)
+      ODOO_USER         Odoo username
+      ODOO_PASSWORD     Odoo password
+      ODOO_DATABASE     Database name
+      ODOO_LANGUAGE     Locale code (de_DE, en_US, fr_FR; legacy: ger, eng)
+
+    \b
+    .ENV CONFIGURATION (optional variables):
+      ODOO_WORKFLOW     0=mapping, 1=testing, 2=both (default: 0)
+      ODOO_COLLECT_YAML Export reports FROM Odoo to YAML (default: False)
+      ODOO_DISABLE_QWEB Disable QWeb reports after mapping (default: True)
+
+    \b
+    INTERACTIVE SELECTION (--select):
+      Shows a table of all YAML files with filename, report name, and model.
+      Enter comma-separated indices (e.g. 1,3,5) or 'all' to process.
+      Without --select, all YAML files in the folder are processed.
+
+    \b
+    YAML COLLECTION MODE (ODOO_COLLECT_YAML=True):
+      Exports existing FastReport entries from Odoo to YAML files.
+      Shows interactive selection of available reports before export.
     """
     # Print banner
     print_banner()
