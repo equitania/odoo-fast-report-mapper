@@ -429,3 +429,108 @@ class TestCollectAllConnections:
         """PathDoesNotExitError is raised for a non-existent directory."""
         with pytest.raises(PathDoesNotExitError):
             eq_utils.collect_all_connections("/nonexistent/connection/path")
+
+
+# ---------------------------------------------------------------------------
+# list_yaml_reports
+# ---------------------------------------------------------------------------
+
+
+class TestListYamlReports:
+    """Tests for list_yaml_reports()."""
+
+    def test_returns_metadata_for_each_yaml(self, tmp_path):
+        """Each YAML file should produce a dict with filename, report_name, model."""
+        yaml_dir = tmp_path / "reports"
+        yaml_dir.mkdir()
+        report_data = {
+            "name": {"de_DE": "Test"},
+            "report_name": "eq_fr_sale",
+            "report_model": "sale.order",
+            "report_type": "fast_report",
+        }
+        with open(yaml_dir / "sale.yaml", "w") as f:
+            yaml.dump(report_data, f)
+
+        result = eq_utils.list_yaml_reports(str(yaml_dir))
+        assert len(result) == 1
+        assert result[0]["filename"] == "sale.yaml"
+        assert result[0]["report_name"] == "eq_fr_sale"
+        assert result[0]["model"] == "sale.order"
+        assert "yaml_object" in result[0]
+
+    def test_multiple_files_sorted(self, tmp_path):
+        """Results should be sorted by filename."""
+        yaml_dir = tmp_path / "reports"
+        yaml_dir.mkdir()
+        for name in ["c_invoice.yaml", "a_sale.yaml", "b_picking.yaml"]:
+            with open(yaml_dir / name, "w") as f:
+                yaml.dump({"report_name": name.replace(".yaml", ""), "report_model": "test"}, f)
+
+        result = eq_utils.list_yaml_reports(str(yaml_dir))
+        filenames = [r["filename"] for r in result]
+        assert filenames == ["a_sale.yaml", "b_picking.yaml", "c_invoice.yaml"]
+
+    def test_empty_directory(self, tmp_path):
+        """Empty directory should return empty list."""
+        yaml_dir = tmp_path / "empty"
+        yaml_dir.mkdir()
+        result = eq_utils.list_yaml_reports(str(yaml_dir))
+        assert result == []
+
+    def test_missing_fields_show_na(self, tmp_path):
+        """When YAML lacks report_name or report_model, 'N/A' is used."""
+        yaml_dir = tmp_path / "reports"
+        yaml_dir.mkdir()
+        with open(yaml_dir / "minimal.yaml", "w") as f:
+            yaml.dump({"name": {"de_DE": "Test"}}, f)
+
+        result = eq_utils.list_yaml_reports(str(yaml_dir))
+        assert result[0]["report_name"] == "N/A"
+        assert result[0]["model"] == "N/A"
+
+
+# ---------------------------------------------------------------------------
+# build_reports_from_yaml_objects
+# ---------------------------------------------------------------------------
+
+
+class TestBuildReportsFromYamlObjects:
+    """Tests for build_reports_from_yaml_objects()."""
+
+    def test_converts_single_report(self, sample_report_yaml_data):
+        """A single YAML dict is converted to an EqReport object."""
+        reports = eq_utils.build_reports_from_yaml_objects([sample_report_yaml_data])
+        assert len(reports) == 1
+        assert isinstance(reports[0], EqReport)
+        assert reports[0].report_name == "eq_fr_core_sale_order"
+
+    def test_multi_company_expansion(self):
+        """A YAML with company_id: [1, 3] is split into two EqReport objects."""
+        yaml_obj = {
+            "name": {"de_DE": "Test", "en_US": "Test"},
+            "report_name": "eq_fr_mc",
+            "report_type": "fast_report",
+            "print_report_name": "Test",
+            "report_model": "sale.order",
+            "company_id": [1, 3],
+            "eq_export_type": "pdf",
+            "eq_ignore_images": True,
+            "eq_handling_html_fields": "standard",
+            "eq_multiprint": "standard",
+            "multi": False,
+            "attachment": "Test.pdf",
+            "attachment_use": False,
+            "eq_print_button": False,
+            "dependencies": ["sale"],
+            "report_fields": {"sale.order": ["id"]},
+            "calculated_fields": {},
+        }
+        reports = eq_utils.build_reports_from_yaml_objects([yaml_obj])
+        assert len(reports) == 2
+        assert reports[0].company_id == [1]
+        assert reports[1].company_id == [3]
+
+    def test_empty_list(self):
+        """Empty input returns empty output."""
+        assert eq_utils.build_reports_from_yaml_objects([]) == []

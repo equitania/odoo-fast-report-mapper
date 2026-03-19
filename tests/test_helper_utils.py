@@ -248,3 +248,58 @@ class TestParseYamlFolder:
         results = utils.parse_yaml_folder(str(tmp_path))
         assert len(results) == 1
         assert results[0]["should"] == "be_included"
+
+
+# ---------------------------------------------------------------------------
+# parse_yaml_folder_with_filenames tests
+# ---------------------------------------------------------------------------
+
+
+class TestParseYamlFolderWithFilenames:
+    """Tests for parse_yaml_folder_with_filenames(path)."""
+
+    def test_returns_tuples_of_filename_and_dict(self, yaml_test_dir):
+        """Each item should be a (filename, dict) tuple."""
+        results = utils.parse_yaml_folder_with_filenames(yaml_test_dir)
+        assert isinstance(results, list)
+        assert len(results) == 2
+        for filename, yaml_obj in results:
+            assert isinstance(filename, str)
+            assert filename.endswith(".yaml")
+            assert isinstance(yaml_obj, dict)
+
+    def test_sorted_by_filename(self, tmp_path):
+        """Results should be sorted alphabetically by filename."""
+        (tmp_path / "c_report.yaml").write_text(yaml.dump({"name": "c"}))
+        (tmp_path / "a_report.yaml").write_text(yaml.dump({"name": "a"}))
+        (tmp_path / "b_report.yaml").write_text(yaml.dump({"name": "b"}))
+
+        results = utils.parse_yaml_folder_with_filenames(str(tmp_path))
+        filenames = [f for f, _ in results]
+        assert filenames == ["a_report.yaml", "b_report.yaml", "c_report.yaml"]
+
+    def test_empty_directory(self, tmp_path):
+        """An empty directory should return an empty list."""
+        results = utils.parse_yaml_folder_with_filenames(str(tmp_path))
+        assert results == []
+
+    def test_nonexistent_directory_raises(self):
+        """A nonexistent directory should raise FileNotFoundError."""
+        with pytest.raises(FileNotFoundError, match="Directory not found"):
+            utils.parse_yaml_folder_with_filenames("/nonexistent/directory")
+
+    def test_skips_invalid_yaml(self, tmp_path):
+        """Invalid YAML files should be skipped."""
+        (tmp_path / "good.yaml").write_text(yaml.dump({"status": "ok"}))
+        (tmp_path / "bad.yaml").write_text("key: [\nbad: yaml\n  broken")
+
+        results = utils.parse_yaml_folder_with_filenames(str(tmp_path))
+        assert len(results) == 1
+        assert results[0][0] == "good.yaml"
+
+    def test_consistent_with_parse_yaml_folder(self, yaml_test_dir):
+        """Content should match parse_yaml_folder output."""
+        with_names = utils.parse_yaml_folder_with_filenames(yaml_test_dir)
+        without_names = utils.parse_yaml_folder(yaml_test_dir)
+        contents_from_with_names = [obj for _, obj in with_names]
+        assert contents_from_with_names == without_names

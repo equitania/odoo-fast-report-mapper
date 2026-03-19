@@ -1,5 +1,26 @@
 # Release Notes
 
+## Version 0.9.0 (19.03.2026)
+
+### Added
+- Interactive YAML report selection for mapping mode via `--select` CLI flag
+- New `list_yaml_reports()` function for displaying YAML files with metadata (filename, report_name, model)
+- New `build_reports_from_yaml_objects()` for multi-company expansion (extracted from `collect_all_reports()`)
+- New `parse_yaml_folder_with_filenames()` in odoo_report_helper for sorted filename-preserving YAML parsing
+- 76 new tests for `EqOdooConnection` (map_reports, set_calculated_fields, collect, rendering, disable_qweb)
+- 19 new tests for interactive selection, YAML listing, and helper functions
+- Total test count: 344 (up from 249)
+
+### Changed
+- Refactored `map_reports()` into focused sub-methods: `_create_or_update_report()`, `_set_report_translations()`, `_map_report_fields()`, `_write_field_mappings()`
+- Refactored `collect_all_reports()` to delegate to `build_reports_from_yaml_objects()`
+- Refactored `parse_yaml_folder()` to delegate to `parse_yaml_folder_with_filenames()`
+- Improved type hints: `IR_ACTIONS_REPORT=False` → `IR_ACTIONS_REPORT=None` for proper None semantics
+
+### Fixed
+- Removed dead code: unused `import base64`, unreferenced `self.connection.env["ir.model"]` calls, unused `base64.encodebytes` result
+- Added logging in `get_company_language()` exception handler (previously silently swallowed)
+
 ## Version 0.8.0 (11.03.2026)
 
 ### Added

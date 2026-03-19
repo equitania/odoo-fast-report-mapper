@@ -63,7 +63,8 @@ def init_callback(ctx, param, value):
     prompt="Please enter the path to your YAML reports folder",
 )
 @click.option("--env_path", default=None, help="Path to .env file (default: current directory)")
-def start_odoo_fast_report_mapper(yaml_path, env_path):
+@click.option("--select", is_flag=True, default=False, help="Interactively select which YAML reports to process")
+def start_odoo_fast_report_mapper(yaml_path, env_path, select):
     """
     Odoo FastReport Mapper - Create and test FastReport entries in Odoo.
 
@@ -140,7 +141,50 @@ def start_odoo_fast_report_mapper(yaml_path, env_path):
         connection.collect_report_entries(yaml_path, report_ids=selected_ids)
     # Yaml Mapping
     else:
-        reports = eq_utils.collect_all_reports(yaml_path)
+        if select:
+            report_items = eq_utils.list_yaml_reports(yaml_path)
+            if not report_items:
+                click.echo("  No YAML report files found.")
+                return
+
+            click.echo(f"\n  Found {len(report_items)} YAML report(s):\n")
+            click.echo(f"  {'#':>3}  {'Filename':<40} {'Report Name':<35} {'Model':<25}")
+            click.echo(f"  {'---':>3}  {'─' * 40} {'─' * 35} {'─' * 25}")
+            for i, item in enumerate(report_items, 1):
+                click.echo(
+                    f"  {i:>3}  {item['filename']:<40} {item['report_name']:<35} {item['model']:<25}"
+                )
+
+            click.echo()
+            selection = click.prompt(
+                "  Select reports (e.g. 1,3,5 or 'all')",
+                type=str,
+                default="all",
+            )
+
+            if selection.strip().lower() == "all":
+                selected_yamls = [item["yaml_object"] for item in report_items]
+            else:
+                try:
+                    indices = [int(x.strip()) for x in selection.split(",")]
+                    selected_yamls = [
+                        report_items[i - 1]["yaml_object"]
+                        for i in indices
+                        if 1 <= i <= len(report_items)
+                    ]
+                except (ValueError, IndexError):
+                    click.echo("  Invalid selection. Aborting.")
+                    return
+
+            if not selected_yamls:
+                click.echo("  No reports selected. Aborting.")
+                return
+
+            logger.info(f"Processing {len(selected_yamls)} selected report(s)...")
+            reports = eq_utils.build_reports_from_yaml_objects(selected_yamls)
+        else:
+            reports = eq_utils.collect_all_reports(yaml_path)
+
         if connection.workflow == 0:
             logger.info("Starting report mapping...")
             connection.map_reports(reports)

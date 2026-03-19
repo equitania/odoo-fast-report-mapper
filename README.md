@@ -18,6 +18,7 @@ Eine Python-Bibliothek zur Erstellung, Verwaltung und Testung von FastReport-Ein
 - **Test-Rendering**: Validierung der FastReport-Dokumente vor der Produktionsfreigabe
 - **Mehrsprachigkeit**: Unbegrenzte Sprachen via Odoo Locale-Codes (de_DE, en_US, fr_FR, etc.) mit automatischer Erkennung installierter Sprachen
 - **Interaktive YAML-Sammlung**: Bei `ODOO_COLLECT_YAML=True` werden alle verfügbaren FastReports tabellarisch angezeigt — gezielte Auswahl einzelner Reports oder Export aller
+- **Interaktive YAML-Auswahl**: Mit `--select` können beim Mapping gezielt einzelne YAML-Dateien zur Verarbeitung ausgewählt werden
 - **Mehrere Exportformate**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow-Optionen
@@ -40,6 +41,7 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 - **Test Rendering**: Validation of FastReport documents before production release
 - **Multi-language**: Unlimited languages via Odoo locale codes (de_DE, en_US, fr_FR, etc.) with automatic detection of installed languages
 - **Interactive YAML Collection**: With `ODOO_COLLECT_YAML=True`, all available FastReports are displayed in a table — select specific reports or export all
+- **Interactive YAML Selection**: With `--select`, choose specific YAML files for mapping instead of processing all
 - **Multiple Export Formats**: PDF, TXT, XML, PNG, JPG, TIFF, ODS, ODT, XLS, DOC
 
 ### Workflow Options
@@ -52,37 +54,36 @@ A Python library for creating, managing, and testing FastReport entries in Odoo 
 
 ## 📦 Installation
 
-### Systemanforderungen / System Requirements
+### Voraussetzungen / Prerequisites
 
-- Python (>= 3.10)
-- click (>= 8.1.3)
-- odoorpc-toolbox (>= 0.7.0)
-- tqdm (>= 4.65.0)
-- python-dotenv (>= 0.19.0)
+Python >= 3.12 und [UV](https://docs.astral.sh/uv/) müssen installiert sein. / Python >= 3.12 and [UV](https://docs.astral.sh/uv/) must be installed.
 
-### Mit uv installieren (empfohlen) / Install with uv (recommended)
+| Betriebssystem / OS | Python | UV |
+|----------------------|--------|-----|
+| macOS | `brew install python@3.12` | `brew install uv` |
+| Linux / WSL | `sudo apt install python3.12` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Windows | [python.org](https://www.python.org/downloads/) | `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 \| iex"` |
+
+### Als CLI-Tool installieren (empfohlen) / Install as CLI tool (recommended)
 
 ```bash
-uv pip install odoo-fast-report-mapper-equitania
+uv tool install odoo-fast-report-mapper-equitania
 ```
 
-### Mit pip installieren / Install with pip
+### Aktualisierung / Update
 
 ```bash
-pip install odoo-fast-report-mapper-equitania
+uv tool upgrade odoo-fast-report-mapper-equitania
 ```
 
-### Entwicklungsumgebung / Development Environment
+### Für Entwickler / For Developers
 
 ```bash
-# Virtuelles Environment erstellen / Create virtual environment
+git clone https://github.com/equitania/odoo-fast-report-mapper.git
+cd odoo-fast-report-mapper
 uv venv && source .venv/bin/activate
-
-# Abhängigkeiten + Paket im Entwicklungsmodus installieren / Install dependencies + package in dev mode
-uv pip install -e .
-
-# Mit Development-Tools (Linting, Testing, Type-Checking) / With development tools
 uv pip install -e ".[dev]"
+odoo-fr-mapper --help
 ```
 
 ### Lokales Testen & Paket erstellen / Local Testing & Building
@@ -192,21 +193,17 @@ odoo-fast-report-mapper --yaml_path=./reports_yaml
 ### Erweiterte Beispiele / Advanced Examples
 
 ```bash
-# Odoo v16 Entwicklungsdatenbank / Odoo v16 development database
-odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v16/yaml
-
 # Odoo v18 Produktionsumgebung / Odoo v18 production environment
-odoo-fast-report-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v18/yaml
+odoo-fr-mapper --yaml_path=$HOME/gitbase/fr-core-yaml/v18/yaml
 
 # Mit spezifischer .env Datei / With specific .env file
-# Option 1: --env_path zeigt auf Verzeichnis / --env_path points to directory
-odoo-fast-report-mapper --yaml_path=./yaml --env_path=/path/to/config/
+odoo-fr-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
 
-# Option 2: --env_path zeigt direkt auf Datei / --env_path points directly to file
-odoo-fast-report-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
-
-# Option 3: .env im aktuellen Verzeichnis / .env in current directory (default)
-odoo-fast-report-mapper --yaml_path=./yaml
+# Interaktive Auswahl einzelner YAML-Dateien / Interactive selection of YAML files
+odoo-fr-mapper --yaml_path=./yaml --select
+#   → Tabelle mit allen YAML-Dateien / Table of all YAML files
+#   → Auswahl: "1,3,5" oder "all" / Select: "1,3,5" or "all"
+#   → Nur ausgewählte Reports werden verarbeitet / Only selected reports are processed
 
 # YAML-Sammlung mit interaktiver Auswahl / YAML collection with interactive selection
 # (ODOO_COLLECT_YAML=True in .env setzen / set in .env)

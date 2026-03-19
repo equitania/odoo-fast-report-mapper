@@ -400,6 +400,152 @@ class TestCollectYaml:
         mock_connection.collect_report_entries.assert_called_once_with("/tmp/fake_yaml", report_ids=[10])
 
 
+class TestSelectFlag:
+    """Tests for the --select flag for interactive YAML report selection."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_select_flag_shows_table(self, mock_eq_utils, cli_runner, mock_connection):
+        """--select should display a table of available YAML reports."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.list_yaml_reports.return_value = [
+            {
+                "filename": "eq_fr_sale_order.yaml",
+                "report_name": "eq_fr_core_sale_order",
+                "model": "sale.order",
+                "yaml_object": {"report_name": "eq_fr_core_sale_order"},
+            },
+        ]
+        mock_eq_utils.build_reports_from_yaml_objects.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--select"],
+            input="all\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Found 1 YAML report(s)" in result.output
+        assert "eq_fr_sale_order.yaml" in result.output
+        assert "eq_fr_core_sale_order" in result.output
+        assert "sale.order" in result.output
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_select_flag_specific_indices(self, mock_eq_utils, cli_runner, mock_connection):
+        """--select with '1,3' should pass only selected YAML dicts to build_reports."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        yaml1 = {"report_name": "eq_fr_sale"}
+        yaml2 = {"report_name": "eq_fr_invoice"}
+        yaml3 = {"report_name": "eq_fr_picking"}
+
+        mock_eq_utils.list_yaml_reports.return_value = [
+            {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": yaml1},
+            {"filename": "invoice.yaml", "report_name": "eq_fr_invoice", "model": "account.move", "yaml_object": yaml2},
+            {"filename": "picking.yaml", "report_name": "eq_fr_picking", "model": "stock.picking", "yaml_object": yaml3},
+        ]
+        mock_eq_utils.build_reports_from_yaml_objects.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--select"],
+            input="1,3\n",
+        )
+
+        assert result.exit_code == 0
+        mock_eq_utils.build_reports_from_yaml_objects.assert_called_once_with([yaml1, yaml3])
+        mock_eq_utils.collect_all_reports.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_select_flag_default_all(self, mock_eq_utils, cli_runner, mock_connection):
+        """Pressing Enter (default 'all') should process all reports."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+
+        yaml1 = {"report_name": "eq_fr_sale"}
+        yaml2 = {"report_name": "eq_fr_invoice"}
+
+        mock_eq_utils.list_yaml_reports.return_value = [
+            {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": yaml1},
+            {"filename": "invoice.yaml", "report_name": "eq_fr_invoice", "model": "account.move", "yaml_object": yaml2},
+        ]
+        mock_eq_utils.build_reports_from_yaml_objects.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--select"],
+            input="\n",
+        )
+
+        assert result.exit_code == 0
+        mock_eq_utils.build_reports_from_yaml_objects.assert_called_once_with([yaml1, yaml2])
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_select_flag_invalid_input_aborts(self, mock_eq_utils, cli_runner, mock_connection):
+        """Invalid input should show error and abort without processing."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.list_yaml_reports.return_value = [
+            {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": {}},
+        ]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--select"],
+            input="abc\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Invalid selection" in result.output
+        mock_eq_utils.build_reports_from_yaml_objects.assert_not_called()
+        mock_connection.map_reports.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_select_flag_no_reports_found(self, mock_eq_utils, cli_runner, mock_connection):
+        """When no YAML files exist, should show message and return."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.list_yaml_reports.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml", "--select"],
+        )
+
+        assert result.exit_code == 0
+        assert "No YAML report files found" in result.output
+        mock_connection.map_reports.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_without_select_flag_processes_all(self, mock_eq_utils, cli_runner, mock_connection):
+        """Without --select, all reports should be processed without interactive prompt."""
+        mock_connection.collect_yaml = False
+        mock_connection.workflow = 0
+        mock_connection.disable_qweb = False
+        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.collect_all_reports.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
+        mock_eq_utils.collect_all_reports.assert_called_once_with("/tmp/fake_yaml")
+        mock_eq_utils.list_yaml_reports.assert_not_called()
+
+
 class TestSuccessOutput:
     """Tests for successful completion output."""
 

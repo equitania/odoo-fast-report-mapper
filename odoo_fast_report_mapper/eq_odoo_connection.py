@@ -1,6 +1,5 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
-import base64
 import os
 from datetime import datetime
 from random import choice
@@ -72,12 +71,13 @@ class EqOdooConnection(OdooConnection):
         try:
             company_obj = self.connection.env["res.company"].browse(company_id)
             lang = company_obj.partner_id.lang or self.language
-        except Exception:
+        except Exception as ex:
+            logger.debug(f"Could not determine language for company {company_id}, falling back to {self.language}: {ex}")
             lang = self.language
         self._company_lang_cache[company_id] = lang
         return lang
 
-    def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False, company_id=False):
+    def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None, company_id=None):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
@@ -87,7 +87,7 @@ class EqOdooConnection(OdooConnection):
             return False
         return report_ids[0]
 
-    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=False):
+    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
@@ -119,7 +119,6 @@ class EqOdooConnection(OdooConnection):
         IR_MODEL = self.connection.env["ir.model"]
         IR_MODEL_FIELDS = self.connection.env["ir.model.fields"]
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-        original_company_yaml_user = IR_ACTIONS_REPORT.env.user.company_id
         models_fields = dict()
         model_name_ids = dict()
 
@@ -130,130 +129,188 @@ class EqOdooConnection(OdooConnection):
         logger.info(f"→ Mapping {len(report_list)} reports to Odoo...")
         for idx, report in enumerate(report_list, 1):
             logger.info(f"  [{idx}/{len(report_list)}] {report.report_name}")
-            report.self_ensure()
-            # Use primary language from name dict for default report name
-            primary_lang = get_primary_lang(report.entry_name)
-            report._data_dictionary["name"] = report.entry_name[primary_lang]
-            # Resolve attachment dict to single value based on company language
-            if isinstance(report.attachment, dict):
-                company_id_val = report.company_id[0] if report.company_id else False
-                if company_id_val:
-                    company_lang = self.get_company_language(company_id_val)
-                else:
-                    company_lang = self.language
-                report._data_dictionary["attachment"] = resolve_attachment_value(
-                    report.attachment, company_lang, fallback_lang=self.language
-                )
-                logger.debug(f"    Resolved attachment for company lang [{company_lang}]")
-            dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
-            if not dependencies_installed and not_installed_modules:
-                logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
-                for not_installed_module in not_installed_modules:
-                    logger.error(f"    - Module '{not_installed_module}' missing")
+
+            report_object, ok = self._create_or_update_report(report, IR_ACTIONS_REPORT, installed_lang_codes)
+            if not ok:
                 continue
-            if report.company_id:
-                IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
-                if self.version in ["13", "14", "15", "16"]:
-                    report_id = self._search_report_v13(
-                        report.model_name,
-                        report.entry_name,
-                        IR_ACTIONS_REPORT,
-                        report.company_id[0],
-                    )
-                else:
-                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
-            else:
-                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
-            if not report_id:
-                report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
-                report_object = IR_ACTIONS_REPORT.browse(report_id)
-            else:
-                report_object = IR_ACTIONS_REPORT.browse(report_id)
-                report_object.write(report._data_dictionary)
-            # Add report to print menu
-            report_object.create_action()
 
-            # Set translations for all installed languages
-            for lang_code, translated_name in report.entry_name.items():
-                if lang_code in installed_lang_codes:
-                    report_object.with_context(lang=lang_code).write({"name": translated_name})
-                    logger.debug(f"    Set name [{lang_code}]: {translated_name}")
-
-            # Set print_report_name translations
-            if report.print_report_name:
-                if isinstance(report.print_report_name, dict):
-                    # Per-language dict: write each language's expression
-                    for lang_code, prn_value in report.print_report_name.items():
-                        if lang_code in installed_lang_codes:
-                            report_object.with_context(lang=lang_code).write({"print_report_name": prn_value})
-                            logger.debug(f"    Set print_report_name [{lang_code}]")
-                else:
-                    # Legacy single string: write to all installed languages
-                    for lang_code in installed_lang_codes:
-                        report_object.with_context(lang=lang_code).write(
-                            {"print_report_name": report.print_report_name}
-                        )
-                logger.debug("    print_report_name configured")
-
-            IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
-
-            # Count total fields for logging
-            total_fields = sum(len(fields) for fields in report._fields.values())
-            logger.debug(f"    Mapping {total_fields} fields across {len(report._fields)} models...")
+            self._set_report_translations(report, report_object, installed_lang_codes)
 
             try:
-                # Loop over all models in report fields dictionary
-                for model_name in report._fields:
-                    # Get model object in Odoo
-                    if model_name in model_name_ids:
-                        model_id = model_name_ids[model_name]
-                    else:
-                        model_id = IR_MODEL.search([("model", "=", model_name)])
-                        if model_id:
-                            model_name_ids[model_name] = model_id[0]
-                            model_id = model_id[0]
-                    # Loop over all fields in the list of the current model
-                    if model_id:
-                        for field_name in report._fields[model_name]:
-                            # Get the field from Odoo
-                            field_id = IR_MODEL_FIELDS.search([("model_id", "=", model_id), ("name", "=", field_name)])
-                            if field_id:
-                                report_list_ids = IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
-                                if report_object.id not in report_list_ids:
-                                    # Create dict of dicts in order to store the ids with the following structure:
-                                    # {model_id: {field_id1: [report_ids], field_id2: [report_ids]}
-                                    report_ids = report_list_ids + [report_object.id]
-                                    if model_id in models_fields:
-                                        if field_id[0] in models_fields[model_id]:
-                                            new_report_ids = models_fields[model_id][field_id[0]] + report_ids
-                                            models_fields[model_id][field_id[0]] = list(dict.fromkeys(new_report_ids))
-                                        else:
-                                            models_fields[model_id][field_id[0]] = report_ids
-                                    else:
-                                        models_fields[model_id] = dict()
-                                        models_fields[model_id][field_id[0]] = report_ids
-                            else:
-                                logger.warning(f"Field '{field_name}' not found in model '{model_name}'")
-                    else:
-                        logger.warning(f"Model '{model_name}' not found in system")
-                if report._calculated_fields:
-                    report_company_id = report.company_id[0] if report.company_id else False
-                    for field, content in report._calculated_fields.items():
-                        for function_name, parameter in content.items():
-                            self.set_calculated_fields(
-                                field,
-                                function_name,
-                                parameter,
-                                report.entry_name,
-                                report.model_name,
-                                report_company_id,
-                            )
+                self._map_report_fields(report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids)
                 logger.info(f"  ✓ Completed: {report.report_name}")
-
             except Exception as ex:
                 logger.error(f"  ✗ Exception while processing report: {report.report_name}")
                 logger.exception(ex)
 
+        self._write_field_mappings(models_fields, IR_MODEL)
+
+    def _create_or_update_report(self, report, IR_ACTIONS_REPORT, installed_lang_codes):
+        """Search for existing report and create or update it in Odoo.
+
+        Handles dependency check, company switching, report search, create/update,
+        and create_action. Resolves attachment dict to single value and sets primary
+        language name in _data_dictionary.
+
+        Args:
+            report: EqReport object to process.
+            IR_ACTIONS_REPORT: Odoo ir.actions.report model proxy.
+            installed_lang_codes: Set of installed language codes.
+
+        Returns:
+            Tuple of (report_object, success). report_object is the browsed record
+            (or None on failure), success is bool.
+        """
+        original_company_yaml_user = IR_ACTIONS_REPORT.env.user.company_id
+
+        report.self_ensure()
+        # Use primary language from name dict for default report name
+        primary_lang = get_primary_lang(report.entry_name)
+        report._data_dictionary["name"] = report.entry_name[primary_lang]
+        # Resolve attachment dict to single value based on company language
+        if isinstance(report.attachment, dict):
+            company_id_val = report.company_id[0] if report.company_id else False
+            if company_id_val:
+                company_lang = self.get_company_language(company_id_val)
+            else:
+                company_lang = self.language
+            report._data_dictionary["attachment"] = resolve_attachment_value(
+                report.attachment, company_lang, fallback_lang=self.language
+            )
+            logger.debug(f"    Resolved attachment for company lang [{company_lang}]")
+        dependencies_installed, not_installed_modules = self.check_dependencies(report._dependencies)
+        if not dependencies_installed and not_installed_modules:
+            logger.error(f"  ✗ Dependencies for {report.report_name} not installed")
+            for not_installed_module in not_installed_modules:
+                logger.error(f"    - Module '{not_installed_module}' missing")
+            return None, False
+        if report.company_id:
+            IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
+            if self.version in ["13", "14", "15", "16"]:
+                report_id = self._search_report_v13(
+                    report.model_name,
+                    report.entry_name,
+                    IR_ACTIONS_REPORT,
+                    report.company_id[0],
+                )
+            else:
+                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+        else:
+            report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+        if not report_id:
+            report_id = IR_ACTIONS_REPORT.create(report._data_dictionary)
+            report_object = IR_ACTIONS_REPORT.browse(report_id)
+        else:
+            report_object = IR_ACTIONS_REPORT.browse(report_id)
+            report_object.write(report._data_dictionary)
+        # Add report to print menu
+        report_object.create_action()
+
+        IR_ACTIONS_REPORT.env.user.company_id = original_company_yaml_user
+
+        return report_object, True
+
+    def _set_report_translations(self, report, report_object, installed_lang_codes):
+        """Write name and print_report_name translations per installed language.
+
+        Args:
+            report: EqReport object with entry_name and print_report_name.
+            report_object: Browsed ir.actions.report record.
+            installed_lang_codes: Set of installed language codes.
+        """
+        # Set translations for all installed languages
+        for lang_code, translated_name in report.entry_name.items():
+            if lang_code in installed_lang_codes:
+                report_object.with_context(lang=lang_code).write({"name": translated_name})
+                logger.debug(f"    Set name [{lang_code}]: {translated_name}")
+
+        # Set print_report_name translations
+        if report.print_report_name:
+            if isinstance(report.print_report_name, dict):
+                # Per-language dict: write each language's expression
+                for lang_code, prn_value in report.print_report_name.items():
+                    if lang_code in installed_lang_codes:
+                        report_object.with_context(lang=lang_code).write({"print_report_name": prn_value})
+                        logger.debug(f"    Set print_report_name [{lang_code}]")
+            else:
+                # Legacy single string: write to all installed languages
+                for lang_code in installed_lang_codes:
+                    report_object.with_context(lang=lang_code).write(
+                        {"print_report_name": report.print_report_name}
+                    )
+            logger.debug("    print_report_name configured")
+
+    def _map_report_fields(self, report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids):
+        """Iterate report fields, search model/field IDs, and build models_fields dict.
+
+        Also sets calculated fields for the report.
+
+        Args:
+            report: EqReport object with _fields and _calculated_fields.
+            report_object: Browsed ir.actions.report record.
+            IR_MODEL: Odoo ir.model model proxy.
+            IR_MODEL_FIELDS: Odoo ir.model.fields model proxy.
+            models_fields: Dict accumulator {model_id: {field_id: [report_ids]}}, modified in-place.
+            model_name_ids: Dict cache {model_name: model_id}, modified in-place.
+        """
+        # Count total fields for logging
+        total_fields = sum(len(fields) for fields in report._fields.values())
+        logger.debug(f"    Mapping {total_fields} fields across {len(report._fields)} models...")
+
+        # Loop over all models in report fields dictionary
+        for model_name in report._fields:
+            # Get model object in Odoo
+            if model_name in model_name_ids:
+                model_id = model_name_ids[model_name]
+            else:
+                model_id = IR_MODEL.search([("model", "=", model_name)])
+                if model_id:
+                    model_name_ids[model_name] = model_id[0]
+                    model_id = model_id[0]
+            # Loop over all fields in the list of the current model
+            if model_id:
+                for field_name in report._fields[model_name]:
+                    # Get the field from Odoo
+                    field_id = IR_MODEL_FIELDS.search([("model_id", "=", model_id), ("name", "=", field_name)])
+                    if field_id:
+                        report_list_ids = IR_MODEL_FIELDS.eq_get_field_report_ids(field_id)
+                        if report_object.id not in report_list_ids:
+                            # Create dict of dicts in order to store the ids with the following structure:
+                            # {model_id: {field_id1: [report_ids], field_id2: [report_ids]}
+                            report_ids = report_list_ids + [report_object.id]
+                            if model_id in models_fields:
+                                if field_id[0] in models_fields[model_id]:
+                                    new_report_ids = models_fields[model_id][field_id[0]] + report_ids
+                                    models_fields[model_id][field_id[0]] = list(dict.fromkeys(new_report_ids))
+                                else:
+                                    models_fields[model_id][field_id[0]] = report_ids
+                            else:
+                                models_fields[model_id] = dict()
+                                models_fields[model_id][field_id[0]] = report_ids
+                    else:
+                        logger.warning(f"Field '{field_name}' not found in model '{model_name}'")
+            else:
+                logger.warning(f"Model '{model_name}' not found in system")
+        if report._calculated_fields:
+            report_company_id = report.company_id[0] if report.company_id else False
+            for field, content in report._calculated_fields.items():
+                for function_name, parameter in content.items():
+                    self.set_calculated_fields(
+                        field,
+                        function_name,
+                        parameter,
+                        report.entry_name,
+                        report.model_name,
+                        report_company_id,
+                    )
+
+    def _write_field_mappings(self, models_fields, IR_MODEL):
+        """Write accumulated field mappings to Odoo models.
+
+        Args:
+            models_fields: Dict {model_id: {field_id: [report_ids]}} built by _map_report_fields.
+            IR_MODEL: Odoo ir.model model proxy.
+        """
         # Final step: Write field mappings to Odoo models
         logger.info(f"→ Writing field mappings to {len(models_fields)} models...")
         for idx, model in enumerate(models_fields, 1):
@@ -638,7 +695,6 @@ class EqOdooConnection(OdooConnection):
             if report.company_id:
                 self.connection.env.user.company_id = report.company_id[0]
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                self.connection.env["ir.model"]
                 if self.version in ["13", "14", "15", "16"]:
                     report_id = self._search_report_v13(
                         report.model_name,
@@ -650,7 +706,6 @@ class EqOdooConnection(OdooConnection):
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             else:
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                self.connection.env["ir.model"]
                 report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
             # Get report action record
             report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
@@ -689,8 +744,6 @@ class EqOdooConnection(OdooConnection):
                             [choice(report_model_records_ids)],
                             create_attachment=False,
                         )
-                    # Convert data content to base64
-                    base64.encodebytes(res.encode("utf-8")).decode("utf-8")
                     logger.info(f"Report rendering successful: {report.report_name}")
                 except Exception as ex:
                     if "No such file or directory" in str(ex):

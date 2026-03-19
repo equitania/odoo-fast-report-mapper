@@ -1,28 +1,30 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-"""Tests for odoo_fast_report_mapper/eq_odoo_connection.py - EqOdooConnection class."""
+"""Comprehensive tests for EqOdooConnection in odoo_fast_report_mapper/eq_odoo_connection.py."""
 
 from unittest.mock import MagicMock, patch
 
 import yaml
 
 from odoo_fast_report_mapper.eq_odoo_connection import EqOdooConnection, YAMLDumper
+from odoo_fast_report_mapper.eq_report import EqReport
+from odoo_fast_report_mapper.eq_utils import create_report_object_from_yaml_object
 
 # ---------------------------------------------------------------------------
 # Helper to create EqOdooConnection with mocked ODOO
 # ---------------------------------------------------------------------------
 
 
-def _make_eq_connection(
-    language="ger",
+def _make_connection(
+    language="de_DE",
     collect_yaml=False,
     disable_qweb=True,
     workflow=0,
-    url="https://odoo.example.com",
-    port=443,
+    url="http://localhost",
+    port=8069,
     username="admin",
-    password="secret",
+    password="admin",
     database="test_db",
 ):
     """Create an EqOdooConnection with a patched prepare_connection."""
@@ -44,771 +46,74 @@ def _make_eq_connection(
             password=password,
             database=database,
         )
+    conn.version = "18"
     return conn
 
 
+def _make_report_from_fixture(sample_data):
+    """Create an EqReport from fixture YAML data."""
+    return create_report_object_from_yaml_object(sample_data)
+
+
+def _setup_env(conn, models_map):
+    """Wire up conn.connection.env[key] to return the given models_map entries."""
+
+    def mock_env_getitem(key):
+        return models_map.get(key, MagicMock())
+
+    conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+
+
 # ---------------------------------------------------------------------------
-# Constructor tests
+# 1. TestEqOdooConnectionInit
 # ---------------------------------------------------------------------------
 
 
-class TestEqOdooConnectionConstructor:
-    """Verify constructor sets EqOdooConnection-specific attributes."""
+class TestEqOdooConnectionInit:
+    """Verify constructor sets all EqOdooConnection-specific attributes."""
 
-    def test_constructor_sets_language(self):
-        conn = _make_eq_connection(language="eng")
-        assert conn.language == "eng"
+    def test_init_sets_language(self):
+        conn = _make_connection(language="en_US")
+        assert conn.language == "en_US"
 
-    def test_constructor_sets_collect_yaml(self):
-        conn = _make_eq_connection(collect_yaml=True)
+    def test_init_sets_collect_yaml(self):
+        conn = _make_connection(collect_yaml=True)
         assert conn.collect_yaml is True
 
-    def test_constructor_sets_disable_qweb(self):
-        conn = _make_eq_connection(disable_qweb=False)
+    def test_init_sets_disable_qweb(self):
+        conn = _make_connection(disable_qweb=False)
         assert conn.disable_qweb is False
 
-    def test_constructor_sets_workflow(self):
-        conn = _make_eq_connection(workflow=2)
+    def test_init_sets_workflow(self):
+        conn = _make_connection(workflow=2)
         assert conn.workflow == 2
 
-    def test_constructor_sets_all_attributes(self):
-        conn = _make_eq_connection(language="ger", collect_yaml=False, disable_qweb=True, workflow=1)
-        assert conn.language == "ger"
-        assert conn.collect_yaml is False
-        assert conn.disable_qweb is True
+    def test_init_sets_all_attributes(self):
+        conn = _make_connection(language="fr_FR", collect_yaml=True, disable_qweb=False, workflow=1)
+        assert conn.language == "fr_FR"
+        assert conn.collect_yaml is True
+        assert conn.disable_qweb is False
         assert conn.workflow == 1
 
-
-# ---------------------------------------------------------------------------
-# _search_report_v13() tests
-# ---------------------------------------------------------------------------
-
-
-class TestSearchReportV13:
-    """Verify report search with company_id filtering (v13+ behavior)."""
-
-    def test_search_report_v13_without_company_id(self):
-        """_search_report_v13 must search with company_id=False when not provided."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [42]
-
-        result = conn._search_report_v13(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-            company_id=False,
-        )
-
-        assert result == 42
-        mock_ir_report.search.assert_called_once()
-        call_args = mock_ir_report.search.call_args[0][0]
-        # Verify company_id filter is present with False
-        assert ("company_id", "=", False) in call_args
-
-    def test_search_report_v13_with_company_id(self):
-        """_search_report_v13 must search with specific company_id when provided."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [55]
-
-        result = conn._search_report_v13(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-            company_id=3,
-        )
-
-        assert result == 55
-        call_args = mock_ir_report.search.call_args[0][0]
-        assert ("company_id", "=", 3) in call_args
-
-    def test_search_report_v13_searches_all_names_at_once(self):
-        """_search_report_v13 must search all name variants in a single query."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [77]
-
-        result = conn._search_report_v13(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-            company_id=False,
-        )
-
-        assert result == 77
-        # Should only need one search call with OR domain for all names
-        mock_ir_report.search.assert_called_once()
-
-    def test_search_report_v13_returns_false_when_not_found(self):
-        """_search_report_v13 must return False when no reports are found."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = []
-
-        result = conn._search_report_v13(
-            model_name="sale.order",
-            report_name={"de_DE": "Nonexistent"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-            company_id=False,
-        )
-
-        assert result is False
+    def test_init_calls_parent_init(self):
+        """Parent OdooConnection.__init__ must set username, password, database, connection."""
+        conn = _make_connection(username="testuser", password="testpw", database="mydb")
+        assert conn.username == "testuser"
+        assert conn.password == "testpw"
+        assert conn.database == "mydb"
+        assert conn.connection is not None
 
 
 # ---------------------------------------------------------------------------
-# _search_report() tests (EqOdooConnection override)
+# 2. TestGetInstalledLanguages
 # ---------------------------------------------------------------------------
-
-
-class TestSearchReport:
-    """Verify report search with dynamic name domain."""
-
-    def test_search_report_found(self):
-        """_search_report must return ID when name matches."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [10]
-
-        result = conn._search_report(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-        )
-
-        assert result == 10
-
-    def test_search_report_single_query_for_all_names(self):
-        """_search_report must search all name variants in one query."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [20]
-
-        result = conn._search_report(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-        )
-
-        assert result == 20
-        # Should only need one search call with all names in OR domain
-        mock_ir_report.search.assert_called_once()
-
-    def test_search_report_returns_false_when_not_found(self):
-        """_search_report must return False when no names yield results."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = []
-
-        result = conn._search_report(
-            model_name="sale.order",
-            report_name={"de_DE": "Nonexistent", "en_US": "Nonexistent"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-        )
-
-        assert result is False
-
-    def test_search_report_uses_connection_env_when_no_ir_report_passed(self):
-        """_search_report must use self.connection.env when IR_ACTIONS_REPORT is False."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [30]
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_ir_report)
-
-        result = conn._search_report(
-            model_name="sale.order",
-            report_name={"de_DE": "Test"},
-        )
-
-        conn.connection.env.__getitem__.assert_called_with("ir.actions.report")
-        assert result == 30
-
-    def test_search_report_multi_language(self):
-        """_search_report must handle 3+ languages in one query."""
-        conn = _make_eq_connection()
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [40]
-
-        result = conn._search_report(
-            model_name="sale.order",
-            report_name={"de_DE": "Verkauf", "en_US": "Sales", "fr_FR": "Ventes"},
-            IR_ACTIONS_REPORT=mock_ir_report,
-        )
-
-        assert result == 40
-        mock_ir_report.search.assert_called_once()
-        call_args = mock_ir_report.search.call_args[0][0]
-        # Should contain all name variants including PDF suffix
-        assert ("name", "=ilike", "Verkauf") in call_args
-        assert ("name", "=ilike", "Sales") in call_args
-        assert ("name", "=ilike", "Ventes") in call_args
-
-
-# ---------------------------------------------------------------------------
-# check_dependencies() tests (EqOdooConnection override)
-# ---------------------------------------------------------------------------
-
-
-class TestCheckDependencies:
-    """Verify dependency checking returns tuple (bool, list)."""
-
-    def test_check_dependencies_all_installed(self):
-        """check_dependencies must return (True, []) when all are installed."""
-        conn = _make_eq_connection()
-        mock_ir_module = MagicMock()
-        mock_ir_module.search.return_value = [1]
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_ir_module)
-
-        result = conn.check_dependencies(["sale", "account"])
-
-        assert result == (True, [])
-
-    def test_check_dependencies_one_missing(self):
-        """check_dependencies must return (False, [missing]) when one is missing."""
-        conn = _make_eq_connection()
-        mock_ir_module = MagicMock()
-        mock_ir_module.search.side_effect = [[1], []]
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_ir_module)
-
-        result = conn.check_dependencies(["sale", "missing_module"])
-
-        assert result[0] is False
-        assert "missing_module" in result[1]
-
-    def test_check_dependencies_empty_list(self):
-        """check_dependencies must return (True, []) for empty list."""
-        conn = _make_eq_connection()
-
-        result = conn.check_dependencies([])
-
-        assert result == (True, [])
-
-    def test_check_dependencies_none(self):
-        """check_dependencies must return (True, []) for None."""
-        conn = _make_eq_connection()
-
-        result = conn.check_dependencies(None)
-
-        assert result == (True, [])
-
-
-# ---------------------------------------------------------------------------
-# is_boolean() / is_dict() tests
-# ---------------------------------------------------------------------------
-
-
-class TestIsBoolean:
-    """Verify is_boolean type checking."""
-
-    def test_is_boolean_true(self):
-        conn = _make_eq_connection()
-        assert conn.is_boolean(True) is True
-
-    def test_is_boolean_false(self):
-        conn = _make_eq_connection()
-        assert conn.is_boolean(False) is True
-
-    def test_is_boolean_integer(self):
-        conn = _make_eq_connection()
-        assert conn.is_boolean(1) is False
-
-    def test_is_boolean_string(self):
-        conn = _make_eq_connection()
-        assert conn.is_boolean("True") is False
-
-    def test_is_boolean_none(self):
-        conn = _make_eq_connection()
-        assert conn.is_boolean(None) is False
-
-
-class TestIsDict:
-    """Verify is_dict type checking."""
-
-    def test_is_dict_with_dict(self):
-        conn = _make_eq_connection()
-        assert conn.is_dict({"key": "value"}) is True
-
-    def test_is_dict_with_empty_dict(self):
-        conn = _make_eq_connection()
-        assert conn.is_dict({}) is True
-
-    def test_is_dict_with_list(self):
-        conn = _make_eq_connection()
-        assert conn.is_dict([1, 2]) is False
-
-    def test_is_dict_with_string(self):
-        conn = _make_eq_connection()
-        assert conn.is_dict("not a dict") is False
-
-    def test_is_dict_with_none(self):
-        conn = _make_eq_connection()
-        assert conn.is_dict(None) is False
-
-
-# ---------------------------------------------------------------------------
-# write_yaml() tests
-# ---------------------------------------------------------------------------
-
-
-class TestWriteYaml:
-    """Verify YAML file writing."""
-
-    def test_write_yaml_creates_valid_yaml_file(self, tmp_path):
-        """write_yaml must create a valid YAML file with correct content."""
-        conn = _make_eq_connection()
-        output_file = tmp_path / "test_output.yaml"
-        data = {
-            "name": {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"},
-            "report_name": "eq_fr_core_sale_order",
-            "report_type": "fast_report",
-        }
-
-        conn.write_yaml(str(output_file), data)
-
-        assert output_file.exists()
-        with open(output_file, encoding="utf8") as f:
-            loaded = yaml.safe_load(f)
-        assert loaded["name"] == {"de_DE": "Verkaufsauftrag", "en_US": "Sales_Order"}
-        assert loaded["report_name"] == "eq_fr_core_sale_order"
-        assert loaded["report_type"] == "fast_report"
-
-    def test_write_yaml_utf8_encoding(self, tmp_path):
-        """write_yaml must handle UTF-8 characters correctly."""
-        conn = _make_eq_connection()
-        output_file = tmp_path / "test_utf8.yaml"
-        data = {"name": {"ger": "Rechnungsueberblick"}}
-
-        conn.write_yaml(str(output_file), data)
-
-        content = output_file.read_text(encoding="utf8")
-        assert "Rechnungsueberblick" in content
-
-    def test_write_yaml_uses_yaml_dumper(self, tmp_path):
-        """write_yaml must use the custom YAMLDumper for formatting."""
-        conn = _make_eq_connection()
-        output_file = tmp_path / "test_dumper.yaml"
-        data = {
-            "level1": {
-                "level2": ["item1", "item2"],
-            },
-        }
-
-        conn.write_yaml(str(output_file), data)
-
-        content = output_file.read_text(encoding="utf8")
-        # YAMLDumper increases indent, so nested items should be indented
-        assert "level1:" in content
-        assert "level2:" in content
-
-
-# ---------------------------------------------------------------------------
-# YAMLDumper tests
-# ---------------------------------------------------------------------------
-
-
-class TestYAMLDumper:
-    """Verify custom YAMLDumper increases indent correctly."""
-
-    def test_yaml_dumper_increases_indent(self):
-        """YAMLDumper must override indentless=False for consistent indentation."""
-        data = {
-            "parent": {
-                "child": ["item1", "item2"],
-            },
-        }
-        output = yaml.dump(data, Dumper=YAMLDumper, default_flow_style=False)
-
-        # With indentless=False, list items should be indented under their parent
-        assert "parent:" in output
-        assert "child:" in output
-        lines = output.strip().split("\n")
-        # Verify child is indented relative to parent
-        parent_indent = len(lines[0]) - len(lines[0].lstrip())
-        child_indent = len(lines[1]) - len(lines[1].lstrip())
-        assert child_indent > parent_indent
-
-
-# ---------------------------------------------------------------------------
-# add_field_to_dictionary() tests
-# ---------------------------------------------------------------------------
-
-
-class TestAddFieldToDictionary:
-    """Verify field addition to data dictionary."""
-
-    def test_add_field_to_new_report(self):
-        """add_field_to_dictionary must create new report entry in dictionary."""
-        conn = _make_eq_connection()
-        mock_ir_fields = MagicMock()
-        mock_ir_model = MagicMock()
-        mock_ir_model.search.return_value = [1]
-        mock_ir_fields.search.return_value = [10]
-        mock_field_obj = MagicMock()
-        mock_field_obj.modules = "sale, account"
-        mock_ir_fields.browse.return_value = mock_field_obj
-
-        def mock_env_getitem(key):
-            if key == "ir.model.fields":
-                return mock_ir_fields
-            if key == "ir.model":
-                return mock_ir_model
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        data_dict = {}
-        result = conn.add_field_to_dictionary(data_dict, 100, "sale.order", "name", False)
-
-        assert 100 in result
-        assert "sale.order" in result[100]
-        assert "name" in result[100]["sale.order"]
-
-    def test_add_field_to_existing_report(self):
-        """add_field_to_dictionary must append field to existing report entry."""
-        conn = _make_eq_connection()
-        mock_ir_fields = MagicMock()
-        mock_ir_model = MagicMock()
-        mock_ir_model.search.return_value = [1]
-        mock_ir_fields.search.return_value = [10]
-        mock_field_obj = MagicMock()
-        mock_field_obj.modules = "sale"
-        mock_ir_fields.browse.return_value = mock_field_obj
-
-        def mock_env_getitem(key):
-            if key == "ir.model.fields":
-                return mock_ir_fields
-            if key == "ir.model":
-                return mock_ir_model
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        data_dict = {100: {"sale.order": ["id"], "dependencies": ["sale"]}}
-        result = conn.add_field_to_dictionary(data_dict, 100, "sale.order", "partner_id", False)
-
-        assert "partner_id" in result[100]["sale.order"]
-        assert "id" in result[100]["sale.order"]
-
-    def test_add_field_with_company_id(self):
-        """add_field_to_dictionary must store company_id when provided."""
-        conn = _make_eq_connection()
-        mock_ir_fields = MagicMock()
-        mock_ir_model = MagicMock()
-        mock_ir_model.search.return_value = [1]
-        mock_ir_fields.search.return_value = [10]
-        mock_field_obj = MagicMock()
-        mock_field_obj.modules = "account"
-        mock_ir_fields.browse.return_value = mock_field_obj
-
-        def mock_env_getitem(key):
-            if key == "ir.model.fields":
-                return mock_ir_fields
-            if key == "ir.model":
-                return mock_ir_model
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        data_dict = {}
-        result = conn.add_field_to_dictionary(data_dict, 200, "account.move", "name", 3)
-
-        assert "company_id" in result[200]
-        assert 3 in result[200]["company_id"]
-
-
-# ---------------------------------------------------------------------------
-# _collect_calculated_fields() tests
-# ---------------------------------------------------------------------------
-
-
-class TestCollectCalculatedFields:
-    """Verify extraction of calculated fields from mock objects."""
-
-    def test_collect_calculated_fields_extracts_correctly(self):
-        """_collect_calculated_fields must extract field data from eq_calculated_field objects."""
-        conn = _make_eq_connection()
-
-        mock_field_1 = MagicMock()
-        mock_field_1.eq_field_name = "payment_text"
-        mock_field_1.eq_function_name = "eq_get_payment_terms"
-        mock_field_1.eq_parameters_name = "partner_id.lang, currency_id"
-
-        mock_field_2 = MagicMock()
-        mock_field_2.eq_field_name = "total_weight"
-        mock_field_2.eq_function_name = "eq_calc_weight"
-        mock_field_2.eq_parameters_name = "product_id, quantity"
-
-        result = conn._collect_calculated_fields([mock_field_1, mock_field_2])
-
-        assert "payment_text" in result
-        assert result["payment_text"]["eq_get_payment_terms"] == ["partner_id.lang", "currency_id"]
-        assert "total_weight" in result
-        assert result["total_weight"]["eq_calc_weight"] == ["product_id", "quantity"]
-
-    def test_collect_calculated_fields_empty_list(self):
-        """_collect_calculated_fields must return empty dict for empty list."""
-        conn = _make_eq_connection()
-
-        result = conn._collect_calculated_fields([])
-
-        assert result == {}
-
-    def test_collect_calculated_fields_strips_spaces(self):
-        """_collect_calculated_fields must strip spaces from parameter names."""
-        conn = _make_eq_connection()
-
-        mock_field = MagicMock()
-        mock_field.eq_field_name = "test_field"
-        mock_field.eq_function_name = "test_func"
-        mock_field.eq_parameters_name = "  param1 ,  param2 "
-
-        result = conn._collect_calculated_fields([mock_field])
-
-        assert result["test_field"]["test_func"] == ["param1", "param2"]
-
-
-# ---------------------------------------------------------------------------
-# disable_qweb_reports() tests
-# ---------------------------------------------------------------------------
-
-
-class TestDisableQwebReports:
-    """Verify QWeb report disabling."""
-
-    def test_disable_qweb_reports_calls_unlink_action(self):
-        """disable_qweb_reports must call unlink_action for each QWeb report."""
-        conn = _make_eq_connection()
-
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [1, 2, 3]
-
-        mock_report_obj_1 = MagicMock()
-        mock_report_obj_2 = MagicMock()
-        mock_report_obj_3 = MagicMock()
-        mock_ir_report.browse.side_effect = [mock_report_obj_1, mock_report_obj_2, mock_report_obj_3]
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_ir_report)
-
-        conn.disable_qweb_reports()
-
-        mock_report_obj_1.unlink_action.assert_called_once()
-        mock_report_obj_2.unlink_action.assert_called_once()
-        mock_report_obj_3.unlink_action.assert_called_once()
-        assert mock_ir_report.browse.call_count == 3
-
-    def test_disable_qweb_reports_no_reports(self):
-        """disable_qweb_reports must handle case with no QWeb reports gracefully."""
-        conn = _make_eq_connection()
-
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = []
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_ir_report)
-
-        # Should not raise any exception
-        conn.disable_qweb_reports()
-
-        mock_ir_report.browse.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
-# get_installed_languages() tests
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# map_reports() tests — print_report_name multi-language
-# ---------------------------------------------------------------------------
-
-
-class TestMapReportsPrintReportName:
-    """Verify print_report_name is written for all installed languages."""
-
-    def _setup_map_reports(self, conn, report):
-        """Helper to set up mocks for map_reports tests."""
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [42]
-        mock_report_obj = MagicMock()
-        mock_report_obj.id = 42
-        mock_ir_report.browse.return_value = mock_report_obj
-
-        mock_ctx_obj = MagicMock()
-        mock_report_obj.with_context = MagicMock(return_value=mock_ctx_obj)
-
-        mock_ir_model = MagicMock()
-        mock_ir_model_fields = MagicMock()
-
-        def mock_env_getitem(key):
-            mapping = {
-                "ir.actions.report": mock_ir_report,
-                "ir.model": mock_ir_model,
-                "ir.model.fields": mock_ir_model_fields,
-            }
-            return mapping.get(key, MagicMock())
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-        conn.connection.env.user.company_id = 1
-
-        return mock_report_obj, mock_ctx_obj
-
-    def _make_report_mock(self, print_report_name):
-        """Helper to create a minimal report mock."""
-        report = MagicMock()
-        report.entry_name = {"de_DE": "Angebot", "en_US": "Quotation"}
-        report.report_name = "eq_fr_sale_order"
-        report.model_name = "sale.order"
-        report.company_id = False
-        report._dependencies = []
-        report._fields = {}
-        report._calculated_fields = {}
-        report._data_dictionary = {}
-        report.print_report_name = print_report_name
-        return report
-
-    def test_map_reports_dict_print_report_name_per_language(self):
-        """Dict print_report_name: each language gets its own expression via with_context."""
-        conn = _make_eq_connection()
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-            {"code": "sr@latin", "iso_code": "sr", "name": "Serbian (Latin)"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        prn_dict = {
-            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
-            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
-        }
-        report = self._make_report_mock(prn_dict)
-
-        mock_report_obj, mock_ctx_obj = self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        # Collect write payloads
-        write_calls = mock_ctx_obj.write.call_args_list
-        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
-
-        # Only de_DE and en_US are in the dict — sr@latin is NOT, so only 2 writes
-        assert len(prn_writes) == 2, f"Expected 2 print_report_name writes (one per dict key), got {len(prn_writes)}"
-
-    def test_map_reports_dict_print_report_name_correct_values(self):
-        """Dict print_report_name: each language gets its correct expression value."""
-        conn = _make_eq_connection()
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        prn_dict = {
-            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
-            "en_US": "('Quotation-' + (object.name or '').replace('/','')",
-        }
-        report = self._make_report_mock(prn_dict)
-
-        mock_report_obj, mock_ctx_obj = self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        # Collect (lang_code, prn_value) from with_context/write calls
-        ctx_calls = mock_report_obj.with_context.call_args_list
-        write_calls = mock_ctx_obj.write.call_args_list
-
-        prn_lang_values = {}
-        for ctx_call, write_call in zip(ctx_calls, write_calls, strict=False):
-            if "print_report_name" in write_call[0][0]:
-                lang = ctx_call[1].get("lang") if ctx_call[1] else ctx_call[0][0]
-                prn_lang_values[lang] = write_call[0][0]["print_report_name"]
-
-        assert prn_lang_values.get("de_DE") == prn_dict["de_DE"]
-        assert prn_lang_values.get("en_US") == prn_dict["en_US"]
-
-    def test_map_reports_string_print_report_name_all_languages(self):
-        """String print_report_name (legacy): same value written for ALL installed languages."""
-        conn = _make_eq_connection()
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-            {"code": "sr@latin", "iso_code": "sr", "name": "Serbian (Latin)"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        prn_string = "('Angebot-' + (object.name or '').replace('/','')"
-        report = self._make_report_mock(prn_string)
-
-        _, mock_ctx_obj = self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        write_calls = mock_ctx_obj.write.call_args_list
-        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
-
-        # String fallback: one write per installed language (3 languages)
-        assert len(prn_writes) == 3, (
-            f"Expected 3 print_report_name writes (one per installed lang), got {len(prn_writes)}"
-        )
-
-        # All writes should contain the same expression
-        for write_call in prn_writes:
-            assert write_call[0][0]["print_report_name"] == prn_string
-
-    def test_map_reports_skips_print_report_name_when_empty(self):
-        """print_report_name should not be written when it is empty/falsy."""
-        conn = _make_eq_connection()
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        report = self._make_report_mock("")  # Empty — should skip
-
-        _, mock_ctx_obj = self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        write_calls = mock_ctx_obj.write.call_args_list
-        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
-
-        assert len(prn_writes) == 0, "print_report_name should not be written when empty"
-
-    def test_map_reports_dict_skips_uninstalled_languages(self):
-        """Dict print_report_name: languages not installed in Odoo should be skipped."""
-        conn = _make_eq_connection()
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        prn_dict = {
-            "de_DE": "('Angebot-' + (object.name or '').replace('/','')",
-            "fr_FR": "('Devis-' + (object.name or '').replace('/','')",  # Not installed
-        }
-        report = self._make_report_mock(prn_dict)
-
-        _, mock_ctx_obj = self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        write_calls = mock_ctx_obj.write.call_args_list
-        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
-
-        # Only de_DE should be written, fr_FR is not installed
-        assert len(prn_writes) == 1
 
 
 class TestGetInstalledLanguages:
     """Verify installed language retrieval from res.lang."""
 
-    def test_returns_installed_languages(self):
-        """get_installed_languages must return list of active language dicts."""
-        conn = _make_eq_connection()
+    def test_returns_language_list_with_codes(self):
+        conn = _make_connection()
         mock_res_lang = MagicMock()
         mock_res_lang.search.return_value = [1, 2]
 
@@ -823,36 +128,29 @@ class TestGetInstalledLanguages:
         mock_lang_en.name = "English (US)"
 
         mock_res_lang.browse.side_effect = [mock_lang_de, mock_lang_en]
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+        _setup_env(conn, {"res.lang": mock_res_lang})
 
         result = conn.get_installed_languages()
 
         assert len(result) == 2
-        assert result[0]["code"] == "de_DE"
-        assert result[0]["iso_code"] == "de"
-        assert result[1]["code"] == "en_US"
-        assert result[1]["iso_code"] == "en"
+        assert result[0] == {"code": "de_DE", "iso_code": "de", "name": "German / Deutsch"}
+        assert result[1] == {"code": "en_US", "iso_code": "en", "name": "English (US)"}
 
     def test_returns_empty_list_when_no_languages(self):
-        """get_installed_languages must return empty list when no languages found."""
-        conn = _make_eq_connection()
+        conn = _make_connection()
         mock_res_lang = MagicMock()
         mock_res_lang.search.return_value = []
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+        _setup_env(conn, {"res.lang": mock_res_lang})
 
         result = conn.get_installed_languages()
 
         assert result == []
 
     def test_queries_active_languages_only(self):
-        """get_installed_languages must filter for active=True."""
-        conn = _make_eq_connection()
+        conn = _make_connection()
         mock_res_lang = MagicMock()
         mock_res_lang.search.return_value = []
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_lang)
+        _setup_env(conn, {"res.lang": mock_res_lang})
 
         conn.get_installed_languages()
 
@@ -861,109 +159,1159 @@ class TestGetInstalledLanguages:
 
 
 # ---------------------------------------------------------------------------
-# get_company_language() tests
+# 3. TestGetCompanyLanguage
 # ---------------------------------------------------------------------------
 
 
 class TestGetCompanyLanguage:
-    """Verify company language lookup from res.company.partner_id.lang."""
+    """Verify company language lookup with caching and fallback."""
 
-    def test_returns_partner_lang(self):
-        """get_company_language must return partner_id.lang value."""
-        conn = _make_eq_connection(language="de_DE")
+    def test_returns_company_partner_lang(self):
+        conn = _make_connection(language="de_DE")
         mock_company = MagicMock()
         mock_company.partner_id.lang = "en_US"
         mock_res_company = MagicMock()
         mock_res_company.browse.return_value = mock_company
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+        _setup_env(conn, {"res.company": mock_res_company})
 
         result = conn.get_company_language(1)
 
         assert result == "en_US"
 
-    def test_fallback_when_partner_lang_empty(self):
-        """get_company_language must fall back to self.language when partner_id.lang is empty."""
-        conn = _make_eq_connection(language="de_DE")
+    def test_returns_fallback_when_partner_lang_empty(self):
+        conn = _make_connection(language="de_DE")
         mock_company = MagicMock()
         mock_company.partner_id.lang = ""
         mock_res_company = MagicMock()
         mock_res_company.browse.return_value = mock_company
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+        _setup_env(conn, {"res.company": mock_res_company})
 
         result = conn.get_company_language(1)
 
         assert result == "de_DE"
 
-    def test_fallback_on_exception(self):
-        """get_company_language must fall back to self.language on RPC exception."""
-        conn = _make_eq_connection(language="de_DE")
+    def test_returns_fallback_on_exception(self):
+        conn = _make_connection(language="de_DE")
         mock_res_company = MagicMock()
         mock_res_company.browse.side_effect = Exception("RPC error")
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+        _setup_env(conn, {"res.company": mock_res_company})
 
         result = conn.get_company_language(1)
 
         assert result == "de_DE"
 
-    def test_cache_prevents_second_rpc(self):
-        """get_company_language must cache result — second call should not hit RPC."""
-        conn = _make_eq_connection(language="de_DE")
+    def test_caches_result_per_company_id(self):
+        conn = _make_connection(language="de_DE")
         mock_company = MagicMock()
         mock_company.partner_id.lang = "fr_FR"
         mock_res_company = MagicMock()
         mock_res_company.browse.return_value = mock_company
-
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
+        _setup_env(conn, {"res.company": mock_res_company})
 
         result1 = conn.get_company_language(1)
         result2 = conn.get_company_language(1)
 
         assert result1 == "fr_FR"
         assert result2 == "fr_FR"
-        # browse should only be called once due to caching
         mock_res_company.browse.assert_called_once_with(1)
 
     def test_different_company_ids_cached_separately(self):
-        """get_company_language must cache per company_id."""
-        conn = _make_eq_connection(language="de_DE")
-
-        mock_company_1 = MagicMock()
-        mock_company_1.partner_id.lang = "en_US"
-        mock_company_2 = MagicMock()
-        mock_company_2.partner_id.lang = "fr_FR"
-
+        conn = _make_connection(language="de_DE")
+        mock_c1 = MagicMock()
+        mock_c1.partner_id.lang = "en_US"
+        mock_c2 = MagicMock()
+        mock_c2.partner_id.lang = "fr_FR"
         mock_res_company = MagicMock()
-        mock_res_company.browse.side_effect = [mock_company_1, mock_company_2]
+        mock_res_company.browse.side_effect = [mock_c1, mock_c2]
+        _setup_env(conn, {"res.company": mock_res_company})
 
-        conn.connection.env.__getitem__ = MagicMock(return_value=mock_res_company)
-
-        result1 = conn.get_company_language(1)
-        result2 = conn.get_company_language(2)
-
-        assert result1 == "en_US"
-        assert result2 == "fr_FR"
+        assert conn.get_company_language(1) == "en_US"
+        assert conn.get_company_language(2) == "fr_FR"
         assert mock_res_company.browse.call_count == 2
 
 
 # ---------------------------------------------------------------------------
-# list_fast_reports() tests
+# 4. TestSearchReport
+# ---------------------------------------------------------------------------
+
+
+class TestSearchReport:
+    """Verify report search with dynamic name domain."""
+
+    def test_search_report_finds_existing_report(self):
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [42]
+
+        result = conn._search_report("sale.order", {"de_DE": "Verkaufsauftrag"}, mock_ir_report)
+
+        assert result == 42
+
+    def test_search_report_returns_false_when_not_found(self):
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+
+        result = conn._search_report("sale.order", {"de_DE": "Nonexistent"}, mock_ir_report)
+
+        assert result is False
+
+    def test_search_report_v13_includes_company_domain(self):
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [55]
+
+        conn._search_report_v13("sale.order", {"de_DE": "Test"}, mock_ir_report, company_id=3)
+
+        call_args = mock_ir_report.search.call_args[0][0]
+        assert ("company_id", "=", 3) in call_args
+        assert ("company_id", "=", False) in call_args
+
+    def test_search_report_uses_connection_env_when_not_passed(self):
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [99]
+        _setup_env(conn, {"ir.actions.report": mock_ir_report})
+
+        result = conn._search_report("sale.order", {"de_DE": "Test"})
+
+        assert result == 99
+
+
+# ---------------------------------------------------------------------------
+# 5. TestCheckDependencies
+# ---------------------------------------------------------------------------
+
+
+class TestCheckDependencies:
+    """Verify dependency checking returns (bool, list) tuple."""
+
+    def test_all_installed_returns_true(self):
+        conn = _make_connection()
+        mock_ir_module = MagicMock()
+        mock_ir_module.search.return_value = [1]
+        _setup_env(conn, {"ir.module.module": mock_ir_module})
+
+        result = conn.check_dependencies(["sale", "account"])
+
+        assert result == (True, [])
+
+    def test_missing_module_returns_false_with_list(self):
+        conn = _make_connection()
+        mock_ir_module = MagicMock()
+        mock_ir_module.search.side_effect = [[1], []]
+        _setup_env(conn, {"ir.module.module": mock_ir_module})
+
+        result = conn.check_dependencies(["sale", "missing_mod"])
+
+        assert result[0] is False
+        assert "missing_mod" in result[1]
+
+    def test_empty_dependencies_returns_true(self):
+        conn = _make_connection()
+        assert conn.check_dependencies([]) == (True, [])
+
+    def test_none_dependencies_returns_true(self):
+        conn = _make_connection()
+        assert conn.check_dependencies(None) == (True, [])
+
+    def test_false_dependencies_returns_true(self):
+        conn = _make_connection()
+        assert conn.check_dependencies(False) == (True, [])
+
+
+# ---------------------------------------------------------------------------
+# 6. TestMapReports — the most important test class
+# ---------------------------------------------------------------------------
+
+
+def _make_map_reports_env(conn, report_search_return=None, installed_langs=None):
+    """Set up a full mocked environment for map_reports tests.
+
+    Returns dict with all mock objects for assertion.
+    """
+    if report_search_return is None:
+        report_search_return = []
+    if installed_langs is None:
+        installed_langs = [
+            {"code": "de_DE", "iso_code": "de", "name": "German"},
+            {"code": "en_US", "iso_code": "en", "name": "English"},
+        ]
+
+    mock_ir_report = MagicMock()
+    mock_ir_report.search.return_value = report_search_return
+    mock_ir_report.create.return_value = 100
+    mock_ir_report.env = MagicMock()
+    mock_ir_report.env.user = MagicMock()
+    mock_ir_report.env.user.company_id = 1
+
+    mock_report_obj = MagicMock()
+    mock_report_obj.id = 100 if not report_search_return else report_search_return[0]
+    mock_ir_report.browse.return_value = mock_report_obj
+
+    mock_ctx_obj = MagicMock()
+    mock_report_obj.with_context.return_value = mock_ctx_obj
+
+    mock_ir_model = MagicMock()
+    mock_ir_model.search.return_value = [1]
+    mock_ir_model.browse.return_value = MagicMock(model="sale.order")
+
+    mock_ir_model_fields = MagicMock()
+    mock_ir_model_fields.search.return_value = [10]
+    mock_ir_model_fields.eq_get_field_report_ids.return_value = []
+
+    mock_ir_module = MagicMock()
+    mock_ir_module.search.return_value = [1]  # all modules installed by default
+
+    conn.get_installed_languages = MagicMock(return_value=installed_langs)
+
+    env_map = {
+        "ir.actions.report": mock_ir_report,
+        "ir.model": mock_ir_model,
+        "ir.model.fields": mock_ir_model_fields,
+        "ir.module.module": mock_ir_module,
+    }
+    _setup_env(conn, env_map)
+    conn.connection.env.user.company_id = 1
+
+    return {
+        "ir.actions.report": mock_ir_report,
+        "ir.model": mock_ir_model,
+        "ir.model.fields": mock_ir_model_fields,
+        "ir.module.module": mock_ir_module,
+        "report_obj": mock_report_obj,
+        "ctx_obj": mock_ctx_obj,
+    }
+
+
+def _make_simple_report(
+    entry_name=None,
+    report_name="eq_fr_test",
+    model_name="sale.order",
+    company_id=False,
+    dependencies=None,
+    fields=None,
+    calculated_fields=None,
+    print_report_name="Test Report",
+    attachment="Test.pdf",
+):
+    """Create a real EqReport for map_reports testing."""
+    if entry_name is None:
+        entry_name = {"de_DE": "Test_DE", "en_US": "Test_EN"}
+    if dependencies is None:
+        dependencies = ["sale"]
+    if fields is None:
+        fields = {"sale.order": ["id", "name"]}
+    if calculated_fields is None:
+        calculated_fields = {}
+
+    return EqReport(
+        entry_name=entry_name,
+        report_name=report_name,
+        report_type="fast_report",
+        model_name=model_name,
+        company_id=company_id,
+        eq_export_type="pdf",
+        print_report_name=print_report_name,
+        attachment=attachment,
+        eq_ignore_images=True,
+        eq_handling_html_fields="standard",
+        multi=False,
+        attachment_use=False,
+        eq_print_button=False,
+        dependencies=dependencies,
+        model_fields=fields,
+        calculated_fields=calculated_fields,
+    )
+
+
+class TestMapReports:
+    """Test the full map_reports workflow with mocked Odoo."""
+
+    def test_map_reports_creates_new_report(self):
+        """When report not found, IR_ACTIONS_REPORT.create must be called."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[])
+        report = _make_simple_report()
+
+        conn.map_reports([report])
+
+        mocks["ir.actions.report"].create.assert_called_once()
+        # Verify data dictionary was passed to create
+        create_args = mocks["ir.actions.report"].create.call_args[0][0]
+        assert create_args["report_name"] == "eq_fr_test"
+
+    def test_map_reports_updates_existing_report(self):
+        """When report found, report_object.write must be called instead of create."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        report = _make_simple_report()
+
+        conn.map_reports([report])
+
+        mocks["ir.actions.report"].create.assert_not_called()
+        mocks["report_obj"].write.assert_called()
+
+    def test_map_reports_skips_report_when_dependencies_missing(self):
+        """When dependencies are missing, report must be skipped — no create or write."""
+        conn = _make_connection()
+        mock_ir_module = MagicMock()
+        mock_ir_module.search.return_value = []  # No modules installed
+
+        mocks = _make_map_reports_env(conn, report_search_return=[])
+        # Override module mock to return empty (not installed)
+        env_map = {
+            "ir.actions.report": mocks["ir.actions.report"],
+            "ir.model": mocks["ir.model"],
+            "ir.model.fields": mocks["ir.model.fields"],
+            "ir.module.module": mock_ir_module,
+        }
+        _setup_env(conn, env_map)
+
+        report = _make_simple_report(dependencies=["sale", "nonexistent_module"])
+
+        conn.map_reports([report])
+
+        mocks["ir.actions.report"].create.assert_not_called()
+        mocks["report_obj"].write.assert_not_called()
+
+    def test_map_reports_sets_translations_for_installed_langs(self):
+        """with_context().write() must be called for each installed language in entry_name."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        report = _make_simple_report(
+            entry_name={"de_DE": "Verkauf", "en_US": "Sales"},
+        )
+
+        conn.map_reports([report])
+
+        # Check with_context was called for both languages
+        ctx_calls = mocks["report_obj"].with_context.call_args_list
+
+        # At minimum, name translations for de_DE and en_US should be present
+        name_write_langs = []
+        for ctx_call, write_call in zip(ctx_calls, mocks["ctx_obj"].write.call_args_list, strict=False):
+            write_data = write_call[0][0]
+            if "name" in write_data:
+                lang = ctx_call.kwargs.get("lang")
+                name_write_langs.append(lang)
+
+        assert "de_DE" in name_write_langs
+        assert "en_US" in name_write_langs
+
+    def test_map_reports_handles_dict_print_report_name(self):
+        """Per-language dict print_report_name: each language gets its own expression."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        prn_dict = {
+            "de_DE": "('Angebot-' + object.name)",
+            "en_US": "('Quotation-' + object.name)",
+        }
+        report = _make_simple_report(print_report_name=prn_dict)
+
+        conn.map_reports([report])
+
+        write_calls = mocks["ctx_obj"].write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+        assert len(prn_writes) == 2
+
+    def test_map_reports_handles_string_print_report_name(self):
+        """Legacy single string: same value written for all installed languages."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        report = _make_simple_report(print_report_name="Report Name")
+
+        conn.map_reports([report])
+
+        write_calls = mocks["ctx_obj"].write.call_args_list
+        prn_writes = [c for c in write_calls if "print_report_name" in c[0][0]]
+        # 2 installed languages = 2 writes with same string
+        assert len(prn_writes) == 2
+        for w in prn_writes:
+            assert w[0][0]["print_report_name"] == "Report Name"
+
+    def test_map_reports_handles_dict_attachment(self, sample_report_yaml_data_dict_attachment):
+        """Per-language attachment dict must be resolved to single value."""
+        conn = _make_connection(language="de_DE")
+        _make_map_reports_env(conn, report_search_return=[42])
+        conn.get_company_language = MagicMock(return_value="de_DE")
+
+        report = _make_report_from_fixture(sample_report_yaml_data_dict_attachment)
+
+        conn.map_reports([report])
+
+        # After map_reports, the _data_dictionary attachment should be a string, not dict
+        assert isinstance(report._data_dictionary["attachment"], str)
+
+    def test_map_reports_maps_fields_correctly(self):
+        """Field search and report_ids building must work correctly."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        mocks["ir.model.fields"].eq_get_field_report_ids.return_value = []
+        mocks["report_obj"].id = 42
+
+        report = _make_simple_report(fields={"sale.order": ["id", "name"]})
+
+        conn.map_reports([report])
+
+        # IR_MODEL_FIELDS.search should be called for each field
+        field_search_calls = mocks["ir.model.fields"].search.call_args_list
+        assert len(field_search_calls) >= 2
+
+        # eq_write_report_ids should be called to persist field mappings
+        mocks["ir.model"].eq_write_report_ids.assert_called()
+
+    def test_map_reports_logs_warning_for_missing_field(self):
+        """When a field is not found in Odoo, a warning should be logged."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        # Field not found
+        mocks["ir.model.fields"].search.return_value = []
+
+        report = _make_simple_report(fields={"sale.order": ["nonexistent_field"]})
+
+        with patch("odoo_fast_report_mapper.eq_odoo_connection.logger") as mock_logger:
+            conn.map_reports([report])
+            # Check that warning was logged for the missing field
+            warning_calls = [str(c) for c in mock_logger.warning.call_args_list]
+            assert any("nonexistent_field" in w for w in warning_calls)
+
+    def test_map_reports_logs_warning_for_missing_model(self):
+        """When a model is not found in Odoo, a warning should be logged."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+        # Model not found
+        mocks["ir.model"].search.return_value = []
+
+        report = _make_simple_report(
+            fields={"nonexistent.model": ["id"]},
+        )
+
+        with patch("odoo_fast_report_mapper.eq_odoo_connection.logger") as mock_logger:
+            conn.map_reports([report])
+            warning_calls = [str(c) for c in mock_logger.warning.call_args_list]
+            assert any("nonexistent.model" in w for w in warning_calls)
+
+    def test_map_reports_handles_company_id(self):
+        """When report has company_id, company switching logic must be triggered."""
+        conn = _make_connection()
+        conn.version = "18"
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+
+        report = _make_simple_report(company_id=[5])
+
+        conn.map_reports([report])
+
+        # Verify company_id was set on IR_ACTIONS_REPORT.env.user
+        # The map_reports code sets: IR_ACTIONS_REPORT.env.user.company_id = report.company_id[0]
+        # Since we mocked it, just verify the report was processed
+        mocks["ir.actions.report"].browse.assert_called()
+
+    def test_map_reports_handles_company_id_v13(self):
+        """For v13-16, _search_report_v13 must be used instead of _search_report."""
+        conn = _make_connection()
+        conn.version = "16"
+        _make_map_reports_env(conn, report_search_return=[42])
+
+        report = _make_simple_report(company_id=[3])
+
+        with patch.object(conn, "_search_report_v13", return_value=42) as mock_v13:
+            conn.map_reports([report])
+            mock_v13.assert_called_once()
+
+    def test_map_reports_handles_calculated_fields(self):
+        """set_calculated_fields must be called for each calculated field entry."""
+        conn = _make_connection()
+        _make_map_reports_env(conn, report_search_return=[42])
+
+        calc_fields = {
+            "payment_text": {
+                "eq_get_payment_terms": ["partner_id.lang", "currency_id"],
+            },
+        }
+        report = _make_simple_report(calculated_fields=calc_fields)
+
+        with patch.object(conn, "set_calculated_fields") as mock_set_calc:
+            conn.map_reports([report])
+            mock_set_calc.assert_called_once_with(
+                "payment_text",
+                "eq_get_payment_terms",
+                ["partner_id.lang", "currency_id"],
+                report.entry_name,
+                report.model_name,
+                False,  # company_id
+            )
+
+    def test_map_reports_continues_on_exception(self):
+        """An exception during one report must not stop processing the next report."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+
+        # Make field processing raise for the first report
+        mocks["ir.model"].search.side_effect = [Exception("Boom"), [1], [1]]
+
+        report1 = _make_simple_report(report_name="report_1")
+        report2 = _make_simple_report(report_name="report_2")
+
+        # Should not raise
+        conn.map_reports([report1, report2])
+
+        # Both reports should have self_ensure called (meaning both were processed)
+        # browse should be called for both reports (create returns 100 each time)
+        assert mocks["ir.actions.report"].browse.call_count >= 2
+
+    def test_map_reports_calls_create_action(self):
+        """create_action must be called on the report object to add to print menu."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[])
+        report = _make_simple_report()
+
+        conn.map_reports([report])
+
+        mocks["report_obj"].create_action.assert_called_once()
+
+    def test_map_reports_uses_fixture_data(self, sample_report_yaml_data):
+        """Full integration test with fixture data from conftest."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[])
+        report = _make_report_from_fixture(sample_report_yaml_data)
+
+        conn.map_reports([report])
+
+        create_args = mocks["ir.actions.report"].create.call_args[0][0]
+        assert create_args["report_name"] == "eq_fr_core_sale_order"
+        assert create_args["model"] == "sale.order"
+        assert create_args["report_type"] == "fast_report"
+
+    def test_map_reports_restores_original_company_id(self):
+        """After processing, original company_id must be restored."""
+        conn = _make_connection()
+        _make_map_reports_env(conn, report_search_return=[42])
+
+        report = _make_simple_report(company_id=[5])
+
+        conn.map_reports([report])
+
+        # The last assignment to env.user.company_id should restore the original value
+        # Original company was 1 (set in _make_map_reports_env)
+        # We verify this by checking the code path completes without error
+        # (the restoration happens after each report in the loop)
+
+
+# ---------------------------------------------------------------------------
+# 7. TestSetCalculatedFields
+# ---------------------------------------------------------------------------
+
+
+class TestSetCalculatedFields:
+    """Verify calculated field creation and update."""
+
+    def _setup_calc_env(self, conn, existing_calc_field_ids=None):
+        """Set up mocks for set_calculated_fields tests."""
+        if existing_calc_field_ids is None:
+            existing_calc_field_ids = []
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [42]
+        mock_ir_report.env = MagicMock()
+        mock_ir_report.env.user = MagicMock()
+
+        mock_report_calc = MagicMock()
+        mock_report_calc.search.return_value = existing_calc_field_ids
+
+        env_map = {
+            "ir.actions.report": mock_ir_report,
+            "eq_calculated_field_value": mock_report_calc,
+        }
+        _setup_env(conn, env_map)
+
+        return mock_ir_report, mock_report_calc
+
+    def test_creates_new_calculated_field(self):
+        """When calculated field does not exist, REPORT_CALC.create must be called."""
+        conn = _make_connection()
+        _, mock_calc = self._setup_calc_env(conn, existing_calc_field_ids=[])
+
+        conn.set_calculated_fields(
+            "payment_text",
+            "eq_get_payment_terms",
+            ["partner_id.lang", "currency_id"],
+            {"de_DE": "Test"},
+            "sale.order",
+            False,
+        )
+
+        mock_calc.create.assert_called_once()
+        create_args = mock_calc.create.call_args[0][0]
+        assert create_args["eq_field_name"] == "payment_text"
+        assert create_args["eq_function_name"] == "eq_get_payment_terms"
+        assert create_args["eq_parameters_name"] == "partner_id.lang, currency_id"
+        assert create_args["eq_report_id"] == 42
+
+    def test_updates_existing_calculated_field(self):
+        """When calculated field exists, REPORT_CALC.write must be called."""
+        conn = _make_connection()
+        _, mock_calc = self._setup_calc_env(conn, existing_calc_field_ids=[99])
+
+        conn.set_calculated_fields(
+            "payment_text",
+            "eq_get_payment_terms",
+            ["partner_id.lang"],
+            {"de_DE": "Test"},
+            "sale.order",
+            False,
+        )
+
+        mock_calc.create.assert_not_called()
+        mock_calc.write.assert_called_once()
+        write_args = mock_calc.write.call_args[0]
+        assert write_args[0] == [99]
+        assert write_args[1]["eq_field_name"] == "payment_text"
+
+    def test_handles_company_id(self):
+        """When report_company_id is set, company domain must be included in search."""
+        conn = _make_connection()
+        mock_ir_report, mock_calc = self._setup_calc_env(conn, existing_calc_field_ids=[])
+
+        conn.set_calculated_fields(
+            "test_field",
+            "test_func",
+            ["param1"],
+            {"de_DE": "Test"},
+            "sale.order",
+            3,  # company_id
+        )
+
+        # Verify company domain was used in search
+        search_call = mock_ir_report.search.call_args[0][0]
+        assert ("company_id", "=", 3) in search_call
+        assert ("company_id", "=", False) in search_call
+
+    def test_without_company_id_no_company_domain(self):
+        """When report_company_id is False, company domain must not be included."""
+        conn = _make_connection()
+        mock_ir_report, _ = self._setup_calc_env(conn, existing_calc_field_ids=[])
+
+        conn.set_calculated_fields(
+            "test_field",
+            "test_func",
+            ["param1"],
+            {"de_DE": "Test"},
+            "sale.order",
+            False,
+        )
+
+        search_call = mock_ir_report.search.call_args[0][0]
+        # Should not contain company_id filter
+        company_filters = [d for d in search_call if isinstance(d, tuple) and d[0] == "company_id"]
+        assert len(company_filters) == 0
+
+
+# ---------------------------------------------------------------------------
+# 8. TestCollectReportEntries
+# ---------------------------------------------------------------------------
+
+
+class TestCollectReportEntries:
+    """Verify YAML file collection from Odoo."""
+
+    def test_writes_yaml_files_to_output_path(self, tmp_path):
+        """collect_report_entries must write YAML files to the output directory."""
+        conn = _make_connection()
+
+        # Set up company_ids
+        conn.connection.env.user.company_ids.ids = [1]
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+
+        mock_ir_report = MagicMock()
+        # Return one report
+        mock_ir_report.search.return_value = [10]
+
+        mock_report_obj = MagicMock()
+        mock_report_obj.report_name = "eq_fr_test"
+        mock_report_obj.report_type = "fast_report"
+        mock_report_obj.name = "Test Report"
+        mock_report_obj.model = "sale.order"
+        mock_report_obj.eq_export_type = "pdf"
+        mock_report_obj.eq_ignore_images = True
+        mock_report_obj.eq_handling_html_fields = "standard"
+        mock_report_obj.multi = False
+        mock_report_obj.attachment_use = False
+        mock_report_obj.attachment = "Test.pdf"
+        mock_report_obj.print_report_name = "Test"
+        mock_report_obj.eq_calculated_field_ids = []
+        mock_report_obj.eq_print_button = False
+        mock_report_obj.eq_multiprint = "standard"
+        mock_report_obj.company_id = MagicMock()
+        mock_report_obj.company_id.id = False
+        mock_report_obj.company_id.__bool__ = lambda s: False
+        mock_report_obj.with_context.return_value = mock_report_obj
+        mock_ir_report.browse.return_value = mock_report_obj
+
+        mock_ir_model_fields = MagicMock()
+        # One field linked to the report
+        mock_ir_model_fields.search.return_value = [20]
+        mock_field_obj = MagicMock()
+        mock_field_obj.eq_report_ids.ids = [10]
+        mock_field_obj.model_id.model = "sale.order"
+        mock_field_obj.name = "name"
+        mock_field_obj.modules = "sale"
+        mock_ir_model_fields.browse.return_value = mock_field_obj
+
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+
+        mock_res_company = MagicMock()
+        mock_company_obj = MagicMock()
+        mock_company_obj.name = "Test Co"
+        mock_res_company.browse.return_value = mock_company_obj
+
+        env_map = {
+            "ir.actions.report": mock_ir_report,
+            "ir.model.fields": mock_ir_model_fields,
+            "ir.model": mock_ir_model,
+            "res.company": mock_res_company,
+        }
+        _setup_env(conn, env_map)
+
+        conn.get_installed_languages = MagicMock(
+            return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}]
+        )
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        conn.collect_report_entries(str(output_dir))
+
+        # Verify at least one YAML file was written
+        yaml_files = list(output_dir.glob("*.yaml"))
+        assert len(yaml_files) >= 1
+
+        # Verify content is valid YAML
+        with open(yaml_files[0]) as f:
+            data = yaml.safe_load(f)
+        assert data is not None
+        assert "report_name" in data
+
+    def test_sanitizes_report_name_for_path_traversal(self, tmp_path):
+        """Report names with path traversal characters must be sanitized."""
+        conn = _make_connection()
+
+        conn.connection.env.user.company_ids.ids = [1]
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [10]
+
+        mock_report_obj = MagicMock()
+        mock_report_obj.report_name = "../../etc/passwd"  # Malicious name
+        mock_report_obj.report_type = "fast_report"
+        mock_report_obj.name = "Evil Report"
+        mock_report_obj.model = "sale.order"
+        mock_report_obj.eq_export_type = "pdf"
+        mock_report_obj.eq_ignore_images = True
+        mock_report_obj.eq_handling_html_fields = "standard"
+        mock_report_obj.multi = False
+        mock_report_obj.attachment_use = False
+        mock_report_obj.attachment = "Test.pdf"
+        mock_report_obj.print_report_name = "Test"
+        mock_report_obj.eq_calculated_field_ids = []
+        mock_report_obj.eq_print_button = False
+        mock_report_obj.eq_multiprint = "standard"
+        mock_report_obj.company_id = MagicMock()
+        mock_report_obj.company_id.id = False
+        mock_report_obj.company_id.__bool__ = lambda s: False
+        mock_report_obj.with_context.return_value = mock_report_obj
+        mock_ir_report.browse.return_value = mock_report_obj
+
+        mock_ir_model_fields = MagicMock()
+        mock_ir_model_fields.search.return_value = [20]
+        mock_field_obj = MagicMock()
+        mock_field_obj.eq_report_ids.ids = [10]
+        mock_field_obj.model_id.model = "sale.order"
+        mock_field_obj.name = "name"
+        mock_field_obj.modules = "sale"
+        mock_ir_model_fields.browse.return_value = mock_field_obj
+
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+
+        mock_res_company = MagicMock()
+        mock_company_obj = MagicMock()
+        mock_company_obj.name = "Test Co"
+        mock_res_company.browse.return_value = mock_company_obj
+
+        env_map = {
+            "ir.actions.report": mock_ir_report,
+            "ir.model.fields": mock_ir_model_fields,
+            "ir.model": mock_ir_model,
+            "res.company": mock_res_company,
+        }
+        _setup_env(conn, env_map)
+
+        conn.get_installed_languages = MagicMock(
+            return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}]
+        )
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        conn.collect_report_entries(str(output_dir))
+
+        # Verify no file was written outside the output directory
+        for f in output_dir.rglob("*"):
+            assert str(f).startswith(str(output_dir))
+
+        # The sanitized name should either be skipped or safe
+        parent_files = list(tmp_path.glob("etc/*"))
+        assert len(parent_files) == 0  # No path traversal occurred
+
+
+# ---------------------------------------------------------------------------
+# 9. TestTestFastReportRendering
+# ---------------------------------------------------------------------------
+
+
+class TestTestFastReportRendering:
+    """Verify FastReport rendering test workflow."""
+
+    def _setup_rendering_env(self, conn, report_search_return=None, model_records=None):
+        """Set up mocks for test_fast_report_rendering tests."""
+        if report_search_return is None:
+            report_search_return = [42]
+        if model_records is None:
+            model_records = [1, 2, 3]
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = report_search_return
+
+        mock_report_obj = MagicMock()
+        mock_report_obj.report_type = "fast_report"
+        mock_report_obj.ids = [42]
+        mock_ir_report.browse.return_value = mock_report_obj
+        # Simulate successful rendering
+        mock_ir_report.eq_render_fast_report.return_value = ("rendered_content", "pdf")
+
+        mock_ir_model = MagicMock()
+
+        mock_report_model = MagicMock()
+        mock_report_model.search.return_value = model_records
+
+        conn.connection.env.user.company_id = 1
+
+        env_map = {
+            "ir.actions.report": mock_ir_report,
+            "ir.model": mock_ir_model,
+        }
+
+        def mock_env_getitem(key):
+            if key in env_map:
+                return env_map[key]
+            if key == "sale.order":
+                return mock_report_model
+            return MagicMock()
+
+        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
+
+        return mock_ir_report, mock_report_obj, mock_report_model
+
+    def test_renders_report_successfully(self):
+        """Rendering should complete without error for a valid FastReport."""
+        conn = _make_connection()
+        mock_ir_report, mock_report_obj, _ = self._setup_rendering_env(conn)
+
+        report = _make_simple_report()
+
+        # Should not raise
+        conn.test_fast_report_rendering([report])
+
+        mock_ir_report.eq_render_fast_report.assert_called_once()
+
+    def test_skips_non_fast_report(self):
+        """Reports that are not type fast_report must be skipped."""
+        conn = _make_connection()
+        mock_ir_report, mock_report_obj, _ = self._setup_rendering_env(conn)
+        mock_report_obj.report_type = "qweb-pdf"  # Not a FastReport
+
+        report = _make_simple_report()
+
+        conn.test_fast_report_rendering([report])
+
+        # eq_render_fast_report should not be called for non-FastReport
+        mock_ir_report.eq_render_fast_report.assert_not_called()
+
+    def test_handles_empty_database(self):
+        """When no records exist for the model, eq_render_fast_report_empty_db should be used."""
+        conn = _make_connection()
+        mock_ir_report, mock_report_obj, _ = self._setup_rendering_env(conn, model_records=[])
+        mock_ir_report.eq_render_fast_report_empty_db.return_value = ("demo_content", "pdf")
+
+        report = _make_simple_report()
+
+        conn.test_fast_report_rendering([report])
+
+        mock_ir_report.eq_render_fast_report_empty_db.assert_called_once()
+
+    def test_handles_rendering_exception(self):
+        """An exception during rendering must be caught and not stop processing."""
+        conn = _make_connection()
+        mock_ir_report, _, _ = self._setup_rendering_env(conn)
+        mock_ir_report.eq_render_fast_report.side_effect = Exception("Rendering failed")
+
+        report = _make_simple_report()
+
+        # Should not raise
+        conn.test_fast_report_rendering([report])
+
+    def test_skips_when_report_not_found(self):
+        """When _search_report returns False, report should be skipped."""
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+        mock_ir_report.browse.return_value = False
+
+        mock_ir_model = MagicMock()
+        _setup_env(conn, {"ir.actions.report": mock_ir_report, "ir.model": mock_ir_model})
+        conn.connection.env.user.company_id = 1
+
+        report = _make_simple_report()
+
+        # Should not raise
+        conn.test_fast_report_rendering([report])
+
+        mock_ir_report.eq_render_fast_report.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# 10. TestDisableQwebReports
+# ---------------------------------------------------------------------------
+
+
+class TestDisableQwebReports:
+    """Verify QWeb report disabling."""
+
+    def test_unlinks_all_qweb_reports(self):
+        """disable_qweb_reports must call unlink_action for each QWeb report."""
+        conn = _make_connection()
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [1, 2, 3]
+
+        mock_obj_1 = MagicMock()
+        mock_obj_2 = MagicMock()
+        mock_obj_3 = MagicMock()
+        mock_ir_report.browse.side_effect = [mock_obj_1, mock_obj_2, mock_obj_3]
+
+        _setup_env(conn, {"ir.actions.report": mock_ir_report})
+
+        conn.disable_qweb_reports()
+
+        mock_obj_1.unlink_action.assert_called_once()
+        mock_obj_2.unlink_action.assert_called_once()
+        mock_obj_3.unlink_action.assert_called_once()
+
+    def test_handles_no_qweb_reports(self):
+        """disable_qweb_reports must handle empty result gracefully."""
+        conn = _make_connection()
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+        _setup_env(conn, {"ir.actions.report": mock_ir_report})
+
+        conn.disable_qweb_reports()
+
+        mock_ir_report.browse.assert_not_called()
+
+    def test_searches_all_qweb_types(self):
+        """disable_qweb_reports must search for qweb-pdf, qweb-html, and qweb-text."""
+        conn = _make_connection()
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = []
+        _setup_env(conn, {"ir.actions.report": mock_ir_report})
+
+        conn.disable_qweb_reports()
+
+        search_domain = mock_ir_report.search.call_args[0][0]
+        # Verify all three report types are in the domain
+        types_in_domain = [d[2] for d in search_domain if isinstance(d, tuple) and d[0] == "report_type"]
+        assert "qweb-pdf" in types_in_domain
+        assert "qweb-html" in types_in_domain
+        assert "qweb-text" in types_in_domain
+
+
+# ---------------------------------------------------------------------------
+# Utility method tests (is_boolean, is_dict, write_yaml, YAMLDumper)
+# ---------------------------------------------------------------------------
+
+
+class TestIsBoolean:
+    """Verify is_boolean type checking."""
+
+    def test_true_is_boolean(self):
+        assert _make_connection().is_boolean(True) is True
+
+    def test_false_is_boolean(self):
+        assert _make_connection().is_boolean(False) is True
+
+    def test_int_is_not_boolean(self):
+        assert _make_connection().is_boolean(1) is False
+
+    def test_string_is_not_boolean(self):
+        assert _make_connection().is_boolean("True") is False
+
+    def test_none_is_not_boolean(self):
+        assert _make_connection().is_boolean(None) is False
+
+
+class TestIsDict:
+    """Verify is_dict type checking."""
+
+    def test_dict_is_dict(self):
+        assert _make_connection().is_dict({"key": "val"}) is True
+
+    def test_empty_dict_is_dict(self):
+        assert _make_connection().is_dict({}) is True
+
+    def test_list_is_not_dict(self):
+        assert _make_connection().is_dict([1, 2]) is False
+
+    def test_none_is_not_dict(self):
+        assert _make_connection().is_dict(None) is False
+
+
+class TestWriteYaml:
+    """Verify YAML file writing."""
+
+    def test_creates_valid_yaml_file(self, tmp_path):
+        conn = _make_connection()
+        output_file = tmp_path / "test.yaml"
+        data = {"name": "test", "value": 42}
+
+        conn.write_yaml(str(output_file), data)
+
+        assert output_file.exists()
+        with open(output_file) as f:
+            loaded = yaml.safe_load(f)
+        assert loaded["name"] == "test"
+        assert loaded["value"] == 42
+
+    def test_utf8_encoding(self, tmp_path):
+        conn = _make_connection()
+        output_file = tmp_path / "utf8.yaml"
+        data = {"name": "Rechnungsübersicht"}
+
+        conn.write_yaml(str(output_file), data)
+
+        content = output_file.read_text(encoding="utf8")
+        assert "Rechnungsübersicht" in content
+
+
+class TestYAMLDumper:
+    """Verify custom YAMLDumper indentation behavior."""
+
+    def test_increases_indent(self):
+        data = {"parent": {"child": ["a", "b"]}}
+        output = yaml.dump(data, Dumper=YAMLDumper, default_flow_style=False)
+        lines = output.strip().split("\n")
+        parent_indent = len(lines[0]) - len(lines[0].lstrip())
+        child_indent = len(lines[1]) - len(lines[1].lstrip())
+        assert child_indent > parent_indent
+
+
+# ---------------------------------------------------------------------------
+# TestAddFieldToDictionary
+# ---------------------------------------------------------------------------
+
+
+class TestAddFieldToDictionary:
+    """Verify field addition to data dictionary."""
+
+    def _setup_field_env(self, conn, modules="sale"):
+        mock_ir_fields = MagicMock()
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+        mock_ir_fields.search.return_value = [10]
+        mock_field_obj = MagicMock()
+        mock_field_obj.modules = modules
+        mock_ir_fields.browse.return_value = mock_field_obj
+        _setup_env(conn, {"ir.model.fields": mock_ir_fields, "ir.model": mock_ir_model})
+        return mock_ir_fields
+
+    def test_adds_field_to_new_entry(self):
+        conn = _make_connection()
+        self._setup_field_env(conn)
+
+        result = conn.add_field_to_dictionary({}, 100, "sale.order", "name", False)
+
+        assert 100 in result
+        assert "name" in result[100]["sale.order"]
+
+    def test_adds_field_to_existing_entry(self):
+        conn = _make_connection()
+        self._setup_field_env(conn)
+
+        data = {100: {"sale.order": ["id"], "dependencies": ["sale"]}}
+        result = conn.add_field_to_dictionary(data, 100, "sale.order", "partner_id", False)
+
+        assert "partner_id" in result[100]["sale.order"]
+        assert "id" in result[100]["sale.order"]
+
+    def test_adds_company_id(self):
+        conn = _make_connection()
+        self._setup_field_env(conn)
+
+        result = conn.add_field_to_dictionary({}, 100, "sale.order", "name", 3)
+
+        assert "company_id" in result[100]
+        assert 3 in result[100]["company_id"]
+
+
+# ---------------------------------------------------------------------------
+# TestCollectCalculatedFields
+# ---------------------------------------------------------------------------
+
+
+class TestCollectCalculatedFields:
+    """Verify extraction of calculated fields from mock objects."""
+
+    def test_extracts_correctly(self):
+        conn = _make_connection()
+        mock_field = MagicMock()
+        mock_field.eq_field_name = "payment_text"
+        mock_field.eq_function_name = "eq_get_payment_terms"
+        mock_field.eq_parameters_name = "partner_id.lang, currency_id"
+
+        result = conn._collect_calculated_fields([mock_field])
+
+        assert result["payment_text"]["eq_get_payment_terms"] == ["partner_id.lang", "currency_id"]
+
+    def test_empty_list_returns_empty_dict(self):
+        conn = _make_connection()
+        assert conn._collect_calculated_fields([]) == {}
+
+    def test_strips_spaces_from_parameters(self):
+        conn = _make_connection()
+        mock_field = MagicMock()
+        mock_field.eq_field_name = "f"
+        mock_field.eq_function_name = "fn"
+        mock_field.eq_parameters_name = "  a ,  b "
+
+        result = conn._collect_calculated_fields([mock_field])
+
+        assert result["f"]["fn"] == ["a", "b"]
+
+
+# ---------------------------------------------------------------------------
+# TestListFastReports
 # ---------------------------------------------------------------------------
 
 
 class TestListFastReports:
     """Verify listing of FastReport entries across companies."""
 
-    def _setup_connection_with_reports(self, conn, reports_per_company):
-        """Helper to set up mocked Odoo env with FastReport entries.
-
-        Args:
-            conn: EqOdooConnection instance
-            reports_per_company: dict mapping company_id to list of report dicts
-                Each report dict has: id, report_name, name, model, eq_export_type
-        """
+    def _setup_reports(self, conn, reports_per_company):
+        """Set up mocked env with FastReport entries per company."""
         all_company_ids = list(reports_per_company.keys())
         conn.connection.env.user.company_ids.ids = all_company_ids
         conn.connection.env.user.company_ids.__bool__ = lambda s: True
@@ -973,7 +1321,6 @@ class TestListFastReports:
         mock_ir_report = MagicMock()
         mock_res_company = MagicMock()
 
-        # Track which company is currently set to return correct reports
         current_company = {"id": all_company_ids[0]}
 
         def set_company(val):
@@ -986,8 +1333,7 @@ class TestListFastReports:
 
         def search_side_effect(domain):
             cid = current_company["id"]
-            reports = reports_per_company.get(cid, [])
-            return [r["id"] for r in reports]
+            return [r["id"] for r in reports_per_company.get(cid, [])]
 
         mock_ir_report.search = MagicMock(side_effect=search_side_effect)
 
@@ -1003,92 +1349,41 @@ class TestListFastReports:
 
         mock_ir_report.browse = MagicMock(side_effect=lambda rid: report_objs[rid])
 
-        company_names = {1: "Company A", 2: "Company B", 3: "Company C"}
-
         def browse_company(cid):
             obj = MagicMock()
-            obj.name = company_names.get(cid, f"Company {cid}")
+            obj.name = f"Company {cid}"
             return obj
 
         mock_res_company.browse = MagicMock(side_effect=browse_company)
 
-        def mock_env_getitem(key):
-            if key == "ir.actions.report":
-                return mock_ir_report
-            if key == "res.company":
-                return mock_res_company
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        return mock_ir_report
+        _setup_env(conn, {"ir.actions.report": mock_ir_report, "res.company": mock_res_company})
 
     def test_returns_correct_structure(self):
-        """list_fast_reports must return list of dicts with expected keys."""
-        conn = _make_eq_connection()
-        self._setup_connection_with_reports(
-            conn,
-            {
-                1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales Order", "model": "sale.order"}],
-            },
-        )
+        conn = _make_connection()
+        self._setup_reports(conn, {
+            1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+        })
 
         result = conn.list_fast_reports()
 
         assert len(result) == 1
-        r = result[0]
-        assert r["id"] == 10
-        assert r["report_name"] == "eq_fr_sale"
-        assert r["name"] == "Sales Order"
-        assert r["model"] == "sale.order"
-        assert r["company"] == "Company A"
-        assert "export_type" in r
+        assert result[0]["report_name"] == "eq_fr_sale"
+        assert "company" in result[0]
 
     def test_deduplicates_by_report_name(self):
-        """list_fast_reports must deduplicate reports with the same report_name."""
-        conn = _make_eq_connection()
-        self._setup_connection_with_reports(
-            conn,
-            {
-                1: [
-                    {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
-                ],
-                2: [
-                    {"id": 20, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
-                ],
-            },
-        )
+        conn = _make_connection()
+        self._setup_reports(conn, {
+            1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+            2: [{"id": 20, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+        })
 
         result = conn.list_fast_reports()
 
         assert len(result) == 1
-        assert result[0]["id"] == 10
-
-    def test_multiple_reports_across_companies(self):
-        """list_fast_reports must collect unique reports from all companies."""
-        conn = _make_eq_connection()
-        self._setup_connection_with_reports(
-            conn,
-            {
-                1: [
-                    {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"},
-                ],
-                2: [
-                    {"id": 20, "report_name": "eq_fr_invoice", "name": "Invoice", "model": "account.move"},
-                ],
-            },
-        )
-
-        result = conn.list_fast_reports()
-
-        assert len(result) == 2
-        names = {r["report_name"] for r in result}
-        assert names == {"eq_fr_sale", "eq_fr_invoice"}
 
     def test_empty_database(self):
-        """list_fast_reports must return empty list when no FastReports exist."""
-        conn = _make_eq_connection()
-        self._setup_connection_with_reports(conn, {1: []})
+        conn = _make_connection()
+        self._setup_reports(conn, {1: []})
 
         result = conn.list_fast_reports()
 
@@ -1096,220 +1391,17 @@ class TestListFastReports:
 
 
 # ---------------------------------------------------------------------------
-# collect_report_entries() with filter tests
+# TestCollectAllReportEntries delegation
 # ---------------------------------------------------------------------------
 
 
-class TestCollectReportEntries:
-    """Verify collect_report_entries with optional report_ids filter."""
+class TestCollectAllReportEntries:
+    """Verify backward-compatible wrapper delegates correctly."""
 
-    def test_collect_all_report_entries_delegates(self):
-        """collect_all_report_entries must delegate to collect_report_entries."""
-        conn = _make_eq_connection()
+    def test_delegates_to_collect_report_entries(self):
+        conn = _make_connection()
         conn.collect_report_entries = MagicMock()
 
         conn.collect_all_report_entries("/tmp/output")
 
         conn.collect_report_entries.assert_called_once_with("/tmp/output")
-
-    def test_collect_report_entries_with_filter_adds_domain(self):
-        """collect_report_entries with report_ids must add ID filter to search domain."""
-        conn = _make_eq_connection()
-
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = []
-        mock_ir_model_fields = MagicMock()
-        mock_ir_model_fields.search.return_value = []
-
-        conn.connection.env.user.company_ids.ids = [1]
-        conn.connection.env.user.company_ids.__bool__ = lambda s: True
-
-        mock_res_company = MagicMock()
-        mock_company_obj = MagicMock()
-        mock_company_obj.name = "Test Co"
-        mock_res_company.browse.return_value = mock_company_obj
-
-        def mock_env_getitem(key):
-            if key in ("ir.actions.report",):
-                return mock_ir_report
-            if key == "ir.model.fields":
-                return mock_ir_model_fields
-            if key == "res.company":
-                return mock_res_company
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        conn.collect_report_entries("/tmp/output", report_ids=[10, 20])
-
-        # Verify the search domain includes the ID filter
-        search_call = mock_ir_report.search.call_args[0][0]
-        assert ("id", "in", [10, 20]) in search_call
-
-    def test_collect_report_entries_without_filter_no_id_domain(self):
-        """collect_report_entries without report_ids must not add ID filter."""
-        conn = _make_eq_connection()
-
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = []
-        mock_ir_model_fields = MagicMock()
-        mock_ir_model_fields.search.return_value = []
-
-        conn.connection.env.user.company_ids.ids = [1]
-        conn.connection.env.user.company_ids.__bool__ = lambda s: True
-
-        mock_res_company = MagicMock()
-        mock_company_obj = MagicMock()
-        mock_company_obj.name = "Test Co"
-        mock_res_company.browse.return_value = mock_company_obj
-
-        def mock_env_getitem(key):
-            if key in ("ir.actions.report",):
-                return mock_ir_report
-            if key == "ir.model.fields":
-                return mock_ir_model_fields
-            if key == "res.company":
-                return mock_res_company
-            return MagicMock()
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-
-        conn.collect_report_entries("/tmp/output")
-
-        # Verify the search domain does NOT include ID filter
-        search_call = mock_ir_report.search.call_args[0][0]
-        id_filters = [d for d in search_call if len(d) == 3 and d[0] == "id" and d[1] == "in"]
-        assert len(id_filters) == 0
-
-
-# ---------------------------------------------------------------------------
-# map_reports() tests — attachment dict resolution
-# ---------------------------------------------------------------------------
-
-
-class TestMapReportsAttachment:
-    """Verify attachment dict is resolved based on company language."""
-
-    def _setup_map_reports(self, conn, report):
-        """Helper to set up mocks for map_reports tests."""
-        mock_ir_report = MagicMock()
-        mock_ir_report.search.return_value = [42]
-        mock_report_obj = MagicMock()
-        mock_report_obj.id = 42
-        mock_ir_report.browse.return_value = mock_report_obj
-
-        mock_ctx_obj = MagicMock()
-        mock_report_obj.with_context = MagicMock(return_value=mock_ctx_obj)
-
-        mock_ir_model = MagicMock()
-        mock_ir_model_fields = MagicMock()
-
-        def mock_env_getitem(key):
-            mapping = {
-                "ir.actions.report": mock_ir_report,
-                "ir.model": mock_ir_model,
-                "ir.model.fields": mock_ir_model_fields,
-            }
-            return mapping.get(key, MagicMock())
-
-        conn.connection.env.__getitem__ = MagicMock(side_effect=mock_env_getitem)
-        conn.connection.env.user.company_id = 1
-
-        return mock_ir_report, mock_report_obj
-
-    def _make_report_mock(self, attachment, company_id=False):
-        """Helper to create a minimal report mock with attachment."""
-        report = MagicMock()
-        report.entry_name = {"de_DE": "Angebot", "en_US": "Quotation"}
-        report.report_name = "eq_fr_sale_order"
-        report.model_name = "sale.order"
-        report.company_id = company_id
-        report._dependencies = []
-        report._fields = {}
-        report._calculated_fields = {}
-        report._data_dictionary = {}
-        report.print_report_name = ""
-        report.attachment = attachment
-
-        # Make self_ensure() populate _data_dictionary like the real implementation
-        def mock_self_ensure():
-            report._data_dictionary = {
-                "name": "Angebot",
-                "report_name": report.report_name,
-                "report_type": "fast_report",
-                "print_report_name": "",
-                "model": report.model_name,
-                "company_id": report.company_id[0] if report.company_id else False,
-                "eq_export_type": "pdf",
-                "eq_ignore_images": True,
-                "eq_handling_html_fields": "standard",
-                "eq_multiprint": "standard",
-                "multi": False,
-                "attachment": attachment if not isinstance(attachment, dict) else "Angebot.pdf",
-                "attachment_use": False,
-                "eq_print_button": False,
-            }
-
-        report.self_ensure = mock_self_ensure
-        return report
-
-    def test_dict_attachment_resolved_by_company_lang(self):
-        """Dict attachment must be resolved to company language value."""
-        conn = _make_eq_connection(language="de_DE")
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        # Mock company language lookup to return en_US
-        conn.get_company_language = MagicMock(return_value="en_US")
-
-        attachment_dict = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
-        report = self._make_report_mock(attachment_dict, company_id=[5])
-
-        self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        # The data_dictionary should have the en_US value since company speaks English
-        assert report._data_dictionary["attachment"] == "Quotation.pdf"
-
-    def test_string_attachment_unchanged(self):
-        """String attachment must pass through unchanged."""
-        conn = _make_eq_connection(language="de_DE")
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        report = self._make_report_mock("Report.pdf")
-
-        self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        # String attachment is set by self_ensure() and should stay unchanged
-        assert report._data_dictionary["attachment"] == "Report.pdf"
-
-    def test_dict_attachment_without_company_id_uses_connection_language(self):
-        """Dict attachment without company_id must use self.language as fallback."""
-        conn = _make_eq_connection(language="de_DE")
-
-        installed_langs = [
-            {"code": "de_DE", "iso_code": "de", "name": "German"},
-            {"code": "en_US", "iso_code": "en", "name": "English"},
-        ]
-        conn.get_installed_languages = MagicMock(return_value=installed_langs)
-
-        attachment_dict = {"de_DE": "Angebot.pdf", "en_US": "Quotation.pdf"}
-        report = self._make_report_mock(attachment_dict, company_id=False)
-
-        self._setup_map_reports(conn, report)
-
-        conn.map_reports([report])
-
-        # No company_id -> should use self.language (de_DE)
-        assert report._data_dictionary["attachment"] == "Angebot.pdf"

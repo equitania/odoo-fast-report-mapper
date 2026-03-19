@@ -76,18 +76,18 @@ def parse_yaml(yaml_file):
             return False
 
 
-def parse_yaml_folder(path):
+def parse_yaml_folder_with_filenames(path):
     """
-    Parse multiple yaml files to list of objects and return them
+    Parse multiple yaml files and return them with their filenames.
     :param: path: path to yaml files directory
-    :return: yaml_objects
+    :return: list of (filename, yaml_object) tuples, sorted by filename
     """
     resolved_path = os.path.realpath(path)
     if not os.path.isdir(resolved_path):
         raise FileNotFoundError(f"Directory not found: {path}")
 
     yaml_objects = []
-    for file in os.listdir(resolved_path):
+    for file in sorted(os.listdir(resolved_path)):
         if file.endswith(".yaml"):
             file_path = os.path.realpath(os.path.join(resolved_path, file))
             # Ensure resolved file path stays within target directory
@@ -96,5 +96,14 @@ def parse_yaml_folder(path):
                 continue
             yaml_object = parse_yaml(file_path)
             if yaml_object:
-                yaml_objects.append(yaml_object)
+                yaml_objects.append((file, yaml_object))
     return yaml_objects
+
+
+def parse_yaml_folder(path):
+    """
+    Parse multiple yaml files to list of objects and return them
+    :param: path: path to yaml files directory
+    :return: yaml_objects
+    """
+    return [obj for _, obj in parse_yaml_folder_with_filenames(path)]

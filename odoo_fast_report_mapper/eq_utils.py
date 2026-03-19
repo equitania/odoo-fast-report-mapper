@@ -144,6 +144,51 @@ def convert_all_yaml_objects(yaml_objects: list, converting_function):
     return local_object_list
 
 
+def build_reports_from_yaml_objects(yaml_objects):
+    """
+    Convert raw YAML dicts to EqReport objects, handling multi-company expansion.
+
+    A YAML dict with company_id: [1, 3, 5] is expanded into three separate
+    EqReport objects, each with a single company_id.
+
+    :param: yaml_objects: list of parsed YAML dicts
+    :return: list of EqReport objects
+    """
+    filtered_yaml_report_objects = []
+    for yaml_report_object in yaml_objects:
+        if yaml_report_object.get("company_id") and len(yaml_report_object.get("company_id")) > 1:
+            company_ids = yaml_report_object.get("company_id")
+            del yaml_report_object["company_id"]
+            for company_id in company_ids:
+                temp_yaml_report_object = copy.deepcopy(yaml_report_object)
+                temp_yaml_report_object["company_id"] = [company_id]
+                filtered_yaml_report_objects.append(temp_yaml_report_object)
+        else:
+            filtered_yaml_report_objects.append(yaml_report_object)
+    return convert_all_yaml_objects(filtered_yaml_report_objects, create_report_object_from_yaml_object)
+
+
+def list_yaml_reports(path):
+    """
+    List all YAML report files with metadata for interactive display.
+
+    :param: path: path to yaml files directory
+    :return: list of dicts with keys: filename, report_name, model, yaml_object
+    """
+    yaml_items = utils.parse_yaml_folder_with_filenames(path)
+    result = []
+    for filename, yaml_obj in yaml_items:
+        result.append(
+            {
+                "filename": filename,
+                "report_name": yaml_obj.get("report_name", "N/A"),
+                "model": yaml_obj.get("report_model", "N/A"),
+                "yaml_object": yaml_obj,
+            }
+        )
+    return result
+
+
 def collect_all_reports(path):
     """
     Get all yaml objects from path and convert them into report objects
@@ -152,21 +197,7 @@ def collect_all_reports(path):
     """
     try:
         yaml_report_objects = utils.parse_yaml_folder(path)
-        filtered_yaml_report_objects = []
-        for yaml_report_object in yaml_report_objects:
-            if yaml_report_object.get("company_id") and len(yaml_report_object.get("company_id")) > 1:
-                company_ids = yaml_report_object.get("company_id")
-                del yaml_report_object["company_id"]
-                for company_id in company_ids:
-                    temp_yaml_report_object = copy.deepcopy(yaml_report_object)
-                    temp_yaml_report_object["company_id"] = [company_id]
-                    filtered_yaml_report_objects.append(temp_yaml_report_object)
-            else:
-                filtered_yaml_report_objects.append(yaml_report_object)
-        eq_report_objects = convert_all_yaml_objects(
-            filtered_yaml_report_objects, create_report_object_from_yaml_object
-        )
-        return eq_report_objects
+        return build_reports_from_yaml_objects(yaml_report_objects)
     except FileNotFoundError as ex:
         raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex)) from ex
 
