@@ -187,9 +187,7 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
             click.echo(f"  {'#':>3}  {'Filename':<40} {'Report Name':<35} {'Model':<25}")
             click.echo(f"  {'---':>3}  {'─' * 40} {'─' * 35} {'─' * 25}")
             for i, item in enumerate(report_items, 1):
-                click.echo(
-                    f"  {i:>3}  {item['filename']:<40} {item['report_name']:<35} {item['model']:<25}"
-                )
+                click.echo(f"  {i:>3}  {item['filename']:<40} {item['report_name']:<35} {item['model']:<25}")
 
             click.echo()
             selection = click.prompt(
@@ -204,9 +202,7 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
                 try:
                     indices = [int(x.strip()) for x in selection.split(",")]
                     selected_yamls = [
-                        report_items[i - 1]["yaml_object"]
-                        for i in indices
-                        if 1 <= i <= len(report_items)
+                        report_items[i - 1]["yaml_object"] for i in indices if 1 <= i <= len(report_items)
                     ]
                 except (ValueError, IndexError):
                     click.echo("  Invalid selection. Aborting.")

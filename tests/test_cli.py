@@ -447,7 +447,12 @@ class TestSelectFlag:
         mock_eq_utils.list_yaml_reports.return_value = [
             {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": yaml1},
             {"filename": "invoice.yaml", "report_name": "eq_fr_invoice", "model": "account.move", "yaml_object": yaml2},
-            {"filename": "picking.yaml", "report_name": "eq_fr_picking", "model": "stock.picking", "yaml_object": yaml3},
+            {
+                "filename": "picking.yaml",
+                "report_name": "eq_fr_picking",
+                "model": "stock.picking",
+                "yaml_object": yaml3,
+            },
         ]
         mock_eq_utils.build_reports_from_yaml_objects.return_value = []
 
