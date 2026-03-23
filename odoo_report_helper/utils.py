@@ -67,7 +67,7 @@ def parse_yaml(yaml_file):
     :param: yaml_file: path to yaml file
     :return: yaml_object
     """
-    with open(yaml_file) as stream:
+    with open(yaml_file, encoding="utf-8") as stream:
         try:
             return yaml.safe_load(stream)
         except yaml.YAMLError as exc:

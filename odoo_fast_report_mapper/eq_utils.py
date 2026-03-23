@@ -293,7 +293,12 @@ def create_connection_from_env(env_path=None):
         "1",
         "yes",
     )
-    workflow = int(os.getenv("ODOO_WORKFLOW", "0"))
+    try:
+        workflow = int(os.getenv("ODOO_WORKFLOW", "0"))
+        if workflow not in (0, 1, 2):
+            raise ValueError(f"ODOO_WORKFLOW must be 0, 1, or 2, got: {workflow}")
+    except ValueError as e:
+        raise ValueError(f"Invalid ODOO_WORKFLOW value: {e}") from e
 
     logger.info(f"Creating connection to {database}@{url}:{port}")
     logger.debug(

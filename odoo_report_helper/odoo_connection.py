@@ -27,6 +27,12 @@ class OdooConnection:
                 "ERROR: Please check your parameters and your connection" + " " + str(ex)
             ) from ex
 
+    def __repr__(self):
+        return f"OdooConnection(username={self.username!r}, database={self.database!r})"
+
+    def __str__(self):
+        return self.__repr__()
+
     def login(self):
         """
         Try to login into the Odoo system and set parameters to optimize the connection
@@ -38,6 +44,8 @@ class OdooConnection:
             self.connection.env.context["active_test"] = False  # Show inactive articles
             self.connection.env.context["tracking_disable"] = True
             self.version = self.connection.version.split(".")[0]
+            # Clear password from memory after successful login
+            self.password = None
             logger.info(f"Connected to database: {self.database}")
         except RPCError as ex:
             raise exceptions.OdooConnectionError(

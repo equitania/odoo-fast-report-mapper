@@ -6,6 +6,7 @@
 from unittest.mock import MagicMock, patch
 
 import yaml
+from odoorpc_toolbox import RPCError
 
 from odoo_fast_report_mapper.eq_odoo_connection import EqOdooConnection, YAMLDumper
 from odoo_fast_report_mapper.eq_report import EqReport
@@ -193,7 +194,7 @@ class TestGetCompanyLanguage:
     def test_returns_fallback_on_exception(self):
         conn = _make_connection(language="de_DE")
         mock_res_company = MagicMock()
-        mock_res_company.browse.side_effect = Exception("RPC error")
+        mock_res_company.browse.side_effect = RPCError("RPC error")
         _setup_env(conn, {"res.company": mock_res_company})
 
         result = conn.get_company_language(1)
@@ -648,7 +649,7 @@ class TestMapReports:
         mocks = _make_map_reports_env(conn, report_search_return=[42])
 
         # Make field processing raise for the first report
-        mocks["ir.model"].search.side_effect = [Exception("Boom"), [1], [1]]
+        mocks["ir.model"].search.side_effect = [RPCError("Boom"), [1], [1]]
 
         report1 = _make_simple_report(report_name="report_1")
         report2 = _make_simple_report(report_name="report_2")
@@ -874,9 +875,7 @@ class TestCollectReportEntries:
         }
         _setup_env(conn, env_map)
 
-        conn.get_installed_languages = MagicMock(
-            return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}]
-        )
+        conn.get_installed_languages = MagicMock(return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}])
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -949,9 +948,7 @@ class TestCollectReportEntries:
         }
         _setup_env(conn, env_map)
 
-        conn.get_installed_languages = MagicMock(
-            return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}]
-        )
+        conn.get_installed_languages = MagicMock(return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}])
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -1056,7 +1053,7 @@ class TestTestFastReportRendering:
         """An exception during rendering must be caught and not stop processing."""
         conn = _make_connection()
         mock_ir_report, _, _ = self._setup_rendering_env(conn)
-        mock_ir_report.eq_render_fast_report.side_effect = Exception("Rendering failed")
+        mock_ir_report.eq_render_fast_report.side_effect = RPCError("Rendering failed")
 
         report = _make_simple_report()
 
@@ -1360,9 +1357,12 @@ class TestListFastReports:
 
     def test_returns_correct_structure(self):
         conn = _make_connection()
-        self._setup_reports(conn, {
-            1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
-        })
+        self._setup_reports(
+            conn,
+            {
+                1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+            },
+        )
 
         result = conn.list_fast_reports()
 
@@ -1372,10 +1372,13 @@ class TestListFastReports:
 
     def test_deduplicates_by_report_name(self):
         conn = _make_connection()
-        self._setup_reports(conn, {
-            1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
-            2: [{"id": 20, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
-        })
+        self._setup_reports(
+            conn,
+            {
+                1: [{"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+                2: [{"id": 20, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order"}],
+            },
+        )
 
         result = conn.list_fast_reports()
 

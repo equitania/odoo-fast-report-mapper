@@ -6,6 +6,7 @@ from random import choice
 
 import click
 import yaml
+from odoorpc_toolbox import RPCError
 
 from odoo_report_helper.odoo_connection import OdooConnection
 
@@ -71,8 +72,10 @@ class EqOdooConnection(OdooConnection):
         try:
             company_obj = self.connection.env["res.company"].browse(company_id)
             lang = company_obj.partner_id.lang or self.language
-        except Exception as ex:
-            logger.debug(f"Could not determine language for company {company_id}, falling back to {self.language}: {ex}")
+        except (RPCError, KeyError, AttributeError) as ex:
+            logger.debug(
+                f"Could not determine language for company {company_id}, falling back to {self.language}: {ex}"
+            )
             lang = self.language
         self._company_lang_cache[company_id] = lang
         return lang
@@ -139,7 +142,7 @@ class EqOdooConnection(OdooConnection):
             try:
                 self._map_report_fields(report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids)
                 logger.info(f"  ✓ Completed: {report.report_name}")
-            except Exception as ex:
+            except (RPCError, KeyError, AttributeError, ValueError, IndexError) as ex:
                 logger.error(f"  ✗ Exception while processing report: {report.report_name}")
                 logger.exception(ex)
 
@@ -235,9 +238,7 @@ class EqOdooConnection(OdooConnection):
             else:
                 # Legacy single string: write to all installed languages
                 for lang_code in installed_lang_codes:
-                    report_object.with_context(lang=lang_code).write(
-                        {"print_report_name": report.print_report_name}
-                    )
+                    report_object.with_context(lang=lang_code).write({"print_report_name": report.print_report_name})
             logger.debug("    print_report_name configured")
 
     def _map_report_fields(self, report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids):
@@ -332,7 +333,7 @@ class EqOdooConnection(OdooConnection):
 
                 # Write/update the report_ids using odoo helper function: eq_write_report_ids defined in eq_fr_core module
                 IR_MODEL.eq_write_report_ids(model, fields_list)
-            except Exception as ex:
+            except (RPCError, KeyError, AttributeError) as ex:
                 logger.error(f"  ✗ Exception while writing report IDs to model {model}")
                 logger.exception(ex)
 
@@ -529,7 +530,7 @@ class EqOdooConnection(OdooConnection):
                 continue
             output_name = os.path.join(output_path, safe_name + "_" + date_now + ".yaml")
             # Verify resolved path stays within output directory
-            if not os.path.realpath(output_name).startswith(os.path.realpath(output_path)):
+            if not os.path.realpath(output_name).startswith(os.path.realpath(output_path) + os.sep):
                 logger.error(f"Path traversal detected, skipping: {eq_report_object.report_name!r}")
                 continue
             self.write_yaml(output_name, eq_yaml_data)
@@ -745,13 +746,12 @@ class EqOdooConnection(OdooConnection):
                             create_attachment=False,
                         )
                     logger.info(f"Report rendering successful: {report.report_name}")
-                except Exception as ex:
-                    if "No such file or directory" in str(ex):
-                        logger.warning(f"No demo data to test report: {report.report_name}")
-                    else:
-                        logger.error(f"Report {report.report_name} not rendering correctly")
-                        logger.error("Exception occurred during rendering")
-                        logger.exception(ex)
+                except FileNotFoundError:
+                    logger.warning(f"No demo data to test report: {report.report_name}")
+                except RPCError as ex:
+                    logger.error(f"Report {report.report_name} not rendering correctly")
+                    logger.error("Exception occurred during rendering")
+                    logger.exception(ex)
         self.connection.env.user.company_id = original_company_yaml_user
 
     def disable_qweb_reports(self):

@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.9.2 (23.03.2026)
+
+### Changed
+- Replaced broad `except Exception` with specific exception types (`RPCError`, `KeyError`, `AttributeError`, `ValueError`, `IndexError`) in `eq_odoo_connection.py` (4 locations)
+- Added `__repr__`/`__str__` to `OdooConnection` to prevent credential leakage in tracebacks/logs
+- Clear `self.password` from memory after successful login
+- YAML parsing now uses explicit `encoding="utf-8"` for cross-platform compatibility
+
+### Fixed
+- Path traversal check in `collect_report_entries()` — added trailing `os.sep` to prevent prefix collision
+- `ODOO_WORKFLOW` environment variable validation — now catches non-integer values and enforces range (0, 1, 2)
+- Rendering test exception handling — replaced fragile string-matching with `FileNotFoundError` / `RPCError`
+
 ## Version 0.9.1 (19.03.2026)
 
 ### Changed
