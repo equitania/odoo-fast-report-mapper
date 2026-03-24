@@ -698,6 +698,48 @@ class TestMapReports:
         # We verify this by checking the code path completes without error
         # (the restoration happens after each report in the loop)
 
+    def test_map_reports_returns_failed_reports_list(self):
+        """map_reports must return a list of (name, error) tuples for failed reports."""
+        conn = _make_connection()
+        mocks = _make_map_reports_env(conn, report_search_return=[42])
+
+        # Make write() raise on first call only, then succeed
+        call_count = {"n": 0}
+
+        def write_side_effect(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RPCError("Report on Print Button flag error")
+            # Reset side_effect so subsequent calls behave normally
+            mocks["report_obj"].write.side_effect = None
+
+        mocks["report_obj"].write.side_effect = write_side_effect
+
+        report1 = _make_simple_report(report_name="eq_fr_failing_report")
+        report2 = _make_simple_report(report_name="eq_fr_success_report")
+
+        failed = conn.map_reports([report1, report2])
+
+        # First report should be in failed list
+        assert len(failed) == 1
+        assert failed[0][0] == "eq_fr_failing_report"
+        assert "Report on Print Button flag error" in failed[0][1]
+
+        # Second report should still be processed (browse called for both)
+        assert mocks["ir.actions.report"].browse.call_count >= 2
+
+    def test_map_reports_returns_empty_list_on_full_success(self):
+        """map_reports must return an empty list when all reports succeed."""
+        conn = _make_connection()
+        _make_map_reports_env(conn, report_search_return=[42])
+
+        report1 = _make_simple_report(report_name="eq_fr_report_1")
+        report2 = _make_simple_report(report_name="eq_fr_report_2")
+
+        failed = conn.map_reports([report1, report2])
+
+        assert failed == []
+
 
 # ---------------------------------------------------------------------------
 # 7. TestSetCalculatedFields

@@ -30,8 +30,11 @@ def mock_connection():
     conn.workflow = 0
     conn.disable_qweb = False
     conn.database = "test_db"
+    conn.url = "https://test.odoo.com"
+    conn.port = 443
+    conn.username = "admin"
     conn.login.return_value = None
-    conn.map_reports.return_value = None
+    conn.map_reports.return_value = []
     conn.test_fast_report_rendering.return_value = None
     conn.disable_qweb_reports.return_value = None
     conn.collect_all_report_entries.return_value = None
@@ -113,12 +116,13 @@ class TestWorkflow0Mapping:
         mock_connection.workflow = 0
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -137,12 +141,13 @@ class TestWorkflow1Testing:
         mock_connection.workflow = 1
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -160,12 +165,13 @@ class TestWorkflow2Both:
         mock_connection.workflow = 2
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -217,12 +223,13 @@ class TestDisableQweb:
         mock_connection.workflow = 0
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = True
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -234,12 +241,13 @@ class TestDisableQweb:
         mock_connection.workflow = 0
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -280,12 +288,12 @@ class TestCollectYaml:
                 "export_type": "pdf",
             },
         ]
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
-            input="1,3\n",
+            input="y\n1,3\n",
         )
 
         assert result.exit_code == 0
@@ -316,12 +324,12 @@ class TestCollectYaml:
                 "export_type": "pdf",
             },
         ]
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
-            input="all\n",
+            input="y\nall\n",
         )
 
         assert result.exit_code == 0
@@ -333,11 +341,12 @@ class TestCollectYaml:
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
         mock_connection.list_fast_reports.return_value = []
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -359,12 +368,12 @@ class TestCollectYaml:
                 "export_type": "pdf",
             },
         ]
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
-            input="all\n",
+            input="y\nall\n",
         )
 
         assert result.exit_code == 0
@@ -388,12 +397,12 @@ class TestCollectYaml:
                 "export_type": "pdf",
             },
         ]
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
-            input="\n",
+            input="y\n\n",
         )
 
         assert result.exit_code == 0
@@ -409,7 +418,7 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.list_yaml_reports.return_value = [
             {
                 "filename": "eq_fr_sale_order.yaml",
@@ -423,7 +432,7 @@ class TestSelectFlag:
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml", "--select"],
-            input="all\n",
+            input="y\nall\n",
         )
 
         assert result.exit_code == 0
@@ -438,7 +447,7 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         yaml1 = {"report_name": "eq_fr_sale"}
         yaml2 = {"report_name": "eq_fr_invoice"}
@@ -459,7 +468,7 @@ class TestSelectFlag:
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml", "--select"],
-            input="1,3\n",
+            input="y\n1,3\n",
         )
 
         assert result.exit_code == 0
@@ -472,7 +481,7 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
         yaml1 = {"report_name": "eq_fr_sale"}
         yaml2 = {"report_name": "eq_fr_invoice"}
@@ -486,7 +495,7 @@ class TestSelectFlag:
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml", "--select"],
-            input="\n",
+            input="y\n\n",
         )
 
         assert result.exit_code == 0
@@ -498,7 +507,7 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.list_yaml_reports.return_value = [
             {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": {}},
         ]
@@ -506,7 +515,7 @@ class TestSelectFlag:
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml", "--select"],
-            input="abc\n",
+            input="y\nabc\n",
         )
 
         assert result.exit_code == 0
@@ -520,12 +529,13 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.list_yaml_reports.return_value = []
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml", "--select"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -538,12 +548,13 @@ class TestSelectFlag:
         mock_connection.collect_yaml = False
         mock_connection.workflow = 0
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = []
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
@@ -560,13 +571,102 @@ class TestSuccessOutput:
         mock_connection.workflow = 0
         mock_connection.collect_yaml = False
         mock_connection.disable_qweb = False
-        mock_eq_utils.create_connection_from_env.return_value = mock_connection
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_eq_utils.collect_all_reports.return_value = []
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
             ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
         )
 
         assert result.exit_code == 0
+        assert "All operations completed successfully" in result.output
+
+
+class TestConnectionConfirmation:
+    """Tests for the connection confirmation prompt."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_confirmation_denied_aborts(self, mock_eq_utils, cli_runner, mock_connection):
+        """When user denies confirmation, CLI should abort without login."""
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="n\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Aborted" in result.output
+        mock_connection.login.assert_not_called()
+        mock_connection.map_reports.assert_not_called()
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_confirmation_shows_connection_details(self, mock_eq_utils, cli_runner, mock_connection):
+        """Confirmation prompt should display .env path, server, database, user, workflow."""
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/path/to/.env")
+        mock_eq_utils.collect_all_reports.return_value = []
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
+        )
+
+        assert result.exit_code == 0
+        assert "Connection Summary" in result.output
+        assert "/path/to/.env" in result.output
+        assert "https://test.odoo.com" in result.output
+        assert "443" in result.output
+        assert "test_db" in result.output
+        assert "admin" in result.output
+        assert "Mapping only" in result.output
+
+
+class TestFailedReportsSummary:
+    """Tests for the failed reports summary output."""
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_failed_reports_shows_summary(self, mock_eq_utils, cli_runner, mock_connection):
+        """When map_reports returns failures, a summary should be displayed."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_connection.map_reports.return_value = [
+            ("eq_fr_core_account_move", "Report on Print Button flag error"),
+        ]
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
+        )
+
+        assert result.exit_code == 0
+        assert "1 of 1 report(s) failed" in result.output
+        assert "eq_fr_core_account_move" in result.output
+        assert "--select" in result.output
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_no_failures_no_summary(self, mock_eq_utils, cli_runner, mock_connection):
+        """When all reports succeed, no failure summary should be shown."""
+        mock_connection.workflow = 0
+        mock_connection.collect_yaml = False
+        mock_connection.disable_qweb = False
+        mock_connection.map_reports.return_value = []
+        mock_eq_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
+        mock_eq_utils.collect_all_reports.return_value = [MagicMock()]
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+            input="y\n",
+        )
+
+        assert result.exit_code == 0
+        assert "report(s) failed" not in result.output
         assert "All operations completed successfully" in result.output

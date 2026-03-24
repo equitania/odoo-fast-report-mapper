@@ -25,8 +25,10 @@ class YAMLDumper(yaml.Dumper):
 
 
 class EqOdooConnection(OdooConnection):
-    def __init__(self, language, collect_yaml, disable_qweb, workflow, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, language, collect_yaml, disable_qweb, workflow, url, port, *args, **kwargs):
+        super().__init__(url, port, *args, **kwargs)
+        self.url = url
+        self.port = port
         self.language = language
         self.collect_yaml = collect_yaml
         self.disable_qweb = disable_qweb
@@ -116,14 +118,16 @@ class EqOdooConnection(OdooConnection):
 
     def map_reports(self, report_list: list):
         """
-        Create/Write reports into the Odoo system with their fields and properties
-        :param: report_list: List of report objects
+        Create/Write reports into the Odoo system with their fields and properties.
+
+        Returns a list of (report_name, error_message) tuples for failed reports.
         """
         IR_MODEL = self.connection.env["ir.model"]
         IR_MODEL_FIELDS = self.connection.env["ir.model.fields"]
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         models_fields = dict()
         model_name_ids = dict()
+        failed_reports = []
 
         # Fetch installed languages once for multi-language translation
         installed_langs = self.get_installed_languages()
@@ -132,21 +136,22 @@ class EqOdooConnection(OdooConnection):
         logger.info(f"→ Mapping {len(report_list)} reports to Odoo...")
         for idx, report in enumerate(report_list, 1):
             logger.info(f"  [{idx}/{len(report_list)}] {report.report_name}")
-
-            report_object, ok = self._create_or_update_report(report, IR_ACTIONS_REPORT, installed_lang_codes)
-            if not ok:
-                continue
-
-            self._set_report_translations(report, report_object, installed_lang_codes)
-
             try:
+                report_object, ok = self._create_or_update_report(report, IR_ACTIONS_REPORT, installed_lang_codes)
+                if not ok:
+                    failed_reports.append((report.report_name, "Dependencies not installed"))
+                    continue
+
+                self._set_report_translations(report, report_object, installed_lang_codes)
                 self._map_report_fields(report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids)
                 logger.info(f"  ✓ Completed: {report.report_name}")
             except (RPCError, KeyError, AttributeError, ValueError, IndexError) as ex:
-                logger.error(f"  ✗ Exception while processing report: {report.report_name}")
-                logger.exception(ex)
+                logger.error(f"  ✗ Failed: {report.report_name} — {ex}")
+                failed_reports.append((report.report_name, str(ex)))
+                continue
 
         self._write_field_mappings(models_fields, IR_MODEL)
+        return failed_reports
 
     def _create_or_update_report(self, report, IR_ACTIONS_REPORT, installed_lang_codes):
         """Search for existing report and create or update it in Odoo.

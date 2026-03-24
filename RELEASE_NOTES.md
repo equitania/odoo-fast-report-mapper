@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.9.3 (24.03.2026)
+
+### Added
+- Connection summary confirmation prompt before login — shows .env path, server, port, database, user, workflow in a box and asks for user confirmation before connecting
+- Failed reports summary at end of mapping — lists failed reports with error messages and `--select` retry hint
+
+### Changed
+- `map_reports()` now catches errors per report instead of aborting the entire batch — failed reports are logged and skipped, remaining reports continue processing
+- `map_reports()` returns a list of failed `(report_name, error_message)` tuples for caller inspection
+- `create_connection_from_env()` returns `(connection, dotenv_path)` tuple for env file tracking
+- `EqOdooConnection` stores `url` and `port` as instance attributes for display purposes
+- Total test count: 350 (up from 344)
+
 ## Version 0.9.2 (23.03.2026)
 
 ### Changed

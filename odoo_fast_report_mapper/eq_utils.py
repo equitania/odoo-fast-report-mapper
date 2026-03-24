@@ -244,9 +244,11 @@ def create_connection_from_env(env_path=None):
         # Load .env file from current working directory
         cwd_env = os.path.join(os.getcwd(), ".env")
         if os.path.exists(cwd_env):
-            logger.info(f"Loading .env from: {cwd_env}")
-            load_dotenv(dotenv_path=cwd_env)
+            dotenv_path = cwd_env
+            logger.info(f"Loading .env from: {dotenv_path}")
+            load_dotenv(dotenv_path=dotenv_path)
         else:
+            dotenv_path = "(auto-discovery)"
             logger.warning(f".env not found in current directory: {os.getcwd()}")
             logger.info("Trying python-dotenv auto-discovery...")
             load_dotenv()
@@ -319,7 +321,7 @@ def create_connection_from_env(env_path=None):
         database,
     )
 
-    return connection
+    return connection, dotenv_path
 
 
 def collect_all_connections(path):

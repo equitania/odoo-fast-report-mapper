@@ -14,6 +14,12 @@ from .logging_config import get_logger, setup_logging
 setup_logging(level=logging.INFO)
 logger = get_logger(__name__)
 
+WORKFLOW_LABELS = {
+    0: "Mapping only",
+    1: "Testing only",
+    2: "Mapping + Testing",
+}
+
 
 def print_banner():
     """Print professional banner with version information"""
@@ -120,7 +126,7 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
 
     # Create connection from .env file
     try:
-        connection = eq_utils.create_connection_from_env(env_path=env_path)
+        connection, env_file_used = eq_utils.create_connection_from_env(env_path=env_path)
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
         click.echo("\n" + "=" * 80)
@@ -131,6 +137,24 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
         else:
             click.echo(f"  Searched in: {os.getcwd()}")
         click.echo("=" * 80 + "\n")
+        return
+
+    # Show connection summary and ask for confirmation
+    workflow_label = WORKFLOW_LABELS.get(connection.workflow, f"Unknown ({connection.workflow})")
+    click.echo("  ┌─────────────────────────────────────────────────────────────────────┐")
+    click.echo("  │  Connection Summary                                                 │")
+    click.echo("  ├─────────────────────────────────────────────────────────────────────┤")
+    click.echo(f"  │  .env:      {env_file_used:<55} │")
+    click.echo(f"  │  Server:    {connection.url:<55} │")
+    click.echo(f"  │  Port:      {str(connection.port):<55} │")
+    click.echo(f"  │  Database:  {connection.database:<55} │")
+    click.echo(f"  │  User:      {connection.username:<55} │")
+    click.echo(f"  │  Workflow:  {workflow_label:<55} │")
+    click.echo("  └─────────────────────────────────────────────────────────────────────┘")
+    click.echo()
+
+    if not click.confirm("  Proceed?", default=True):
+        click.echo("\n  Aborted.")
         return
 
     # Login to Odoo
@@ -217,20 +241,34 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
         else:
             reports = eq_utils.collect_all_reports(yaml_path)
 
+        failed_reports = []
         if connection.workflow == 0:
             logger.info("Starting report mapping...")
-            connection.map_reports(reports)
+            failed_reports = connection.map_reports(reports)
         elif connection.workflow == 1:
             logger.info(f"Testing report rendering for database: {connection.database}")
             connection.test_fast_report_rendering(reports)
         elif connection.workflow == 2:
             logger.info("Starting report mapping...")
-            connection.map_reports(reports)
+            failed_reports = connection.map_reports(reports)
             logger.info(f"Testing report rendering for database: {connection.database}")
             connection.test_fast_report_rendering(reports)
         else:
             logger.error("Invalid workflow configuration parameter value!")
             raise ValueError("Workflow must be 0 (mapping), 1 (testing), or 2 (both)")
+
+        # Show summary if any reports failed
+        if failed_reports:
+            click.echo()
+            click.echo(f"  ⚠ {len(failed_reports)} of {len(reports)} report(s) failed:")
+            for name, error in failed_reports:
+                # Truncate long error messages
+                short_error = error[:80] + "..." if len(error) > 80 else error
+                click.echo(f"    - {name}: {short_error}")
+            click.echo()
+            click.echo("  Tip: Re-run failed reports individually with:")
+            click.echo(f"    odoo-fr-mapper --yaml_path={yaml_path} --select")
+            click.echo()
 
     if connection.disable_qweb:
         logger.info("Disabling QWeb reports...")

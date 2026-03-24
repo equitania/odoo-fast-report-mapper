@@ -271,19 +271,21 @@ class TestCreateConnectionFromEnv:
     def test_from_explicit_env_file_path(self, tmp_env_file, mock_odoorpc, monkeypatch):
         """Connection is created from an explicit .env file path."""
         self._clear_odoo_env_vars(monkeypatch)
-        conn = eq_utils.create_connection_from_env(env_path=str(tmp_env_file))
+        conn, env_file = eq_utils.create_connection_from_env(env_path=str(tmp_env_file))
         assert isinstance(conn, EqOdooConnection)
         assert conn.database == "test_db"
         assert conn.username == "admin"
         # Legacy 'ger' is normalized to 'de_DE'
         assert conn.language == "de_DE"
+        assert str(tmp_env_file) in env_file
 
     def test_from_directory_path(self, tmp_env_file, mock_odoorpc, monkeypatch):
         """Connection is created when env_path points to a directory containing .env."""
         self._clear_odoo_env_vars(monkeypatch)
-        conn = eq_utils.create_connection_from_env(env_path=str(tmp_env_file.parent))
+        conn, env_file = eq_utils.create_connection_from_env(env_path=str(tmp_env_file.parent))
         assert isinstance(conn, EqOdooConnection)
         assert conn.database == "test_db"
+        assert ".env" in env_file
 
     def test_missing_required_vars_raises_value_error(self, tmp_path, mock_odoorpc, monkeypatch):
         """ValueError is raised when required environment variables are missing."""
@@ -307,7 +309,7 @@ class TestCreateConnectionFromEnv:
         )
         env_file = tmp_path / ".env"
         env_file.write_text(env_content)
-        conn = eq_utils.create_connection_from_env(env_path=str(env_file))
+        conn, _ = eq_utils.create_connection_from_env(env_path=str(env_file))
         assert conn.collect_yaml is False
         assert conn.disable_qweb is True
         assert conn.workflow == 0
@@ -334,7 +336,7 @@ class TestCreateConnectionFromEnv:
         )
         env_file = tmp_path / ".env"
         env_file.write_text(env_content)
-        conn = eq_utils.create_connection_from_env(env_path=str(env_file))
+        conn, _ = eq_utils.create_connection_from_env(env_path=str(env_file))
         assert conn.collect_yaml is True
         assert conn.disable_qweb is False
         assert conn.workflow == 2
