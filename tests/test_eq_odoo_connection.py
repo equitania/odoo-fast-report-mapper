@@ -278,6 +278,30 @@ class TestSearchReport:
 
         assert result == 99
 
+    def test_search_report_with_company_id_includes_company_domain(self):
+        """_search_report with company_id should add company filter to domain."""
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [77]
+
+        conn._search_report("sale.order", {"de_DE": "Auftrag"}, mock_ir_report, company_id=2)
+
+        call_args = mock_ir_report.search.call_args[0][0]
+        assert ("company_id", "=", 2) in call_args
+        assert ("company_id", "=", False) in call_args
+
+    def test_search_report_without_company_id_no_company_domain(self):
+        """_search_report without company_id should NOT include company filter."""
+        conn = _make_connection()
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [88]
+
+        conn._search_report("sale.order", {"de_DE": "Auftrag"}, mock_ir_report)
+
+        call_args = mock_ir_report.search.call_args[0][0]
+        # No company_id tuple in domain
+        assert not any(t[0] == "company_id" for t in call_args if isinstance(t, tuple))
+
 
 # ---------------------------------------------------------------------------
 # 5. TestCheckDependencies

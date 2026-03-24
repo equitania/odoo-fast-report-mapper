@@ -92,11 +92,14 @@ class EqOdooConnection(OdooConnection):
             return False
         return report_ids[0]
 
-    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None):
+    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None, company_id=None):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
-        report_ids = IR_ACTIONS_REPORT.search([("model", "=ilike", model_name)] + name_domain)
+        domain = [("model", "=ilike", model_name)] + name_domain
+        if company_id:
+            domain += ["|", ("company_id", "=", company_id), ("company_id", "=", False)]
+        report_ids = IR_ACTIONS_REPORT.search(domain)
         if len(report_ids) == 0:
             return False
         return report_ids[0]
@@ -202,7 +205,9 @@ class EqOdooConnection(OdooConnection):
                     report.company_id[0],
                 )
             else:
-                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+                report_id = self._search_report(
+                    report.model_name, report.entry_name, IR_ACTIONS_REPORT, company_id=report.company_id[0]
+                )
         else:
             report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
         if not report_id:

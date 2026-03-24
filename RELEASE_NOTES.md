@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.9.4 (24.03.2026)
+
+### Fixed
+- Multi-company report mapping: `_search_report()` now includes `company_id` filter for v17+ — previously reports with the same name but different companies would overwrite each other instead of creating separate records
+- Total test count: 352
+
 ## Version 0.9.3 (24.03.2026)
 
 ### Added
