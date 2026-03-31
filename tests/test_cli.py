@@ -45,11 +45,10 @@ class TestVersionOption:
     """Tests for the --version CLI option."""
 
     def test_version_option(self, cli_runner):
-        """--version should display the program name and current version."""
+        """--version should display the current version."""
         result = cli_runner.invoke(start_odoo_fast_report_mapper, ["--version"])
         assert result.exit_code == 0
         assert __version__ in result.output
-        assert "odoo-fast-report-mapper" in result.output
 
 
 class TestInitFlag:

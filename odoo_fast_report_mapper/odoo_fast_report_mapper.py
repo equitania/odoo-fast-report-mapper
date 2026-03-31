@@ -54,7 +54,7 @@ def init_callback(ctx, param, value):
 
 
 @click.command()
-@click.version_option(version=__version__, prog_name="odoo-fast-report-mapper")
+@click.version_option(version=__version__)
 @click.option(
     "--init",
     is_flag=True,

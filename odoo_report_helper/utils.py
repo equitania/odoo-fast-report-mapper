@@ -3,6 +3,7 @@
 
 import logging
 import os
+from urllib.parse import urlparse
 
 import yaml
 from odoorpc_toolbox import ODOO
@@ -16,6 +17,10 @@ def prepare_connection(url, port):
     :param url: Odoo URL
     :param port: Port number
     """
+    parsed = urlparse(url)
+    if parsed.scheme and parsed.scheme not in ("http", "https"):
+        raise ValueError(f"URL scheme must be http or https, got: {parsed.scheme!r}")
+
     port = int(port)
     _protocol = "jsonrpc+ssl"
     if url.startswith("https"):

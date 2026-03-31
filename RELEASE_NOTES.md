@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 0.9.5 (31.03.2026)
+
+### Fixed
+- Dynamic CLI `prog_name`: both entry points (`odoo-fr-mapper`, `odoo-fast-report-mapper`) now self-identify correctly in `--version` output — previously hardcoded to the long name
+- Password cleanup on connection failure: `self.password` is now cleared in the `except` block of `OdooConnection.__init__()` to prevent credential retention after failed connections
+- URL schema validation: `prepare_connection()` now rejects non-http/https URL schemes (e.g. `ftp://`, `file://`) with a clear `ValueError`
+
+### Changed
+- Unified progress bars: replaced `click.progressbar` in `collect_report_entries()` with project's own `progress_bar()` wrapper (tqdm-based) for consistent styling across all operations
+- Removed `import click` from `eq_odoo_connection.py` — Click is no longer a dependency of the connection module
+- Total test count: 352
+
 ## Version 0.9.4 (24.03.2026)
 
 ### Fixed

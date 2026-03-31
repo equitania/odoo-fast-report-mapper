@@ -4,10 +4,10 @@ import os
 from datetime import datetime
 from random import choice
 
-import click
 import yaml
 from odoorpc_toolbox import RPCError
 
+from odoo_fast_report_mapper.progress import progress_bar
 from odoo_report_helper.odoo_connection import OdooConnection
 
 from . import eq_report
@@ -484,47 +484,47 @@ class EqOdooConnection(OdooConnection):
             company_name = self.connection.env["res.company"].browse(company_id).name
             logger.info(f"Collecting fields for company: {company_name}")
 
-            # Progressbar...
-            with click.progressbar(all_report_field_ids, length=len(all_report_field_ids)) as bar:
-                for field_id in bar:
-                    # Get object
-                    field_object = IR_MODEL_FIELDS.browse(field_id)
-                    # Get attributes
-                    report_action_ids = field_object.eq_report_ids.ids
-                    model_id = field_object.model_id
-                    model_name = model_id.model
-                    field_name = field_object.name
+            for field_id in progress_bar(
+                all_report_field_ids, desc=f"Collecting fields ({company_name})", unit="field"
+            ):
+                # Get object
+                field_object = IR_MODEL_FIELDS.browse(field_id)
+                # Get attributes
+                report_action_ids = field_object.eq_report_ids.ids
+                model_id = field_object.model_id
+                model_name = model_id.model
+                field_name = field_object.name
 
-                    # Add field to dictionary
-                    for report_action_id in report_action_ids:
-                        report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
-                        company_id = report_action_object.company_id.id if report_action_object.company_id else False
-                        if company_id:
+                # Add field to dictionary
+                for report_action_id in report_action_ids:
+                    report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
+                    company_id = report_action_object.company_id.id if report_action_object.company_id else False
+                    if company_id:
+                        if (
+                            report_action_object.report_name in report_name_id_combination
+                            and report_action_id != report_name_id_combination[report_action_object.report_name]
+                        ):
                             if (
-                                report_action_object.report_name in report_name_id_combination
-                                and report_action_id != report_name_id_combination[report_action_object.report_name]
-                            ):
-                                if (
+                                "company_id"
+                                in data_dictionary[report_name_id_combination[report_action_object.report_name]]
+                                and company_id
+                                not in data_dictionary[report_name_id_combination[report_action_object.report_name]][
                                     "company_id"
-                                    in data_dictionary[report_name_id_combination[report_action_object.report_name]]
-                                    and company_id
-                                    not in data_dictionary[
-                                        report_name_id_combination[report_action_object.report_name]
-                                    ]["company_id"]
-                                ):
-                                    data_dictionary[report_name_id_combination[report_action_object.report_name]][
-                                        "company_id"
-                                    ].append(company_id)
-                                continue
-                            else:
-                                report_name_id_combination[report_action_object.report_name] = report_action_id
-                        data_dictionary = self.add_field_to_dictionary(
-                            data_dictionary,
-                            report_action_id,
-                            model_name,
-                            field_name,
-                            company_id,
-                        )
+                                ]
+                            ):
+                                data_dictionary[report_name_id_combination[report_action_object.report_name]][
+                                    "company_id"
+                                ].append(company_id)
+                            continue
+                        else:
+                            report_name_id_combination[report_action_object.report_name] = report_action_id
+                    data_dictionary = self.add_field_to_dictionary(
+                        data_dictionary,
+                        report_action_id,
+                        model_name,
+                        field_name,
+                        company_id,
+                    )
         for report_action_id, fields in data_dictionary.items():
             # Create report object
             eq_report_object = self.create_eq_report_object(report_action_id, fields)

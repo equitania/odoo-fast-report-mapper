@@ -23,6 +23,8 @@ class OdooConnection:
             # Build connection
             self.connection = utils.prepare_connection(url, port)
         except urllib.error.URLError as ex:
+            # Clear password from memory on connection failure
+            self.password = None
             raise exceptions.OdooConnectionError(
                 "ERROR: Please check your parameters and your connection" + " " + str(ex)
             ) from ex
