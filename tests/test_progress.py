@@ -178,11 +178,13 @@ class TestCreateProgressBar:
 
     def test_creates_usable_as_context_manager(self):
         """create_progress_bar result must be usable as context manager."""
-        with patch("odoo_fast_report_mapper.progress.sys.stdout", _devnull):
-            with create_progress_bar(total=5) as pbar:
-                for _ in range(5):
-                    pbar.update(1)
-                assert pbar.pbar.n == 5
+        with (
+            patch("odoo_fast_report_mapper.progress.sys.stdout", _devnull),
+            create_progress_bar(total=5) as pbar,
+        ):
+            for _ in range(5):
+                pbar.update(1)
+            assert pbar.pbar.n == 5
 
 
 # ---------------------------------------------------------------------------

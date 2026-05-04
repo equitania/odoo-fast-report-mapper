@@ -31,7 +31,7 @@ def reset_logger_manager():
     LoggerManager._loggers = {}
     yield
     # Cleanup: reset again and remove any handlers we may have added
-    for name, logger_obj in LoggerManager._loggers.items():
+    for _name, logger_obj in LoggerManager._loggers.items():
         logger_obj.handlers.clear()
     LoggerManager._instance = None
     LoggerManager._loggers = {}
@@ -160,7 +160,7 @@ class TestLoggerManagerSingleton:
 
     def test_reset_singleton_allows_new_instance(self):
         """After resetting singleton state, a new instance can be created."""
-        manager1 = LoggerManager()
+        LoggerManager()
         LoggerManager._instance = None
         LoggerManager._loggers = {}
         manager2 = LoggerManager()

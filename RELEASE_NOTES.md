@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 0.9.6 (04.05.2026)
+
+### Added
+- GitHub Actions CI workflow (`.github/workflows/test.yml`) running on Python 3.12 and 3.13: `ruff check`, `ruff format --check`, `mypy`, `pytest` with coverage on every push/PR to `main` and `develop`
+
+### Fixed
+- Security: `prepare_connection()` now emits a `logger.warning()` when an `http://` URL is used, alerting users that credentials will be transmitted unencrypted (previously silent protocol downgrade to plain `jsonrpc`)
+- Security: removed plaintext-looking placeholder from `tests/fixtures/sample_connection.yaml` (`test_password` → `PLACEHOLDER_NOT_A_REAL_PASSWORD`) to prevent confusion with real credentials
+- Lint: 5 pre-existing ruff violations fixed in test suite (B017 in `test_exceptions.py`, B007/F841 in `test_logging.py`, SIM117 in `test_progress.py`)
+
+### Removed
+- Redundant `tests/utils_test.py` deleted — silently excluded from pytest runs (didn't match `test_*.py` pattern), made a real network call to `odoo.com`, and was fully duplicated by `test_helper_utils.py` with proper mocks
+- Total test count: 352 (unchanged — utils_test.py was never executed)
+
 ## Version 0.9.5 (31.03.2026)
 
 ### Fixed

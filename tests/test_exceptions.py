@@ -31,7 +31,7 @@ class TestOdooConnectionError:
 
     def test_can_be_caught_as_exception(self):
         """OdooConnectionError must be catchable as generic Exception."""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="Caught as Exception"):
             raise OdooConnectionError("Caught as Exception")
 
     def test_empty_message(self):
@@ -70,7 +70,7 @@ class TestPathDoesNotExitError:
 
     def test_can_be_caught_as_exception(self):
         """PathDoesNotExitError must be catchable as generic Exception."""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="Caught as Exception"):
             raise PathDoesNotExitError("Caught as Exception")
 
     def test_empty_message(self):

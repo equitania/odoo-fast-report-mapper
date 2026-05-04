@@ -31,6 +31,12 @@ def prepare_connection(url, port):
     elif url.startswith("http:"):
         url = url.replace("http:", "")
         _protocol = "jsonrpc"
+        logger.warning(
+            "Connecting via plain HTTP (no TLS) to %s. "
+            "Credentials will be transmitted unencrypted. "
+            "Use https:// for production connections.",
+            url.lstrip("/"),
+        )
 
     while url and url.startswith("/"):
         url = url[1:]
