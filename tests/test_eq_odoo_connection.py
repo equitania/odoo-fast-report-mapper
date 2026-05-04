@@ -958,6 +958,96 @@ class TestCollectReportEntries:
         assert data is not None
         assert "report_name" in data
 
+    def test_dependencies_only_contain_field_specific_modules(self, tmp_path):
+        """Exported dependencies must come from ir.model.fields.modules per field
+        (e.g. 'sale, account'), NOT from a dump of all installed modules.
+
+        Regression guard: ensures collect_report_entries reads from the per-field
+        `modules` attribute and respects the comma-split + whitespace-trim path.
+        """
+        conn = _make_connection()
+
+        conn.connection.env.user.company_ids.ids = [1]
+        conn.connection.env.user.company_ids.__bool__ = lambda s: True
+
+        mock_ir_report = MagicMock()
+        mock_ir_report.search.return_value = [10]
+
+        mock_report_obj = MagicMock()
+        mock_report_obj.report_name = "eq_fr_multi_module"
+        mock_report_obj.report_type = "fast_report"
+        mock_report_obj.name = "Multi Module Report"
+        mock_report_obj.model = "sale.order"
+        mock_report_obj.eq_export_type = "pdf"
+        mock_report_obj.eq_ignore_images = True
+        mock_report_obj.eq_handling_html_fields = "standard"
+        mock_report_obj.multi = False
+        mock_report_obj.attachment_use = False
+        mock_report_obj.attachment = "MM.pdf"
+        mock_report_obj.print_report_name = "MM"
+        mock_report_obj.eq_calculated_field_ids = []
+        mock_report_obj.eq_print_button = False
+        mock_report_obj.eq_multiprint = "standard"
+        mock_report_obj.company_id = MagicMock()
+        mock_report_obj.company_id.id = False
+        mock_report_obj.company_id.__bool__ = lambda s: False
+        mock_report_obj.with_context.return_value = mock_report_obj
+        mock_ir_report.browse.return_value = mock_report_obj
+
+        # Field whose `modules` attribute lists multiple modules (with whitespace)
+        # — this is the Odoo standard format for fields defined/extended in
+        # several modules (e.g. via inheritance).
+        mock_ir_model_fields = MagicMock()
+        mock_ir_model_fields.search.return_value = [20]
+        mock_field_obj = MagicMock()
+        mock_field_obj.eq_report_ids.ids = [10]
+        mock_field_obj.model_id.model = "sale.order"
+        mock_field_obj.name = "amount_total"
+        mock_field_obj.modules = "sale, account"
+        mock_ir_model_fields.browse.return_value = mock_field_obj
+
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+
+        mock_res_company = MagicMock()
+        mock_res_company.browse.return_value = MagicMock(name="Test Co")
+
+        env_map = {
+            "ir.actions.report": mock_ir_report,
+            "ir.model.fields": mock_ir_model_fields,
+            "ir.model": mock_ir_model,
+            "res.company": mock_res_company,
+        }
+        _setup_env(conn, env_map)
+
+        # Sentinel: if collect_report_entries ever queries ir.module.module,
+        # the test must fail — exporting all installed modules is a regression.
+        ir_module_module_mock = MagicMock(
+            side_effect=AssertionError("ir.module.module must not be queried during export")
+        )
+        conn.connection.env.__getitem__.side_effect = lambda key: (
+            ir_module_module_mock() if key == "ir.module.module" else env_map[key]
+        )
+
+        conn.get_installed_languages = MagicMock(return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}])
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        conn.collect_report_entries(str(output_dir))
+
+        yaml_files = list(output_dir.glob("*.yaml"))
+        assert len(yaml_files) == 1
+
+        with open(yaml_files[0]) as f:
+            data = yaml.safe_load(f)
+
+        assert "dependencies" in data
+        # Whitespace must be stripped, comma must split — order is set-based.
+        assert sorted(data["dependencies"]) == ["account", "sale"]
+        # Negative guard: no other modules must leak in.
+        assert len(data["dependencies"]) == 2
+
     def test_sanitizes_report_name_for_path_traversal(self, tmp_path):
         """Report names with path traversal characters must be sanitized."""
         conn = _make_connection()

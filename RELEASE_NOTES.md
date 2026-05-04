@@ -12,7 +12,10 @@
 
 ### Removed
 - Redundant `tests/utils_test.py` deleted — silently excluded from pytest runs (didn't match `test_*.py` pattern), made a real network call to `odoo.com`, and was fully duplicated by `test_helper_utils.py` with proper mocks
-- Total test count: 352 (unchanged — utils_test.py was never executed)
+
+### Tests
+- New regression guard `test_dependencies_only_contain_field_specific_modules` in `TestCollectReportEntries`: verifies that YAML export reads dependencies from `ir.model.fields.modules` per field (correctly handling comma-separated multi-module fields like `"sale, account"`) and never falls back to dumping all installed modules from `ir.module.module`
+- Total test count: 353 (up from 352 — the new regression test)
 
 ## Version 0.9.5 (31.03.2026)
 
