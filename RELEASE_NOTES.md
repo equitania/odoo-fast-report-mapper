@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.9.7.3 (11.05.2026)
+
+### Fixed
+- Connection Summary box used a fixed 55-character value padding that broke alignment when long absolute `.env` paths (or long URLs/usernames) exceeded the width. The right-hand `│` border drifted off into the next column and the box looked broken
+- Box width now sizes dynamically to the longest row (with a floor of 65 characters for aesthetics on short-content sessions), keeping the alignment correct regardless of input length
+
 ## Version 0.9.7.2 (11.05.2026)
 
 ### Fixed

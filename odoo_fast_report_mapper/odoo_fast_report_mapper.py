@@ -178,17 +178,28 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
         auth_label = f"API-Key ({key_prefix})"
     else:
         auth_label = "Password"
-    click.echo("  ┌─────────────────────────────────────────────────────────────────────┐")
-    click.echo("  │  Connection Summary                                                 │")
-    click.echo("  ├─────────────────────────────────────────────────────────────────────┤")
-    click.echo(f"  │  .env:      {env_file_used:<55} │")
-    click.echo(f"  │  Server:    {connection.url:<55} │")
-    click.echo(f"  │  Port:      {str(connection.port):<55} │")
-    click.echo(f"  │  Database:  {connection.database:<55} │")
-    click.echo(f"  │  User:      {connection.username:<55} │")
-    click.echo(f"  │  Auth:      {auth_label:<55} │")
-    click.echo(f"  │  Workflow:  {workflow_label:<55} │")
-    click.echo("  └─────────────────────────────────────────────────────────────────────┘")
+
+    rows = [
+        ("  .env:     ", env_file_used),
+        ("  Server:   ", connection.url),
+        ("  Port:     ", str(connection.port)),
+        ("  Database: ", connection.database),
+        ("  User:     ", connection.username),
+        ("  Auth:     ", auth_label),
+        ("  Workflow: ", workflow_label),
+    ]
+    title = "  Connection Summary"
+    # Compute inner width from longest row, with a sensible floor for aesthetics
+    inner_width = max(len(title), max(len(label) + len(value) for label, value in rows))
+    inner_width = max(inner_width, 65)
+    horiz = "─" * (inner_width + 2)
+
+    click.echo(f"  ┌{horiz}┐")
+    click.echo(f"  │ {title.ljust(inner_width)} │")
+    click.echo(f"  ├{horiz}┤")
+    for label, value in rows:
+        click.echo(f"  │ {(label + value).ljust(inner_width)} │")
+    click.echo(f"  └{horiz}┘")
     click.echo()
 
     if not click.confirm("  Proceed?", default=True):
