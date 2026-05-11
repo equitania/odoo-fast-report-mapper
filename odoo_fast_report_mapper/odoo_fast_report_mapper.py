@@ -141,6 +141,12 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
 
     # Show connection summary and ask for confirmation
     workflow_label = WORKFLOW_LABELS.get(connection.workflow, f"Unknown ({connection.workflow})")
+    if connection.auth_method == "api_key":
+        key_value = connection.password or ""
+        key_prefix = (key_value[:4] + "…") if len(key_value) > 4 else "…"
+        auth_label = f"API-Key ({key_prefix})"
+    else:
+        auth_label = "Password"
     click.echo("  ┌─────────────────────────────────────────────────────────────────────┐")
     click.echo("  │  Connection Summary                                                 │")
     click.echo("  ├─────────────────────────────────────────────────────────────────────┤")
@@ -149,12 +155,21 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
     click.echo(f"  │  Port:      {str(connection.port):<55} │")
     click.echo(f"  │  Database:  {connection.database:<55} │")
     click.echo(f"  │  User:      {connection.username:<55} │")
+    click.echo(f"  │  Auth:      {auth_label:<55} │")
     click.echo(f"  │  Workflow:  {workflow_label:<55} │")
     click.echo("  └─────────────────────────────────────────────────────────────────────┘")
     click.echo()
 
     if not click.confirm("  Proceed?", default=True):
         click.echo("\n  Aborted.")
+        return
+
+    # Pre-login version gate: block API-key auth against Odoo < 14
+    try:
+        connection.check_api_key_compatibility()
+    except ValueError as e:
+        logger.error(str(e))
+        click.echo(f"\n  ✗ {e}\n")
         return
 
     # Login to Odoo

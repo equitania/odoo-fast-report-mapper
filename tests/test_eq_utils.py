@@ -373,6 +373,52 @@ class TestCreateConnectionFromEnv:
         with pytest.raises(ValueError, match="Invalid ODOO_PORT"):
             eq_utils.create_connection_from_env(env_path=str(env_file))
 
+    # ----- API-key authentication -----
+
+    @staticmethod
+    def _base_env_lines():
+        return "ODOO_URL=https://test.com\nODOO_PORT=443\nODOO_USER=admin\nODOO_DATABASE=db\nODOO_LANGUAGE=en_US\n"
+
+    def test_api_key_only_sets_auth_method_api_key(self, tmp_path, mock_odoorpc, monkeypatch):
+        """Only ODOO_API_KEY set → auth_method == 'api_key', password slot holds the key."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_file = tmp_path / ".env"
+        env_file.write_text(self._base_env_lines() + "ODOO_API_KEY=secret-api-key-xyz\n")
+        conn, _ = eq_utils.create_connection_from_env(env_path=str(env_file))
+        assert conn.auth_method == "api_key"
+        assert conn.password == "secret-api-key-xyz"
+
+    def test_password_only_sets_auth_method_password(self, tmp_path, mock_odoorpc, monkeypatch):
+        """Only ODOO_PASSWORD set → auth_method == 'password'."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_file = tmp_path / ".env"
+        env_file.write_text(self._base_env_lines() + "ODOO_PASSWORD=plain-pw\n")
+        conn, _ = eq_utils.create_connection_from_env(env_path=str(env_file))
+        assert conn.auth_method == "password"
+        assert conn.password == "plain-pw"
+
+    def test_api_key_wins_over_password_when_both_set(self, tmp_path, mock_odoorpc, monkeypatch):
+        """Both set → API-key wins + warning logged."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_file = tmp_path / ".env"
+        env_file.write_text(self._base_env_lines() + "ODOO_PASSWORD=plain-pw\nODOO_API_KEY=api-key-1\n")
+        # Patch the logger inside eq_utils to capture warning calls
+        with patch.object(eq_utils.logger, "warning") as mock_warning:
+            conn, _ = eq_utils.create_connection_from_env(env_path=str(env_file))
+        assert conn.auth_method == "api_key"
+        assert conn.password == "api-key-1"
+        # Verify warning was emitted mentioning both env vars
+        warning_messages = [c.args[0] for c in mock_warning.call_args_list]
+        assert any("ODOO_API_KEY" in msg and "ODOO_PASSWORD" in msg for msg in warning_messages)
+
+    def test_neither_password_nor_api_key_raises(self, tmp_path, mock_odoorpc, monkeypatch):
+        """Neither auth var → ValueError mentioning both."""
+        self._clear_odoo_env_vars(monkeypatch)
+        env_file = tmp_path / ".env"
+        env_file.write_text(self._base_env_lines())
+        with pytest.raises(ValueError, match="ODOO_API_KEY.*ODOO_PASSWORD"):
+            eq_utils.create_connection_from_env(env_path=str(env_file))
+
 
 # ---------------------------------------------------------------------------
 # collect_all_connections (deprecated)

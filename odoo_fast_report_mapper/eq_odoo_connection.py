@@ -25,7 +25,18 @@ class YAMLDumper(yaml.Dumper):
 
 
 class EqOdooConnection(OdooConnection):
-    def __init__(self, language, collect_yaml, disable_qweb, workflow, url, port, *args, **kwargs):
+    def __init__(
+        self,
+        language,
+        collect_yaml,
+        disable_qweb,
+        workflow,
+        url,
+        port,
+        *args,
+        auth_method: str = "password",
+        **kwargs,
+    ):
         super().__init__(url, port, *args, **kwargs)
         self.url = url
         self.port = port
@@ -33,6 +44,29 @@ class EqOdooConnection(OdooConnection):
         self.collect_yaml = collect_yaml
         self.disable_qweb = disable_qweb
         self.workflow = workflow
+        self.auth_method = auth_method  # 'password' or 'api_key'
+
+    def check_api_key_compatibility(self) -> None:
+        """Verify the Odoo server supports API-key authentication (>= v14).
+
+        Queries server version BEFORE login (uses unauthenticated common.version
+        endpoint). Only enforced when auth_method == 'api_key'.
+
+        Raises:
+            ValueError: If auth_method is 'api_key' and the server major version < 14.
+        """
+        if self.auth_method != "api_key":
+            return
+        try:
+            server_version = self.connection.version
+            major = int(server_version.split(".")[0])
+        except (AttributeError, ValueError, IndexError) as ex:
+            raise ValueError(f"Could not determine Odoo server version for API-key compatibility check: {ex}") from ex
+        if major < 14:
+            raise ValueError(
+                f"API-key authentication requires Odoo >= 14, but server reports v{server_version}. "
+                "Use ODOO_PASSWORD instead, or upgrade the Odoo server."
+            )
 
     def get_installed_languages(self):
         """Query res.lang for all active languages in Odoo.
@@ -86,7 +120,7 @@ class EqOdooConnection(OdooConnection):
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
-        company_domain = ["|", ("company_id", "=", company_id), ("company_id", "=", False)]
+        company_domain = ["|", ("company_id", "=", company_id), ("company_id", "=", False)] if company_id else []
         report_ids = IR_ACTIONS_REPORT.search([("model", "=ilike", model_name)] + name_domain + company_domain)
         if len(report_ids) == 0:
             return False
@@ -383,6 +417,9 @@ class EqOdooConnection(OdooConnection):
             report_id = IR_ACTIONS_REPORT.search(base_domain + name_domain + company_domain)
         else:
             report_id = IR_ACTIONS_REPORT.search(base_domain + name_domain)
+        if not report_id:
+            logger.error(f"Cannot set calculated fields: report not found for model={report_model}")
+            return
         value_dict["eq_report_id"] = report_id[0]
         calculated_field_id = REPORT_CALC.search(
             [("eq_report_id", "=", report_id[0]), ("eq_field_name", "=", field_name)]
@@ -498,8 +535,8 @@ class EqOdooConnection(OdooConnection):
                 # Add field to dictionary
                 for report_action_id in report_action_ids:
                     report_action_object = IR_ACTIONS_REPORT.browse(report_action_id)
-                    company_id = report_action_object.company_id.id if report_action_object.company_id else False
-                    if company_id:
+                    report_company_id = report_action_object.company_id.id if report_action_object.company_id else False
+                    if report_company_id:
                         if (
                             report_action_object.report_name in report_name_id_combination
                             and report_action_id != report_name_id_combination[report_action_object.report_name]
@@ -507,14 +544,14 @@ class EqOdooConnection(OdooConnection):
                             if (
                                 "company_id"
                                 in data_dictionary[report_name_id_combination[report_action_object.report_name]]
-                                and company_id
+                                and report_company_id
                                 not in data_dictionary[report_name_id_combination[report_action_object.report_name]][
                                     "company_id"
                                 ]
                             ):
                                 data_dictionary[report_name_id_combination[report_action_object.report_name]][
                                     "company_id"
-                                ].append(company_id)
+                                ].append(report_company_id)
                             continue
                         else:
                             report_name_id_combination[report_action_object.report_name] = report_action_id
@@ -523,7 +560,7 @@ class EqOdooConnection(OdooConnection):
                         report_action_id,
                         model_name,
                         field_name,
-                        company_id,
+                        report_company_id,
                     )
         for report_action_id, fields in data_dictionary.items():
             # Create report object
@@ -553,13 +590,10 @@ class EqOdooConnection(OdooConnection):
         if field_name not in data_dictionary[report_id][model_name]:
             data_dictionary[report_id][model_name].append(field_name)
         if company_id:
-            if (
-                "company_id" in data_dictionary[report_id]
-                and company_id not in data_dictionary[report_id]["company_id"]
-            ):
-                data_dictionary[report_id]["company_id"].append(company_id)
-            else:
+            if "company_id" not in data_dictionary[report_id]:
                 data_dictionary[report_id]["company_id"] = [company_id]
+            elif company_id not in data_dictionary[report_id]["company_id"]:
+                data_dictionary[report_id]["company_id"].append(company_id)
         # Collect dependencies
         IR_FIELDS = self.connection.env["ir.model.fields"]
         IR_MODEL = self.connection.env["ir.model"]
@@ -634,12 +668,8 @@ class EqOdooConnection(OdooConnection):
         attachment_use = action_object.attachment_use
         attachment = action_object.attachment
         eq_calculated_field_ids = action_object.eq_calculated_field_ids
-        company_id = field_dictionary.get("company_id", False)
-        if "company_id" in field_dictionary:
-            del field_dictionary["company_id"]
-        dependencies = sorted(field_dictionary["dependencies"])
-        if "dependencies" in field_dictionary:
-            del field_dictionary["dependencies"]
+        company_id = field_dictionary.pop("company_id", False)
+        dependencies = sorted(field_dictionary.pop("dependencies", []))
 
         calculated_fields_dict = self._collect_calculated_fields(eq_calculated_field_ids)
         if not self.is_dict(calculated_fields_dict):
@@ -702,67 +732,60 @@ class EqOdooConnection(OdooConnection):
 
         # Logging is now centrally configured via logging_config.py
         original_company_yaml_user = self.connection.env.user.company_id
-        for report in report_list:
-            if report.company_id:
-                self.connection.env.user.company_id = report.company_id[0]
-                IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                if self.version in ["13", "14", "15", "16"]:
-                    report_id = self._search_report_v13(
-                        report.model_name,
-                        report.entry_name,
-                        IR_ACTIONS_REPORT,
-                        report.company_id[0],
-                    )
-                else:
-                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
-            else:
-                IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-                report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
-            # Get report action record
-            report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
-            # Check if the report has been created and is type Fast Report
-            if not report_id or report_object.report_type != "fast_report":
-                logger.warning(f"Report {report.report_name} not created or is not type FastReport")
-                continue
-
-            logger.info(f"Testing report rendering: {report.report_name}")
-
-            ## Get module from report model
-            IR_REPORT_MODEL = self.connection.env[report.model_name]
-
-            """ This is extra help: display modules from report model and report filename code
-            # Get the report model object
-            model_id = IR_MODEL.search([('model', '=', report.model_name)])
-            report_model_object = IR_MODEL.browse(model_id)
-            report_modules = report_model_object['modules']
-            logger.debug(f"Modules using model {report.model_name} from report {report.report_name} with filename {report.print_report_name}")
-            logger.debug(f"Modules: {report_modules}")
-            Can be commented if not necessary """
-
-            if report_object:
-                # Get all report model records ids
-                report_model_records_ids = IR_REPORT_MODEL.search([])
-                try:
-                    if not len(report_model_records_ids):
-                        logger.warning(f"No records for model {report.model_name}")
-                        logger.info(f"Using demo data to test report: {report.report_name}")
-                        # Render Fast Report for demo example databases
-                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
-                    else:
-                        # Render Fast Report for a random report model record, without creating attachment
-                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(
-                            report_object.ids,
-                            [choice(report_model_records_ids)],
-                            create_attachment=False,
+        try:
+            for report in report_list:
+                if report.company_id:
+                    self.connection.env.user.company_id = report.company_id[0]
+                    IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
+                    if self.version in ["13", "14", "15", "16"]:
+                        report_id = self._search_report_v13(
+                            report.model_name,
+                            report.entry_name,
+                            IR_ACTIONS_REPORT,
+                            report.company_id[0],
                         )
-                    logger.info(f"Report rendering successful: {report.report_name}")
-                except FileNotFoundError:
-                    logger.warning(f"No demo data to test report: {report.report_name}")
-                except RPCError as ex:
-                    logger.error(f"Report {report.report_name} not rendering correctly")
-                    logger.error("Exception occurred during rendering")
-                    logger.exception(ex)
-        self.connection.env.user.company_id = original_company_yaml_user
+                    else:
+                        report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+                else:
+                    IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
+                    report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+                # Get report action record
+                report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
+                # Check if the report has been created and is type Fast Report
+                if not report_id or report_object.report_type != "fast_report":
+                    logger.warning(f"Report {report.report_name} not created or is not type FastReport")
+                    continue
+
+                logger.info(f"Testing report rendering: {report.report_name}")
+
+                # Get module from report model
+                IR_REPORT_MODEL = self.connection.env[report.model_name]
+
+                if report_object:
+                    # Get all report model records ids
+                    report_model_records_ids = IR_REPORT_MODEL.search([])
+                    try:
+                        if not len(report_model_records_ids):
+                            logger.warning(f"No records for model {report.model_name}")
+                            logger.info(f"Using demo data to test report: {report.report_name}")
+                            # Render Fast Report for demo example databases
+                            res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
+                        else:
+                            # Render Fast Report for a random report model record, without creating attachment
+                            res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(
+                                report_object.ids,
+                                [choice(report_model_records_ids)],
+                                create_attachment=False,
+                            )
+                        logger.info(f"Report rendering successful: {report.report_name}")
+                    except FileNotFoundError:
+                        logger.warning(f"No demo data to test report: {report.report_name}")
+                    except RPCError as ex:
+                        logger.error(f"Report {report.report_name} not rendering correctly")
+                        logger.error("Exception occurred during rendering")
+                        logger.exception(ex)
+        finally:
+            self.connection.env.user.company_id = original_company_yaml_user
 
     def disable_qweb_reports(self):
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]

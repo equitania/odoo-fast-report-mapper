@@ -5,6 +5,7 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
 import yaml
 from odoorpc_toolbox import RPCError
 
@@ -1564,3 +1565,195 @@ class TestCollectAllReportEntries:
         conn.collect_all_report_entries("/tmp/output")
 
         conn.collect_report_entries.assert_called_once_with("/tmp/output")
+
+
+# ---------------------------------------------------------------------------
+# Regression: create_eq_report_object handles missing dependencies (B-02)
+# ---------------------------------------------------------------------------
+
+
+class TestCreateEqReportObjectGuards:
+    """Verify create_eq_report_object does not crash on missing dict keys (B-02)."""
+
+    def _setup_action(self, conn, with_calc_fields=True):
+        ir_actions = MagicMock()
+        action_obj = MagicMock()
+        action_obj.name = "Test Report"
+        action_obj.report_name = "test_report"
+        action_obj.report_type = "fast_report"
+        action_obj.eq_export_type = "pdf"
+        action_obj.print_report_name = ""
+        action_obj.model = "sale.order"
+        action_obj.eq_ignore_images = False
+        action_obj.eq_handling_html_fields = "standard"
+        action_obj.multi = False
+        action_obj.attachment_use = False
+        action_obj.attachment = ""
+        action_obj.eq_calculated_field_ids = [] if with_calc_fields else False
+        action_obj.eq_print_button = False
+        action_obj.eq_multiprint = False
+        action_obj.with_context.return_value = action_obj
+        ir_actions.browse.return_value = action_obj
+        res_lang = MagicMock()
+        res_lang.search.return_value = [1]
+        lang_obj = MagicMock(code="de_DE", iso_code="de", name="German")
+        res_lang.browse.return_value = lang_obj
+        conn.connection.env.__getitem__.side_effect = lambda k: {
+            "ir.actions.report": ir_actions,
+            "res.lang": res_lang,
+        }.get(k, MagicMock())
+
+    def test_no_keyerror_when_dependencies_missing(self):
+        """B-02: field_dictionary without 'dependencies' must not raise KeyError."""
+        conn = _make_connection()
+        self._setup_action(conn)
+        # Field dict with NO 'dependencies' key — would crash before B-02 fix
+        field_dictionary = {"sale.order": ["name"]}
+
+        report = conn.create_eq_report_object(action_id=1, field_dictionary=field_dictionary)
+
+        assert report is not None
+        assert report.report_name == "test_report"
+
+
+# ---------------------------------------------------------------------------
+# Regression: set_calculated_fields (subclass) guards report_id (B-03)
+# ---------------------------------------------------------------------------
+
+
+class TestSetCalculatedFieldsSubclassGuard:
+    """Verify EqOdooConnection.set_calculated_fields guards empty search result (B-03)."""
+
+    def test_returns_when_report_not_found(self):
+        conn = _make_connection()
+        ir_actions = MagicMock()
+        ir_actions.search.return_value = []
+        ir_actions.env.user.company_id = 1
+        report_calc = MagicMock()
+        conn.connection.env.__getitem__.side_effect = lambda k: {
+            "ir.actions.report": ir_actions,
+            "eq_calculated_field_value": report_calc,
+        }.get(k, MagicMock())
+
+        # Must not raise IndexError
+        result = conn.set_calculated_fields(
+            field_name="payment_text",
+            function_name="eq_get_payment_terms",
+            parameters=["partner_id.lang"],
+            report_name={"de_DE": "Report"},
+            report_model="sale.order",
+            report_company_id=False,
+        )
+
+        assert result is None
+        report_calc.create.assert_not_called()
+        report_calc.write.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Regression: _search_report_v13 omits company_domain when company_id None (W-04)
+# ---------------------------------------------------------------------------
+
+
+class TestSearchReportV13CompanyGuard:
+    """Verify _search_report_v13 does not inject None into the company_id domain (W-04)."""
+
+    def test_no_company_domain_when_company_id_none(self):
+        conn = _make_connection()
+        ir_actions = MagicMock()
+        ir_actions.search.return_value = [42]
+
+        conn._search_report_v13(
+            model_name="sale.order",
+            report_name={"de_DE": "Test Report"},
+            IR_ACTIONS_REPORT=ir_actions,
+            company_id=None,
+        )
+
+        # Inspect the domain passed to search — no company_id clause must appear
+        call_args = ir_actions.search.call_args
+        domain = call_args.args[0]
+        for clause in domain:
+            if isinstance(clause, tuple):
+                assert clause[0] != "company_id", "company_id clause leaked into v13 search domain"
+
+    def test_company_domain_present_when_company_id_set(self):
+        conn = _make_connection()
+        ir_actions = MagicMock()
+        ir_actions.search.return_value = [42]
+
+        conn._search_report_v13(
+            model_name="sale.order",
+            report_name={"de_DE": "Test Report"},
+            IR_ACTIONS_REPORT=ir_actions,
+            company_id=7,
+        )
+
+        domain = ir_actions.search.call_args.args[0]
+        company_clauses = [c for c in domain if isinstance(c, tuple) and c[0] == "company_id"]
+        assert len(company_clauses) == 2
+        assert ("company_id", "=", 7) in company_clauses
+
+
+# ---------------------------------------------------------------------------
+# API-key authentication: auth_method tracking + version gate
+# ---------------------------------------------------------------------------
+
+
+class TestApiKeyAuthMethod:
+    """Verify auth_method attribute and check_api_key_compatibility() pre-login gate."""
+
+    def test_default_auth_method_is_password(self):
+        conn = _make_connection()
+        assert conn.auth_method == "password"
+
+    def test_explicit_auth_method_api_key(self):
+        with patch("odoo_report_helper.odoo_connection.utils.prepare_connection") as mock_prepare:
+            mock_connection = MagicMock()
+            mock_prepare.return_value = mock_connection
+            conn = EqOdooConnection(
+                language="de_DE",
+                collect_yaml=False,
+                disable_qweb=True,
+                workflow=0,
+                url="https://test",
+                port=443,
+                username="admin",
+                password="api-key-value",
+                database="db",
+                auth_method="api_key",
+            )
+        assert conn.auth_method == "api_key"
+
+    def test_check_compatibility_password_auth_is_noop(self):
+        """Password auth must skip the version check entirely."""
+        conn = _make_connection()
+        conn.connection.version = "12.0"  # Would fail if checked
+        # Must not raise
+        conn.check_api_key_compatibility()
+
+    def test_check_compatibility_v14_passes(self):
+        conn = _make_connection()
+        conn.auth_method = "api_key"
+        conn.connection.version = "14.0"
+        conn.check_api_key_compatibility()  # No raise
+
+    def test_check_compatibility_v18_passes(self):
+        conn = _make_connection()
+        conn.auth_method = "api_key"
+        conn.connection.version = "18.0"
+        conn.check_api_key_compatibility()
+
+    def test_check_compatibility_v13_raises(self):
+        conn = _make_connection()
+        conn.auth_method = "api_key"
+        conn.connection.version = "13.0"
+        with pytest.raises(ValueError, match="API-key authentication requires Odoo >= 14"):
+            conn.check_api_key_compatibility()
+
+    def test_check_compatibility_v10_raises(self):
+        conn = _make_connection()
+        conn.auth_method = "api_key"
+        conn.connection.version = "10.0"
+        with pytest.raises(ValueError, match="requires Odoo >= 14.*v10"):
+            conn.check_api_key_compatibility()

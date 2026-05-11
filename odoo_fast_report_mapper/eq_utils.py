@@ -23,8 +23,15 @@ ENV_TEMPLATE = """# Odoo Fast Report Mapper - Environment Configuration
 ODOO_URL=https://your-odoo-instance.com
 ODOO_PORT=443
 ODOO_USER=admin
-ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
+
+# Authentication (REQUIRED — choose ONE)
+# Option A: Classic username/password
+ODOO_PASSWORD=your_password
+# Option B: API key (Odoo >= 14, recommended for v16+)
+# Generate via Odoo: Preferences → Account Security → New API Key
+# If both are set, ODOO_API_KEY takes precedence.
+# ODOO_API_KEY=your_api_key
 
 # Report Configuration (REQUIRED)
 # Primary language for report names (Odoo locale code)
@@ -155,16 +162,16 @@ def build_reports_from_yaml_objects(yaml_objects):
     :return: list of EqReport objects
     """
     filtered_yaml_report_objects = []
-    for yaml_report_object in yaml_objects:
-        if yaml_report_object.get("company_id") and len(yaml_report_object.get("company_id")) > 1:
-            company_ids = yaml_report_object.get("company_id")
-            del yaml_report_object["company_id"]
+    for original in yaml_objects:
+        if original.get("company_id") and len(original.get("company_id")) > 1:
+            base_template = copy.deepcopy(original)
+            company_ids = base_template.pop("company_id")
             for company_id in company_ids:
-                temp_yaml_report_object = copy.deepcopy(yaml_report_object)
+                temp_yaml_report_object = copy.deepcopy(base_template)
                 temp_yaml_report_object["company_id"] = [company_id]
                 filtered_yaml_report_objects.append(temp_yaml_report_object)
         else:
-            filtered_yaml_report_objects.append(yaml_report_object)
+            filtered_yaml_report_objects.append(original)
     return convert_all_yaml_objects(filtered_yaml_report_objects, create_report_object_from_yaml_object)
 
 
@@ -199,7 +206,7 @@ def collect_all_reports(path):
         yaml_report_objects = utils.parse_yaml_folder(path)
         return build_reports_from_yaml_objects(yaml_report_objects)
     except FileNotFoundError as ex:
-        raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex)) from ex
+        raise exceptions.PathDoesNotExistError("ERROR: Please check your Path" + " " + str(ex)) from ex
 
 
 def create_connection_from_env(env_path=None):
@@ -253,12 +260,11 @@ def create_connection_from_env(env_path=None):
             logger.info("Trying python-dotenv auto-discovery...")
             load_dotenv()
 
-    # Required variables
+    # Required (non-auth) variables
     required_vars = {
         "ODOO_URL": "url",
         "ODOO_PORT": "port",
         "ODOO_USER": "user",
-        "ODOO_PASSWORD": "password",
         "ODOO_DATABASE": "database",
         "ODOO_LANGUAGE": "language",
     }
@@ -271,6 +277,25 @@ def create_connection_from_env(env_path=None):
         logger.info("Please create a .env file based on .env.example")
         raise ValueError(error_msg)
 
+    # Authentication: API-key takes precedence over password (Odoo >= 14)
+    api_key = os.getenv("ODOO_API_KEY")
+    password = os.getenv("ODOO_PASSWORD")
+    if api_key and password:
+        logger.warning(
+            "Both ODOO_API_KEY and ODOO_PASSWORD are set — using ODOO_API_KEY. "
+            "Remove ODOO_PASSWORD from .env to silence this warning."
+        )
+    if api_key:
+        credential = api_key
+        auth_method = "api_key"
+    elif password:
+        credential = password
+        auth_method = "password"
+    else:
+        error_msg = "Missing authentication: set either ODOO_API_KEY (Odoo >= 14) or ODOO_PASSWORD"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+
     # Get required values
     url = os.getenv("ODOO_URL")
     try:
@@ -280,7 +305,6 @@ def create_connection_from_env(env_path=None):
     except (ValueError, TypeError) as e:
         raise ValueError(f"Invalid ODOO_PORT value: {os.getenv('ODOO_PORT')} — {e}") from e
     user = os.getenv("ODOO_USER")
-    password = os.getenv("ODOO_PASSWORD")
     database = os.getenv("ODOO_DATABASE")
     language = normalize_language_code(os.getenv("ODOO_LANGUAGE"))
 
@@ -304,11 +328,12 @@ def create_connection_from_env(env_path=None):
 
     logger.info(f"Creating connection to {database}@{url}:{port}")
     logger.debug(
-        f"Configuration: language={language}, workflow={workflow}, collect_yaml={collect_yaml}, disable_qweb={disable_qweb}"
+        f"Configuration: language={language}, workflow={workflow}, collect_yaml={collect_yaml}, "
+        f"disable_qweb={disable_qweb}, auth={auth_method}"
     )
 
-    # Create connection object
-    # EqOdooConnection expects: language, collect_yaml, disable_qweb, workflow, url, port, username, password, database
+    # Create connection object — credential is either the API key or the password.
+    # Odoo treats both as the 'password' field at the authentication endpoint.
     connection = eq_odoo_connection.EqOdooConnection(
         language,
         collect_yaml,
@@ -317,8 +342,9 @@ def create_connection_from_env(env_path=None):
         url,
         port,
         user,  # Will be passed as 'username' to parent class
-        password,
+        credential,
         database,
+        auth_method=auth_method,
     )
 
     return connection, dotenv_path
@@ -342,4 +368,4 @@ def collect_all_connections(path):
         )
         return eq_connection_objects
     except FileNotFoundError as ex:
-        raise exceptions.PathDoesNotExitError("ERROR: Please check your Path" + " " + str(ex)) from ex
+        raise exceptions.PathDoesNotExistError("ERROR: Please check your Path" + " " + str(ex)) from ex
