@@ -1,5 +1,19 @@
 # Release Notes
 
+## Version 0.9.7.2 (11.05.2026)
+
+### Fixed
+- Error message when the .env file is found but **incomplete** (e.g. `ODOO_USER` missing) was confusing: the CLI printed a generic `Failed to load connection configuration / Searched in: <path>` box that strongly suggested the file could not be located, while the actual root-cause line (`Missing required environment variables: ODOO_USER`) was buried in the log output above. Captain mistook this for a path-resolution bug.
+- Error output is now differentiated by error type:
+  - **File missing** → `Reason: .env file not found at: <path>` + recommend `odoo-fr-mapper --init`
+  - **Variables missing** → `Reason: Missing required environment variables in <path>: <names>` + "The .env file was found but is missing one or more required entries"
+  - **Authentication missing** → `Reason: Missing authentication in <path>: set either ODOO_API_KEY or ODOO_PASSWORD`
+  - **Invalid value** → `A value in your .env file is invalid. Correct it and retry.`
+- `create_connection_from_env()` ValueErrors now include the resolved `.env` path in their message so the calling layer (CLI, library users) can present accurate diagnostics
+
+### Tests
+- 2 new CLI tests covering missing-variables vs file-not-found code paths (no longer recommends `--init` when the file exists)
+
 ## Version 0.9.7.1 (11.05.2026)
 
 ### Fixed

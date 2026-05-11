@@ -272,9 +272,11 @@ def create_connection_from_env(env_path=None):
     # Check for missing required variables
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     if missing_vars:
-        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        error_msg = (
+            f"Missing required environment variables in {dotenv_path}: {', '.join(missing_vars)}"
+        )
         logger.error(error_msg)
-        logger.info("Please create a .env file based on .env.example")
+        logger.info("The .env file was loaded successfully — add the missing variables and retry.")
         raise ValueError(error_msg)
 
     # Authentication: API-key takes precedence over password (Odoo >= 14)
@@ -292,7 +294,9 @@ def create_connection_from_env(env_path=None):
         credential = password
         auth_method = "password"
     else:
-        error_msg = "Missing authentication: set either ODOO_API_KEY (Odoo >= 14) or ODOO_PASSWORD"
+        error_msg = (
+            f"Missing authentication in {dotenv_path}: set either ODOO_API_KEY (Odoo >= 14) or ODOO_PASSWORD"
+        )
         logger.error(error_msg)
         raise ValueError(error_msg)
 

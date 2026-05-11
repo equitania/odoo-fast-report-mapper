@@ -144,15 +144,30 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
     try:
         connection, env_file_used = eq_utils.create_connection_from_env(env_path=env_path)
     except ValueError as e:
-        logger.error(f"Configuration error: {e}")
+        error_msg = str(e)
+        logger.error(f"Configuration error: {error_msg}")
         click.echo("\n" + "=" * 80)
         click.echo("  Failed to load connection configuration")
-        click.echo("  Run 'odoo-fr-mapper --init' to generate a .env template")
-        if env_path:
-            click.echo(f"  Searched in: {env_path}")
+        click.echo("=" * 80)
+        click.echo(f"  Reason: {error_msg}")
+        click.echo()
+        # Differentiate user-facing guidance based on error type
+        if ".env file not found" in error_msg:
+            # File missing
+            search_loc = env_path if env_path else f"{os.getcwd()}/.env"
+            click.echo(f"  The .env file does not exist at: {search_loc}")
+            click.echo("  Run 'odoo-fr-mapper --init' to generate a .env template.")
+        elif "Missing required environment variables" in error_msg or "Missing authentication" in error_msg:
+            # File loaded but incomplete
+            click.echo("  The .env file was found but is missing one or more required entries.")
+            click.echo("  Edit the file and add the variables listed above.")
+        elif "Invalid ODOO_PORT" in error_msg or "ODOO_WORKFLOW" in error_msg:
+            # Bad value in .env
+            click.echo("  A value in your .env file is invalid. Correct it and retry.")
         else:
-            click.echo(f"  Searched in: {os.getcwd()}")
-        click.echo("=" * 80 + "\n")
+            # Fallback for any other ValueError
+            click.echo("  Inspect the message above for the root cause.")
+        click.echo()
         return
 
     # Show connection summary and ask for confirmation

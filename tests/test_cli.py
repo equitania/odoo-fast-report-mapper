@@ -183,10 +183,10 @@ class TestEnvError:
     """Tests for connection configuration errors."""
 
     @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
-    def test_env_error_shows_failure_message(self, mock_eq_utils, cli_runner):
-        """When create_connection_from_env raises ValueError, the CLI should show an error."""
+    def test_env_error_missing_vars_message(self, mock_eq_utils, cli_runner):
+        """Missing-variable error must show the specific reason, not a generic 'init' hint."""
         mock_eq_utils.create_connection_from_env.side_effect = ValueError(
-            "Missing required environment variables: ODOO_URL, ODOO_PORT"
+            "Missing required environment variables in /tmp/x/.env: ODOO_URL, ODOO_PORT"
         )
 
         result = cli_runner.invoke(
@@ -194,7 +194,28 @@ class TestEnvError:
             ["--yaml_path", "/tmp/fake_yaml"],
         )
 
-        assert result.exit_code == 0  # CLI handles the error gracefully, no exception
+        assert result.exit_code == 0
+        assert "Failed to load connection configuration" in result.output
+        # Specific guidance for missing-variables case (file was found)
+        assert "missing one or more required entries" in result.output
+        # The reason line must surface the actual ValueError message
+        assert "ODOO_URL, ODOO_PORT" in result.output
+        # Must NOT recommend --init because the file already exists
+        assert "odoo-fr-mapper --init" not in result.output
+
+    @patch("odoo_fast_report_mapper.odoo_fast_report_mapper.eq_utils")
+    def test_env_error_file_not_found_recommends_init(self, mock_eq_utils, cli_runner):
+        """File-not-found error must recommend --init."""
+        mock_eq_utils.create_connection_from_env.side_effect = ValueError(
+            ".env file not found at: /tmp/nonexistent/.env"
+        )
+
+        result = cli_runner.invoke(
+            start_odoo_fast_report_mapper,
+            ["--yaml_path", "/tmp/fake_yaml"],
+        )
+
+        assert result.exit_code == 0
         assert "Failed to load connection configuration" in result.output
         assert "odoo-fr-mapper --init" in result.output
 
