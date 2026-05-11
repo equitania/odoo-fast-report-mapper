@@ -6,5 +6,9 @@ class OdooConnectionError(Exception):
     pass
 
 
-class PathDoesNotExitError(Exception):
+class PathDoesNotExistError(Exception):
     pass
+
+
+# Backward-compatibility alias for the historical misspelling (typo: "Exit" → "Exist")
+PathDoesNotExitError = PathDoesNotExistError

@@ -15,9 +15,6 @@ LEGACY_LANG_MAP = {
     "eng": "en_US",
 }
 
-# Reverse mapping for collection mode
-LOCALE_TO_LEGACY = {v: k for k, v in LEGACY_LANG_MAP.items()}
-
 
 def normalize_language_code(lang_code: str) -> str:
     """Convert legacy 'ger'/'eng' to Odoo locale codes, pass through valid locales.
@@ -49,21 +46,23 @@ def normalize_name_dict(name_dict: dict) -> dict:
     return normalized
 
 
-def get_primary_lang(name_dict: dict) -> str:
+def get_primary_lang(name_dict: dict, preferred_lang: str = "de_DE") -> str:
     """Return primary language code from name dict.
 
-    Priority: de_DE > any key starting with 'de' > first key.
+    Priority: preferred_lang > any key sharing the language prefix > first key.
 
     Args:
         name_dict: Dictionary mapping language codes to report names.
+        preferred_lang: Preferred locale code. Defaults to 'de_DE' (Equitania convention).
 
     Returns:
         The primary language code string.
     """
-    if "de_DE" in name_dict:
-        return "de_DE"
+    if preferred_lang in name_dict:
+        return preferred_lang
+    prefix = preferred_lang.split("_")[0]
     for key in name_dict:
-        if key.startswith("de"):
+        if key.startswith(prefix):
             return key
     return next(iter(name_dict))
 

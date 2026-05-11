@@ -5,7 +5,6 @@
 
 from odoo_fast_report_mapper.lang_utils import (
     LEGACY_LANG_MAP,
-    LOCALE_TO_LEGACY,
     build_name_search_domain,
     get_primary_lang,
     normalize_language_code,
@@ -185,13 +184,6 @@ class TestMappingConstants:
 
     def test_legacy_lang_map(self):
         assert LEGACY_LANG_MAP == {"ger": "de_DE", "eng": "en_US"}
-
-    def test_locale_to_legacy_reverse(self):
-        assert LOCALE_TO_LEGACY == {"de_DE": "ger", "en_US": "eng"}
-
-    def test_bidirectional_mapping(self):
-        for legacy, locale in LEGACY_LANG_MAP.items():
-            assert LOCALE_TO_LEGACY[locale] == legacy
 
 
 # ---------------------------------------------------------------------------
