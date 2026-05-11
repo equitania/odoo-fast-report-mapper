@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.9.7.1 (11.05.2026)
+
+### Fixed
+- `--help` docstring still listed `ODOO_PASSWORD` as a required variable and did not mention `ODOO_API_KEY` at all — confusing for users who saw the v0.9.7 release notes but found the in-CLI help unchanged. Restructured into three clear blocks: **Server (required)**, **Authentication (REQUIRED — set ONE)**, **Workflow (optional)**, plus a new **`.ENV FILE LOCATION (--env_path)`** section with three concrete examples (relative directory, absolute file, relative file)
+- Documentation only — no code logic changes, all 368 tests still pass
+
 ## Version 0.9.7 (11.05.2026)
 
 ### Added

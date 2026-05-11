@@ -94,21 +94,37 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
       2. Edit .env with your Odoo connection credentials
       3. Map all reports:  odoo-fr-mapper --yaml_path=./reports_yaml
       4. Map selected:     odoo-fr-mapper --yaml_path=./reports_yaml --select
+      5. Custom .env path: odoo-fr-mapper --env_path=./connections/ --yaml_path=./yaml/
 
     \b
-    .ENV CONFIGURATION (required variables):
+    .ENV CONFIGURATION — Server (required):
       ODOO_URL          Odoo server URL (e.g. https://odoo.example.com)
       ODOO_PORT         Server port (443 for HTTPS, 8069 for HTTP)
-      ODOO_USER         Odoo username
-      ODOO_PASSWORD     Odoo password
+      ODOO_USER         Odoo username (login email)
       ODOO_DATABASE     Database name
       ODOO_LANGUAGE     Locale code (de_DE, en_US, fr_FR; legacy: ger, eng)
 
     \b
-    .ENV CONFIGURATION (optional variables):
+    .ENV CONFIGURATION — Authentication (REQUIRED — set ONE of these):
+      ODOO_PASSWORD     Classic username + password (works with all Odoo versions)
+      ODOO_API_KEY      API key (Odoo >= 14, recommended for v16+)
+                        Create via Odoo: Preferences → Account Security → New API Key
+                        If both are set, ODOO_API_KEY takes precedence with a warning.
+                        Pre-login version check rejects API-key auth on Odoo < 14.
+
+    \b
+    .ENV CONFIGURATION — Workflow (optional):
       ODOO_WORKFLOW     0=mapping, 1=testing, 2=both (default: 0)
       ODOO_COLLECT_YAML Export reports FROM Odoo to YAML (default: False)
       ODOO_DISABLE_QWEB Disable QWeb reports after mapping (default: True)
+
+    \b
+    .ENV FILE LOCATION (--env_path):
+      Default:  ./env  (relative to current working directory)
+      Override: --env_path can be EITHER a directory OR a file path:
+                --env_path=./connections/          → loads ./connections/.env
+                --env_path=/abs/path/to/file.env   → loads that exact file
+                --env_path=../other-project/.env   → loads relative file
 
     \b
     INTERACTIVE SELECTION (--select):
