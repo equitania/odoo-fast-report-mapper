@@ -1,5 +1,41 @@
 # Release Notes
 
+## Version 0.9.7 (11.05.2026)
+
+### Added
+- **API-key authentication** (Odoo >= 14): new `ODOO_API_KEY` environment variable as an alternative to `ODOO_PASSWORD`. If both are set, the API key takes precedence with a warning. The Connection Summary in the CLI now shows an `Auth:` row indicating either `Password` or `API-Key (xxxx…)` with the first 4 characters of the key
+- Pre-login version gate: `EqOdooConnection.check_api_key_compatibility()` queries `connection.version` (unauthenticated `common.version` endpoint) before login and raises `ValueError` when API-key auth is requested against an Odoo server < v14
+- `EqOdooConnection.auth_method` attribute tracks the active authentication scheme (`'password'` or `'api_key'`)
+- 11 new tests covering: API-key-only path, password-only path, both-set precedence with warning, neither-set rejection, version-gate behavior for v10/v13/v14/v18, password-auth bypass of version check
+
+### Fixed (Blocker)
+- **B-01** `OdooConnection.map_reports()` passed non-existent `report.model` attribute to `set_calculated_fields()` — now uses `report.model_name` (dead-but-broken code path in base class)
+- **B-02** `create_eq_report_object()` accessed `field_dictionary["dependencies"]` before the existence guard, raising `KeyError` for reports with no mapped fields — now uses `field_dictionary.pop("dependencies", [])`
+- **B-03** `set_calculated_fields()` indexed `report_id[0]` without checking for empty search result (both base `OdooConnection` and `EqOdooConnection`) — now logs and returns gracefully when the report is not found
+
+### Fixed (Warning)
+- **W-01** `company_id` loop variable in `collect_report_entries()` was shadowed by inner-loop assignment — renamed inner variable to `report_company_id`
+- **W-02** `Report.add_calculated_fields()` iterated `field_dict` directly instead of `.items()` — broken for dict inputs, now correctly uses `.items()`
+- **W-03** Base `OdooConnection.map_reports()` returned `None` implicitly; CLI iterates the return value → now returns `[]`
+- **W-04** `_search_report_v13()` injected `None` into the company_id domain when called without a company — guard mirrors `_search_report()`
+- **W-05** `LoggerManager._loggers` was a class-level mutable dict (shared singleton state risk) — moved to instance attribute in `__init__`
+
+### Changed (Polish)
+- **P-01** Renamed `PathDoesNotExitError` → `PathDoesNotExistError` (typo fix); the misspelled name remains as a backward-compatibility alias
+- **P-02** Removed stale 8-line commented-out debug block in `test_fast_report_rendering()`
+- **P-03** `get_primary_lang()` accepts optional `preferred_lang` parameter (defaults to `'de_DE'` for backward-compat) — generalizes the previously hardcoded German-first priority
+- **P-04** `build_reports_from_yaml_objects()` no longer mutates the input YAML dict before deepcopy — fixes re-run idempotency in `--select` mode
+- **P-05** `add_field_to_dictionary()` company_id accumulation refactored to explicit `if/elif` — previous off-by-one `else` could overwrite an existing company list with a single-element list when adding a duplicate
+- **P-06** `ENV_TEMPLATE` and `.env.example` now document `ODOO_API_KEY` as alternative authentication
+- **P-07** Removed unused `LOCALE_TO_LEGACY` reverse map and its 2 unused tests
+- **P-10** `test_fast_report_rendering()` wraps the per-report loop in `try/finally` so the original company context is restored even when reports trigger `continue`
+
+### Deferred to v1.0
+- **P-08/P-09** `ProgressBar`, `create_progress_bar()`, and `ReportProgress` are unused internally but have full test coverage — treated as public PyPI API and kept; removal would be a breaking change for external consumers
+
+### Tests
+- Total test count: 368 (up from 353): +11 API-key tests, +4 BLOCKER regression tests, +2 W-04 domain-shape regression tests, −2 obsolete `LOCALE_TO_LEGACY` tests
+
 ## Version 0.9.6 (04.05.2026)
 
 ### Added

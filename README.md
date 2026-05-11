@@ -88,8 +88,12 @@ odoo-fr-mapper --select            # Interaktive YAML-Auswahl
 ODOO_URL=https://your-odoo-instance.com
 ODOO_PORT=443
 ODOO_USER=admin
-ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
+
+# Authentifizierung (Pflicht — eine Variante wählen)
+ODOO_PASSWORD=your_password       # Klassisch: Benutzername + Passwort
+# ODOO_API_KEY=your_api_key       # Alternative: API-Key (Odoo >= 14, empfohlen ab v16)
+                                  # Beide gesetzt? API-Key gewinnt mit Warnung.
 
 # Report-Konfiguration (Pflicht)
 ODOO_LANGUAGE=de_DE               # Odoo Locale-Code (de_DE, en_US, fr_FR, etc.)
@@ -232,8 +236,12 @@ odoo-fr-mapper --select            # Interactive YAML selection
 ODOO_URL=https://your-odoo-instance.com
 ODOO_PORT=443
 ODOO_USER=admin
-ODOO_PASSWORD=your_password
 ODOO_DATABASE=your_database
+
+# Authentication (Required — choose ONE)
+ODOO_PASSWORD=your_password       # Classic username + password
+# ODOO_API_KEY=your_api_key       # Alternative: API key (Odoo >= 14, recommended for v16+)
+                                  # If both are set, the API key wins (with warning).
 
 # Report Configuration (Required)
 ODOO_LANGUAGE=de_DE               # Odoo locale code (de_DE, en_US, fr_FR, etc.)
