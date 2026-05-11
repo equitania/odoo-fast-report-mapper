@@ -7,6 +7,7 @@ import logging
 
 import pytest
 
+from odoo_fast_report_mapper import logging_config as _logging_module
 from odoo_fast_report_mapper.logging_config import (
     ColoredFormatter,
     LogColors,
@@ -24,17 +25,23 @@ from odoo_fast_report_mapper.logging_config import (
 # ---------------------------------------------------------------------------
 
 
+def _clear_manager_loggers(manager):
+    """Clear logger cache and any attached handlers on a LoggerManager instance."""
+    if manager is None:
+        return
+    for _name, logger_obj in list(manager._loggers.items()):
+        logger_obj.handlers.clear()
+    manager._loggers.clear()
+
+
 @pytest.fixture(autouse=True)
 def reset_logger_manager():
     """Reset LoggerManager singleton state before each test."""
-    LoggerManager._instance = None
-    LoggerManager._loggers = {}
+    _clear_manager_loggers(LoggerManager._instance)
+    _clear_manager_loggers(_logging_module._manager)
     yield
-    # Cleanup: reset again and remove any handlers we may have added
-    for _name, logger_obj in LoggerManager._loggers.items():
-        logger_obj.handlers.clear()
-    LoggerManager._instance = None
-    LoggerManager._loggers = {}
+    _clear_manager_loggers(LoggerManager._instance)
+    _clear_manager_loggers(_logging_module._manager)
 
 
 # ---------------------------------------------------------------------------

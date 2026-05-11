@@ -279,3 +279,101 @@ class TestGetFastReportIds:
         result = conn._get_fast_report_ids()
 
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Regression: set_calculated_fields guards report_id (B-03)
+# ---------------------------------------------------------------------------
+
+
+class TestSetCalculatedFieldsGuard:
+    """Verify set_calculated_fields handles empty search result safely (B-03)."""
+
+    @patch("odoo_report_helper.odoo_connection.utils.prepare_connection")
+    def test_returns_when_report_not_found(self, mock_prepare):
+        """set_calculated_fields must log error and return when report search is empty."""
+        mock_connection = MagicMock()
+        mock_ir_actions = MagicMock()
+        mock_ir_actions.search.return_value = []
+        mock_report_calc = MagicMock()
+
+        def env_getitem(self, key):
+            if key == "ir.actions.report":
+                return mock_ir_actions
+            return mock_report_calc
+
+        mock_connection.env.__getitem__ = env_getitem
+        mock_prepare.return_value = mock_connection
+
+        conn = OdooConnection("https://odoo.example.com", 443, "admin", "secret", "test_db")
+        # Must not raise IndexError
+        result = conn.set_calculated_fields(
+            "payment_text",
+            "eq_get_payment_terms",
+            ["partner_id.lang"],
+            {"de_DE": "Report"},
+            "sale.order",
+        )
+
+        assert result is None
+        mock_report_calc.create.assert_not_called()
+        mock_report_calc.write.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Regression: map_reports uses report.model_name (B-01)
+# ---------------------------------------------------------------------------
+
+
+class TestMapReportsUsesModelName:
+    """Verify base map_reports does not access non-existent report.model attribute (B-01)."""
+
+    @patch("odoo_report_helper.odoo_connection.utils.prepare_connection")
+    def test_map_reports_passes_model_name_to_set_calculated_fields(self, mock_prepare):
+        """Base map_reports must use report.model_name (not report.model) for calculated fields."""
+        from odoo_report_helper.report import Report
+
+        mock_connection = MagicMock()
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+        mock_ir_fields = MagicMock()
+        mock_ir_fields.search.return_value = [10]
+        mock_field_obj = MagicMock()
+        mock_field_obj.eq_report_ids.ids = []
+        mock_ir_fields.browse.return_value = mock_field_obj
+        mock_ir_actions = MagicMock()
+        mock_ir_actions.search.return_value = [100]
+        mock_ir_actions.create.return_value = 100
+        mock_action_obj = MagicMock(id=100)
+        mock_ir_actions.browse.return_value = mock_action_obj
+
+        def env_getitem(self, key):
+            return {
+                "ir.model": mock_ir_model,
+                "ir.model.fields": mock_ir_fields,
+                "ir.actions.report": mock_ir_actions,
+            }.get(key, MagicMock())
+
+        mock_connection.env.__getitem__ = env_getitem
+        mock_prepare.return_value = mock_connection
+
+        conn = OdooConnection("https://odoo.example.com", 443, "admin", "secret", "test_db")
+        # Build a Report with calculated fields — would crash on report.model before fix
+        # Base Report expects string entry_name (subclass EqReport extends to dict)
+        report = Report(
+            entry_name="Test Report",
+            report_name="test_report",
+            report_type="fast_report",
+            model_name="sale.order",
+            model_fields={"sale.order": ["name"]},
+            calculated_fields={"payment_text": {"eq_get_payment_terms": ["partner_id.lang"]}},
+        )
+        # Must not raise AttributeError on 'model'
+        with (
+            patch.object(conn, "check_dependencies", return_value=True),
+            patch.object(conn, "set_calculated_fields") as mock_set_calc,
+        ):
+            conn.map_reports([report])
+            mock_set_calc.assert_called_once()
+            # 5th positional argument is report_model — must equal report.model_name
+            assert mock_set_calc.call_args.args[4] == "sale.order"

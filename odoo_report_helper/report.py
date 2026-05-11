@@ -74,7 +74,7 @@ class Report:
             'payment_text': {'eq_get_payment_terms': ['partner_id.lang', 'currency_id']}
         }
         """
-        for field_name, content in field_dict:
+        for field_name, content in field_dict.items():
             self._calculated_fields[field_name] = content
         self._calculated_fields = utils.self_clean(self._calculated_fields)
 

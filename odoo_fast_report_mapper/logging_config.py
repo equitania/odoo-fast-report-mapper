@@ -83,7 +83,6 @@ class LoggerManager:
     """
 
     _instance: Optional["LoggerManager"] = None
-    _loggers: dict = {}
 
     def __new__(cls):
         """Singleton pattern to ensure only one instance exists."""
@@ -98,6 +97,7 @@ class LoggerManager:
             return
 
         self._initialized = True
+        self._loggers: dict = {}
         self._log_dir = Path.home() / ".odoo-fast-report-mapper" / "logs"
         self._log_level = logging.INFO
         self._console_handler = None

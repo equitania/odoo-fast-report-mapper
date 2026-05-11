@@ -261,9 +261,7 @@ class TestAddFields:
 class TestAddCalculatedFields:
     """Verify add_calculated_fields behavior.
 
-    NOTE: The method iterates ``field_dict`` directly (not .items()),
-    so callers must pass an iterable of (key, value) tuples, such as
-    the result of dict.items().
+    The method accepts a dict (calls .items() internally).
     """
 
     def test_add_calculated_fields_single(self, minimal_report):
@@ -271,7 +269,7 @@ class TestAddCalculatedFields:
         reduced to a list of its keys because self_clean applies
         list(dict.fromkeys(value)) on every value."""
         calc = {"payment_text": {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}}
-        minimal_report.add_calculated_fields(calc.items())
+        minimal_report.add_calculated_fields(calc)
         assert "payment_text" in minimal_report._calculated_fields
         # self_clean converts the inner dict to a list of its keys
         assert minimal_report._calculated_fields["payment_text"] == ["eq_get_payment_terms"]
@@ -281,7 +279,7 @@ class TestAddCalculatedFields:
             "field_a": {"func_a": ["p1"]},
             "field_b": {"func_b": ["p2", "p3"]},
         }
-        minimal_report.add_calculated_fields(calc.items())
+        minimal_report.add_calculated_fields(calc)
         assert len(minimal_report._calculated_fields) == 2
         assert "field_a" in minimal_report._calculated_fields
         assert "field_b" in minimal_report._calculated_fields
@@ -294,7 +292,7 @@ class TestAddCalculatedFields:
             model_name="sale.order",
             calculated_fields={"existing": {"fn": ["x"]}},
         )
-        report.add_calculated_fields({"new_field": {"fn2": ["y"]}}.items())
+        report.add_calculated_fields({"new_field": {"fn2": ["y"]}})
         assert "existing" in report._calculated_fields
         assert "new_field" in report._calculated_fields
 

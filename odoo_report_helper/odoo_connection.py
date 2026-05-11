@@ -54,10 +54,13 @@ class OdooConnection:
                 "ERROR: Please check your parameters and your connection" + " " + str(ex)
             ) from ex
 
-    def map_reports(self, report_list: list):
+    def map_reports(self, report_list: list) -> list:
         """
-        Create/Write reports into the Odoo system with their fields and properties
+        Create/Write reports into the Odoo system with their fields and properties.
+
         :param: report_list: List of report objects
+        :return: Empty list (base implementation tracks no failures); subclasses
+                 may return a list of (report_name, error_message) tuples.
         """
         IR_MODEL = self.connection.env["ir.model"]
         IR_MODEL_FIELDS = self.connection.env["ir.model.fields"]
@@ -100,11 +103,14 @@ class OdooConnection:
                 if report._calculated_fields:
                     for field, content in report._calculated_fields.items():
                         for function_name, parameter in content.items():
-                            self.set_calculated_fields(field, function_name, parameter, report.entry_name, report.model)
+                            self.set_calculated_fields(
+                                field, function_name, parameter, report.entry_name, report.model_name
+                            )
                 logger.info(f"Successfully processed report: {report.report_name}")
             except Exception as ex:
                 logger.error(f"Exception while processing report: {report.report_name}")
                 logger.exception(ex)
+        return []
 
     def set_calculated_fields(self, field_name, function_name, parameters, report_name, report_model):
         """
@@ -128,6 +134,9 @@ class OdooConnection:
         report_id = IR_ACTIONS_REPORT.search(
             [("model", "=", report_model), ("report_type", "=", "fast_report")] + name_domain
         )
+        if not report_id:
+            logger.error(f"Cannot set calculated fields: report not found for model={report_model}")
+            return
         value_dict["eq_report_id"] = report_id[0]
         calculated_field_id = REPORT_CALC.search(
             [("eq_report_id", "=", report_id[0]), ("eq_field_name", "=", field_name)]
