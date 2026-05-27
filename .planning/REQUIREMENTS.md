@@ -80,6 +80,24 @@
 - [ ] **GATE-04**: Migration-Guide manuell von Captain reviewed.
 - [ ] **GATE-05**: `uv build` produziert wheel + sdist ohne Fehler. **`uv publish` wird ausschließlich von Captain ausgeführt** — Claude führt diesen Befehl niemals aus.
 
+### Correctness-Bug-Fixes
+
+> Hinzugefügt 27.05.2026 nach dem Baseline-Code-Review (`.planning/BASELINE-REVIEW.md`, v0.9.7.3, deep). Der ursprüngliche v1.0-Scope war reines Tech-Debt-Cleanup; diese Bugs sind echte Korrektheitsfehler (Crashes, stille Datenkorruption, umgangene Validierung), die das Cleanup-Vorhaben sonst unverändert überlebt hätten. Bewusste Scope-Erweiterung per Captain-Entscheidung. Werden in Phase 1.1 — nach der Konsolidierung — in der finalen Package-Struktur behoben.
+
+- [ ] **BUG-01** (Review CR-02): `add_field_to_dictionary()` indiziert `IR_MODEL.search()` ungeschützt (`model_id[0]`). Leeres Suchergebnis → `IndexError` mitten in der Iteration, `data_dictionary` bleibt korrupt. Fix: Ergebnis vor Zugriff prüfen; Regressionstest für den Leer-Fall.
+
+- [ ] **BUG-02** (Review CR-03): `self_clean()` zerstört Calculated-Field-Parameter — `list(dict.fromkeys(value))` iteriert nur die Keys eines Inner-Dicts. `{"eq_get_payment_terms": ["p1","p2"]}` wird zu `["eq_get_payment_terms"]`. Fix: verschachtelte Struktur erhalten; Regressionstest prüft Unversehrtheit.
+
+- [ ] **BUG-03** (Review CR-04): `check_dependencies` gibt `Tuple[bool, list]` zurück, Basis-`map_reports` nutzt den Wert als Bool — `bool((False, [...]))` ist immer `True`, Dependency-Check wird still umgangen. Fix: Contract zwischen Methode und Caller angleichen; Regressionstest beweist, dass eine fehlende Dependency den Lauf stoppt.
+
+- [ ] **BUG-04** (Review WR-03): `build_name_search_domain({})` liefert `[]` → unbegrenzte „alle Reports für Modell"-Suche statt lautem Fehler. Fix: leeren Input guarden / laut scheitern.
+
+- [ ] **BUG-05** (Review WR-04): `prepare_connection` URL-Parsing via `str.replace("https:", "")` behält Pfad-Komponenten (`https://host/web` → Host `host/web`). Fix: Schema + Pfad korrekt strippen.
+
+- [ ] **BUG-06** (Review WR-05): `Report.__init__` annotiert `entry_name: str`, erhält zur Laufzeit aber ein `dict` — Basis-`self_ensure()` würde ein dict-Objekt in Odoos `name`-Feld schreiben. Fix: Typ-/Laufzeit-Handling angleichen.
+
+- [ ] **BUG-07** (Review WR-07): `create_odoo_connection_from_yaml_object` hardcodet `auth_method='password'` — ein API-Key in der YAML wird still als Passwort behandelt. Fix: konfigurierte Auth-Methode respektieren.
+
 ---
 
 ## Out of Scope für v1.0
@@ -112,7 +130,44 @@ Diese Items haben Wert, sind aber nach v1.0:
 
 <!-- Filled by gsd-roadmapper when ROADMAP.md is created. Maps each REQ-ID to its phase. -->
 
-(Pending — roadmapper agent fills this section after ROADMAP.md generation.)
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CONS-01 | Phase 1 — Package Consolidation | Pending |
+| CONS-02 | Phase 1 — Package Consolidation | Pending |
+| CONS-03 | Phase 1 — Package Consolidation | Pending |
+| CONS-04 | Phase 1 — Package Consolidation | Pending |
+| DEAD-01 | Phase 1 — Package Consolidation | Pending |
+| DEAD-02 | Phase 1 — Package Consolidation | Pending |
+| DEAD-03 | Phase 1 — Package Consolidation | Pending |
+| TYPE-01 | Phase 2 — Type Safety | Pending |
+| TYPE-02 | Phase 2 — Type Safety | Pending |
+| TYPE-03 | Phase 2 — Type Safety | Pending |
+| PERF-01 | Phase 3 — Performance | Pending |
+| PERF-02 | Phase 3 — Performance | Pending |
+| PERF-03 | Phase 3 — Performance | Pending |
+| PERF-04 | Phase 3 — Performance | Pending |
+| DOCS-01 | Phase 4 — Release Preparation | Pending |
+| DOCS-02 | Phase 4 — Release Preparation | Pending |
+| DOCS-03 | Phase 4 — Release Preparation | Pending |
+| DOCS-04 | Phase 4 — Release Preparation | Pending |
+| DOCS-05 | Phase 4 — Release Preparation | Pending |
+| CI-01 | Phase 4 — Release Preparation | Pending |
+| CI-02 | Phase 4 — Release Preparation | Pending |
+| CI-03 | Phase 4 — Release Preparation | Pending |
+| GATE-01 | Phase 4 — Release Preparation | Pending |
+| GATE-02 | Phase 4 — Release Preparation | Pending |
+| GATE-03 | Phase 4 — Release Preparation | Pending |
+| GATE-04 | Phase 4 — Release Preparation | Pending |
+| GATE-05 | Phase 4 — Release Preparation | Pending |
+| BUG-01 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-02 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-03 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-04 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-05 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-06 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-07 | Phase 1.1 — Correctness Bug Fixes | Pending |
+
+**Coverage: 34/34 requirements mapped** (DEAD-04 is not in scope — it is an explicit exclusion documented in REQUIREMENTS.md; progress_bar() stays. BUG-01..BUG-07 added 27.05.2026 from the baseline review — see Correctness-Bug-Fixes section.)
 
 ---
 
