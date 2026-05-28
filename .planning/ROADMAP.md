@@ -30,7 +30,7 @@
   5. All remaining tests pass (369 minus the legitimately removed P-08/P-09 tests)
 **Plans**: 5 plans
 Plans:
-- [ ] 01-01-PLAN.md — Coverage baseline and pre-flight green verification (D-13)
+- [x] 01-01-PLAN.md — Coverage baseline and pre-flight green verification (D-13)
 - [ ] 01-02-PLAN.md — Create leaf private submodules: _exceptions, _lang_utils, _logging, _yaml_dumper, _progress
 - [ ] 01-03-PLAN.md — Create merged _connection.py (OdooConnection) and _utils.py
 - [ ] 01-04-PLAN.md — Create merged _report.py (Report class)
@@ -91,7 +91,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Consolidation | 0/5 | Not started | - |
+| 1. Package Consolidation | 1/5 | In progress | - |
 | 1.1 Correctness Bug Fixes *(inserted)* | 0/? | Not started | - |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
