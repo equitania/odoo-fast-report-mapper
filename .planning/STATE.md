@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-28T13:09:18.968Z"
+last_updated: "2026-05-28T13:39:37.151Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
-  percent: 0
+  completed_plans: 5
+  percent: 20
 ---
 
 # STATE — odoo-fast-report-mapper
@@ -24,16 +24,15 @@ progress:
 
 ## Current Position
 
-Phase: 01 (package-consolidation) — EXECUTING
-Plan: 4 of 5
+Phase: 01 (package-consolidation) — COMPLETE
+Plan: 5 of 5
 **Phase**: 1 — Package Consolidation
-**Plan**: 5 of 5 (01-05 next)
-**Status**: In progress
-**Progress**: 4/5 plans complete (Phase 1)
+**Plan**: 5 of 5 — COMPLETE
+**Status**: Phase 1 complete
+**Progress**: 5/5 plans complete (Phase 1)
 
 ```
-[Phase 1: Consolidation] → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
-      ^^^^^^^^^ HERE
+[Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
 ```
 
 ---
@@ -69,6 +68,8 @@ Plan: 4 of 5
 | No UI hint on any phase | Pure Python CLI/library — no frontend components anywhere in scope |
 | Lazy import for _report.Report in Wave 3 | Avoids forward-reference before Wave 4 creates _report.py — clean and no circular dependency |
 | Explicit params in merged OdooConnection.__init__ | Replaces *args/**kwargs pass-through — eliminates silent positional-arg reordering risk (R-01) |
+| test_connection.py patches _connection.prepare_connection | prepare_connection is bound at import time in _connection.py; patching _utils.prepare_connection would miss the already-bound reference |
+| Empty odoo_report_helper/ namespace dir required explicit rmdir | git rm removes files but leaves directories; empty dir with __pycache__ was treated as namespace package by Python |
 
 ### Architectural Facts (for plan authors)
 
@@ -90,8 +91,8 @@ None.
 
 ## Session Continuity
 
-**Last action**: Plan 01-04 executed — _report.py created (5ce17d1) — 2026-05-28
-**Next action**: Execute plan 01-05 (import switching — rewire all callers to _* modules)
+**Last action**: Plan 01-05 executed — Phase 1 consolidation complete (79c1fcd) — 2026-05-28
+**Next action**: Execute Phase 1.1 (Correctness Bug Fixes) or Phase 2 (Type Safety)
 
 ---
 

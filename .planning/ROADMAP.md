@@ -8,7 +8,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Package Consolidation** - Dissolve odoo_report_helper/ into a single package, remove dead progress-bar APIs, eliminate circular import
+- [x] **Phase 1: Package Consolidation** - Dissolve odoo_report_helper/ into a single package, remove dead progress-bar APIs, eliminate circular import (completed 2026-05-28)
 - [ ] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins
 - [ ] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase
 - [ ] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary()
@@ -33,8 +33,8 @@ Plans:
 - [x] 01-01-PLAN.md — Coverage baseline and pre-flight green verification (D-13)
 - [x] 01-02-PLAN.md — Create leaf private submodules: _exceptions, _lang_utils, _logging, _yaml_dumper, _progress
 - [x] 01-03-PLAN.md — Create merged _connection.py (OdooConnection) and _utils.py
-- [ ] 01-04-PLAN.md — Create merged _report.py (Report class)
-- [ ] 01-05-PLAN.md — Switch imports, rename CLI to _cli.py, merge tests, delete old files, verify all success criteria
+- [x] 01-04-PLAN.md — Create merged _report.py (Report class)
+- [x] 01-05-PLAN.md — Switch imports, rename CLI to _cli.py, merge tests, delete old files, verify all success criteria
 
 ### Phase 1.1: Correctness Bug Fixes (INSERTED)
 **Goal**: The correctness bugs surfaced by the baseline review are fixed in the consolidated codebase — no unguarded crashes, no silent data corruption, no bypassed dependency checks, and connection/config parsing fails loudly instead of silently mis-handling input. Each fix is locked in by a regression test.
@@ -91,7 +91,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Consolidation | 3/5 | In Progress|  |
+| 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 0/? | Not started | - |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
