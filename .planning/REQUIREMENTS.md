@@ -11,21 +11,21 @@
 
 ### Consolidation
 
-- [ ] **CONS-01**: `odoo_report_helper/` package wird vollständig in `odoo_fast_report_mapper/` aufgelöst. Inhalte (`OdooConnection`, `Report`, `utils`, `exceptions`) wandern als Untermodule (z.B. `odoo_fast_report_mapper/_connection.py`, `_report.py`, `_utils.py`, `exceptions.py`). Nach v1.0 existiert nur noch ein Package.
+- [x] **CONS-01**: `odoo_report_helper/` package wird vollständig in `odoo_fast_report_mapper/` aufgelöst. Inhalte (`OdooConnection`, `Report`, `utils`, `exceptions`) wandern als Untermodule (z.B. `odoo_fast_report_mapper/_connection.py`, `_report.py`, `_utils.py`, `exceptions.py`). Nach v1.0 existiert nur noch ein Package.
 
 - [ ] **CONS-02**: Circular import zwischen den zwei Packages ist eliminiert. Alle Tests können auch in Isolation kollektiert werden (`pytest tests/test_odoo_connection.py` allein darf nicht mehr scheitern).
 
-- [ ] **CONS-03**: Override-Smell aufgelöst — `EqOdooConnection` erweitert die Basis statt sie zu überschreiben. Gemeinsame Logik liegt in einer Basisklasse (oder in Modul-Funktionen), nicht doppelt.
+- [x] **CONS-03**: Override-Smell aufgelöst — `EqOdooConnection` erweitert die Basis statt sie zu überschreiben. Gemeinsame Logik liegt in einer Basisklasse (oder in Modul-Funktionen), nicht doppelt.
 
 - [ ] **CONS-04**: Tot-aber-defekte Base-Class-Pfade entfernt (B-01/B-03 Fixes in v0.9.7 waren Pflaster — v1.0 entfernt den toten Code statt ihn zu reparieren).
 
 ### Dead-Code-Removal
 
-- [ ] **DEAD-01**: `ProgressBar`-Klasse aus `progress.py` entfernt. Konsumenten nutzen `tqdm` direkt (siehe MIGRATION.md). Tests für `ProgressBar` entfernt.
+- [x] **DEAD-01**: `ProgressBar`-Klasse aus `progress.py` entfernt. Konsumenten nutzen `tqdm` direkt (siehe MIGRATION.md). Tests für `ProgressBar` entfernt.
 
-- [ ] **DEAD-02**: `create_progress_bar()`-Factory entfernt. Tests entfernt.
+- [x] **DEAD-02**: `create_progress_bar()`-Factory entfernt. Tests entfernt.
 
-- [ ] **DEAD-03**: `ReportProgress`-Klasse mit ihren statischen Methoden (`mapping_progress`, `field_progress`, `testing_progress`) entfernt. Tests entfernt.
+- [x] **DEAD-03**: `ReportProgress`-Klasse mit ihren statischen Methoden (`mapping_progress`, `field_progress`, `testing_progress`) entfernt. Tests entfernt.
 
 - [ ] **DEAD-04**: `progress_bar()`-Wrapper-Funktion bleibt — sie wird intern in `eq_odoo_connection.py` verwendet. (Nur die ungenutzten Klassen-APIs sind in Scope.)
 
@@ -132,13 +132,13 @@ Diese Items haben Wert, sind aber nach v1.0:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONS-01 | Phase 1 — Package Consolidation | Pending |
+| CONS-01 | Phase 1 — Package Consolidation | Complete |
 | CONS-02 | Phase 1 — Package Consolidation | Pending |
-| CONS-03 | Phase 1 — Package Consolidation | Pending |
+| CONS-03 | Phase 1 — Package Consolidation | Complete |
 | CONS-04 | Phase 1 — Package Consolidation | Pending |
-| DEAD-01 | Phase 1 — Package Consolidation | Pending |
-| DEAD-02 | Phase 1 — Package Consolidation | Pending |
-| DEAD-03 | Phase 1 — Package Consolidation | Pending |
+| DEAD-01 | Phase 1 — Package Consolidation | Complete |
+| DEAD-02 | Phase 1 — Package Consolidation | Complete |
+| DEAD-03 | Phase 1 — Package Consolidation | Complete |
 | TYPE-01 | Phase 2 — Type Safety | Pending |
 | TYPE-02 | Phase 2 — Type Safety | Pending |
 | TYPE-03 | Phase 2 — Type Safety | Pending |
