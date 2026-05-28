@@ -41,8 +41,8 @@ Documentation = "https://www.ownerp.com/odoo-fastreport"
 Company = "https://www.equitania.de"
 
 [project.scripts]
-odoo-fast-report-mapper = "odoo_fast_report_mapper.odoo_fast_report_mapper:start_odoo_fast_report_mapper"
-odoo-fr-mapper = "odoo_fast_report_mapper.odoo_fast_report_mapper:start_odoo_fast_report_mapper"
+odoo-fast-report-mapper = "odoo_fast_report_mapper._cli:start_odoo_fast_report_mapper"
+odoo-fr-mapper = "odoo_fast_report_mapper._cli:start_odoo_fast_report_mapper"
 
 [project.optional-dependencies]
 dev = [
@@ -65,7 +65,7 @@ test = [
 version = { attr = "odoo_fast_report_mapper.__version__.__version__" }
 
 [tool.setuptools.packages.find]
-include = ["odoo_fast_report_mapper*", "odoo_report_helper*"]
+include = ["odoo_fast_report_mapper*"]
 
 [tool.ruff]
 line-length = 120
@@ -79,7 +79,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["odoo_fast_report_mapper", "odoo_report_helper"]
+known-first-party = ["odoo_fast_report_mapper"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -97,7 +97,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["odoo_fast_report_mapper", "odoo_report_helper"]
+source = ["odoo_fast_report_mapper"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
