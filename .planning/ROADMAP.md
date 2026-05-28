@@ -32,7 +32,7 @@
 Plans:
 - [x] 01-01-PLAN.md — Coverage baseline and pre-flight green verification (D-13)
 - [x] 01-02-PLAN.md — Create leaf private submodules: _exceptions, _lang_utils, _logging, _yaml_dumper, _progress
-- [ ] 01-03-PLAN.md — Create merged _connection.py (OdooConnection) and _utils.py
+- [x] 01-03-PLAN.md — Create merged _connection.py (OdooConnection) and _utils.py
 - [ ] 01-04-PLAN.md — Create merged _report.py (Report class)
 - [ ] 01-05-PLAN.md — Switch imports, rename CLI to _cli.py, merge tests, delete old files, verify all success criteria
 
@@ -91,7 +91,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Consolidation | 2/5 | In Progress|  |
+| 1. Package Consolidation | 3/5 | In Progress|  |
 | 1.1 Correctness Bug Fixes *(inserted)* | 0/? | Not started | - |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
