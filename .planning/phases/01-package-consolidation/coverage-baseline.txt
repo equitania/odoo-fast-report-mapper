@@ -1,0 +1,45 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.12, pytest-9.0.3, pluggy-1.6.0
+rootdir: /Users/picard/gitbase/PyPi-Projects/odoo-fast-report-mapper
+configfile: pyproject.toml
+testpaths: tests
+plugins: mock-3.15.1, cov-7.1.0
+collected 369 items
+
+tests/test_cli.py .............................                          [  7%]
+tests/test_eq_odoo_connection.py ....................................... [ 18%]
+.....................................................                    [ 32%]
+tests/test_eq_report.py .....................                            [ 38%]
+tests/test_eq_utils.py ........................................          [ 49%]
+tests/test_exceptions.py ...............                                 [ 53%]
+tests/test_helper_utils.py .............................                 [ 61%]
+tests/test_lang_utils.py ....................................            [ 71%]
+tests/test_logging.py ........................                           [ 77%]
+tests/test_odoo_connection.py ................                           [ 81%]
+tests/test_progress.py .........................                         [ 88%]
+tests/test_report.py ..........................................          [100%]
+
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.13.12-final-0 _______________
+
+Name                                                 Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------
+odoo_fast_report_mapper/__init__.py                      5      0   100%
+odoo_fast_report_mapper/__version__.py                   9      0   100%
+odoo_fast_report_mapper/eq_odoo_connection.py          418     34    92%   63-64, 121, 126, 219, 331, 380-382, 451, 503, 512, 540-557, 576-577, 581-582, 595-596, 635, 639, 651, 676, 679, 738-748, 782
+odoo_fast_report_mapper/eq_report.py                    34      0   100%
+odoo_fast_report_mapper/eq_utils.py                    132     12    91%   252-261, 329-331
+odoo_fast_report_mapper/lang_utils.py                   36      1    97%   120
+odoo_fast_report_mapper/logging_config.py              102      4    96%   133, 154, 211, 275
+odoo_fast_report_mapper/odoo_fast_report_mapper.py     170     19    89%   164-169, 176-178, 212-215, 249-251, 254-255, 293-294, 314-315
+odoo_fast_report_mapper/progress.py                     33      0   100%
+odoo_report_helper/__init__.py                           4      0   100%
+odoo_report_helper/exceptions.py                         5      0   100%
+odoo_report_helper/odoo_connection.py                  108     14    87%   33, 36, 72-73, 77-78, 110-112, 140-149
+odoo_report_helper/report.py                            33      0   100%
+odoo_report_helper/utils.py                             61      3    95%   22, 106-107
+----------------------------------------------------------------------------------
+TOTAL                                                 1150     87    92%
+Coverage JSON written to file coverage.json
+Required test coverage of 60.0% reached. Total coverage: 92.43%
+============================= 369 passed in 0.71s ==============================
