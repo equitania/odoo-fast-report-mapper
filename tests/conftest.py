@@ -184,8 +184,8 @@ def sample_connection_yaml_data():
 
 @pytest.fixture
 def mock_odoorpc():
-    """Patch odoo_report_helper.utils.ODOO to prevent real network connections."""
-    with patch("odoo_report_helper.utils.ODOO") as mock_odoo_cls:
+    """Patch odoo_fast_report_mapper._utils.ODOO to prevent real network connections."""
+    with patch("odoo_fast_report_mapper._utils.ODOO") as mock_odoo_cls:
         mock_instance = MagicMock()
         mock_instance.version = "18.0"
         mock_instance.env = MagicMock()

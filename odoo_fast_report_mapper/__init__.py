@@ -1,6 +1,3 @@
-from . import eq_odoo_connection as eq_odoo_connection
-from . import eq_report as eq_report
-from . import eq_utils as eq_utils
 from .__version__ import (
     __author__,
     __author_email__,
@@ -12,8 +9,18 @@ from .__version__ import (
     __version__,
     __version_info__,
 )
+from ._connection import OdooConnection
+from ._exceptions import OdooConnectionError, PathDoesNotExistError, PathDoesNotExitError
+from ._report import Report
+from ._utils import create_connection_from_env
 
 __all__ = [
+    "OdooConnection",
+    "Report",
+    "create_connection_from_env",
+    "OdooConnectionError",
+    "PathDoesNotExistError",
+    "PathDoesNotExitError",
     "__version__",
     "__version_info__",
     "__title__",
@@ -23,7 +30,4 @@ __all__ = [
     "__url__",
     "__license__",
     "__copyright__",
-    "eq_odoo_connection",
-    "eq_report",
-    "eq_utils",
 ]
