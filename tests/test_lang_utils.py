@@ -1,9 +1,9 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-"""Tests for odoo_fast_report_mapper/lang_utils.py - Language utility functions."""
+"""Tests for odoo_fast_report_mapper/_lang_utils.py - Language utility functions."""
 
-from odoo_fast_report_mapper.lang_utils import (
+from odoo_fast_report_mapper._lang_utils import (
     LEGACY_LANG_MAP,
     build_name_search_domain,
     get_primary_lang,
@@ -136,7 +136,6 @@ class TestBuildNameSearchDomain:
 
     def test_two_names(self):
         result = build_name_search_domain({"de_DE": "Verkauf", "en_US": "Sales"})
-        # 4 conditions -> 3 OR operators
         assert result.count("|") == 3
         assert ("name", "=ilike", "Verkauf") in result
         assert ("name", "=ilike", "Verkauf (PDF)") in result
@@ -151,7 +150,6 @@ class TestBuildNameSearchDomain:
                 "fr_FR": "Ventes",
             }
         )
-        # 6 conditions -> 5 OR operators
         assert result.count("|") == 5
         assert ("name", "=ilike", "Ventes") in result
         assert ("name", "=ilike", "Ventes (PDF)") in result
@@ -163,7 +161,6 @@ class TestBuildNameSearchDomain:
     def test_domain_structure_is_valid_odoo_format(self):
         """Verify the domain structure follows Odoo's prefix notation."""
         result = build_name_search_domain({"de_DE": "A", "en_US": "B"})
-        # All '|' operators must come before the tuples
         or_count = 0
         for item in result:
             if item == "|":

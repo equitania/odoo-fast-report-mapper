@@ -1,14 +1,14 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-"""Tests for odoo_fast_report_mapper/logging_config.py - Logging configuration."""
+"""Tests for odoo_fast_report_mapper/_logging.py - Logging configuration."""
 
 import logging
 
 import pytest
 
-from odoo_fast_report_mapper import logging_config as _logging_module
-from odoo_fast_report_mapper.logging_config import (
+from odoo_fast_report_mapper import _logging as _logging_module
+from odoo_fast_report_mapper._logging import (
     ColoredFormatter,
     LogColors,
     LoggerManager,
@@ -171,7 +171,6 @@ class TestLoggerManagerSingleton:
         LoggerManager._instance = None
         LoggerManager._loggers = {}
         manager2 = LoggerManager()
-        # Both are LoggerManager instances but different objects
         assert isinstance(manager2, LoggerManager)
 
 
@@ -193,7 +192,6 @@ class TestColoredFormatter:
         result = formatter.format(record)
 
         assert "Test message" in result
-        # The original levelname should be restored after formatting
         assert record.levelname == "INFO"
 
     def test_colored_formatter_formats_error(self):
@@ -241,7 +239,6 @@ class TestColoredFormatter:
 
         result = formatter.format(record)
 
-        # The formatted output should contain ANSI escape codes
         assert "\033[" in result
         assert LogColors.RESET in result
 

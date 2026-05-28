@@ -1,11 +1,11 @@
 # Copyright 2014-now Equitania Software GmbH - Pforzheim - Germany
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-"""Tests for odoo_report_helper/exceptions.py - Custom exception classes."""
+"""Tests for odoo_fast_report_mapper._exceptions - Custom exception classes."""
 
 import pytest
 
-from odoo_report_helper.exceptions import OdooConnectionError, PathDoesNotExitError
+from odoo_fast_report_mapper import OdooConnectionError, PathDoesNotExistError, PathDoesNotExitError
 
 # ---------------------------------------------------------------------------
 # OdooConnectionError tests
@@ -83,6 +83,22 @@ class TestPathDoesNotExitError:
         path = "/home/user/yaml_reports/config.yaml"
         error = PathDoesNotExitError(path)
         assert str(error) == path
+
+
+# ---------------------------------------------------------------------------
+# PathDoesNotExistError tests (alias)
+# ---------------------------------------------------------------------------
+
+
+class TestPathDoesNotExistError:
+    """Verify PathDoesNotExistError (corrected spelling alias) behavior."""
+
+    def test_can_be_raised_and_caught(self):
+        with pytest.raises(PathDoesNotExistError):
+            raise PathDoesNotExistError("Path not found")
+
+    def test_inherits_from_exception(self):
+        assert issubclass(PathDoesNotExistError, Exception)
 
 
 # ---------------------------------------------------------------------------
