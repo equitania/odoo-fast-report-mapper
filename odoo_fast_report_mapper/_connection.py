@@ -63,9 +63,7 @@ class OdooConnection:
         except urllib.error.URLError as ex:
             # Clear password from memory on connection failure
             self.password = None
-            raise OdooConnectionError(
-                "ERROR: Please check your parameters and your connection" + " " + str(ex)
-            ) from ex
+            raise OdooConnectionError("ERROR: Please check your parameters and your connection" + " " + str(ex)) from ex
 
     def __repr__(self):
         return f"OdooConnection(username={self.username!r}, database={self.database!r})"
@@ -88,9 +86,7 @@ class OdooConnection:
             self.password = None
             logger.info(f"Connected to database: {self.database}")
         except RPCError as ex:
-            raise OdooConnectionError(
-                "ERROR: Please check your parameters and your connection" + " " + str(ex)
-            ) from ex
+            raise OdooConnectionError("ERROR: Please check your parameters and your connection" + " " + str(ex)) from ex
 
     def _get_fast_report_ids(self):
         """
@@ -127,9 +123,7 @@ class OdooConnection:
             server_version = self.connection.version
             major = int(server_version.split(".")[0])
         except (AttributeError, ValueError, IndexError) as ex:
-            raise ValueError(
-                f"Could not determine Odoo server version for API-key compatibility check: {ex}"
-            ) from ex
+            raise ValueError(f"Could not determine Odoo server version for API-key compatibility check: {ex}") from ex
         if major < 14:
             raise ValueError(
                 f"API-key authentication requires Odoo >= 14, but server reports v{server_version}. "

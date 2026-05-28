@@ -18,7 +18,7 @@ import yaml
 from dotenv import load_dotenv
 from odoorpc_toolbox import ODOO
 
-from ._exceptions import OdooConnectionError, PathDoesNotExistError
+from ._exceptions import PathDoesNotExistError
 from ._lang_utils import normalize_language_code, normalize_name_dict
 from ._logging import get_logger
 
@@ -438,9 +438,7 @@ def create_connection_from_env(env_path=None):
         credential = password
         auth_method = "password"
     else:
-        error_msg = (
-            f"Missing authentication in {dotenv_path}: set either ODOO_API_KEY (Odoo >= 14) or ODOO_PASSWORD"
-        )
+        error_msg = f"Missing authentication in {dotenv_path}: set either ODOO_API_KEY (Odoo >= 14) or ODOO_PASSWORD"
         logger.error(error_msg)
         raise ValueError(error_msg)
 

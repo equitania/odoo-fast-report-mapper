@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
+from odoo_fast_report_mapper import _utils
 from odoo_fast_report_mapper._connection import OdooConnection
 from odoo_fast_report_mapper._exceptions import PathDoesNotExitError
 from odoo_fast_report_mapper._report import Report
@@ -25,7 +26,6 @@ from odoo_fast_report_mapper._utils import (
     prepare_connection,
     self_clean,
 )
-from odoo_fast_report_mapper import _utils
 
 # ---------------------------------------------------------------------------
 # generate_env_template

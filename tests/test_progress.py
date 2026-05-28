@@ -9,7 +9,6 @@ have been removed as part of Phase 1 consolidation (DEAD-01/DEAD-02/DEAD-03).
 
 from odoo_fast_report_mapper._progress import progress_bar
 
-
 # ---------------------------------------------------------------------------
 # TestProgressBarFunction — the only surviving test class (DEAD-04 excluded)
 # ---------------------------------------------------------------------------

@@ -200,9 +200,7 @@ class TestEnvError:
     @patch("odoo_fast_report_mapper._cli._utils")
     def test_env_error_file_not_found_recommends_init(self, mock_utils, cli_runner):
         """File-not-found error must recommend --init."""
-        mock_utils.create_connection_from_env.side_effect = ValueError(
-            ".env file not found at: /tmp/nonexistent/.env"
-        )
+        mock_utils.create_connection_from_env.side_effect = ValueError(".env file not found at: /tmp/nonexistent/.env")
 
         result = cli_runner.invoke(
             start_odoo_fast_report_mapper,
@@ -277,9 +275,30 @@ class TestCollectYaml:
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
         mock_connection.list_fast_reports.return_value = [
-            {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order", "company": "TestCo", "export_type": "pdf"},
-            {"id": 20, "report_name": "eq_fr_invoice", "name": "Invoice", "model": "account.move", "company": "TestCo", "export_type": "pdf"},
-            {"id": 30, "report_name": "eq_fr_picking", "name": "Picking", "model": "stock.picking", "company": "TestCo", "export_type": "pdf"},
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 20,
+                "report_name": "eq_fr_invoice",
+                "name": "Invoice",
+                "model": "account.move",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 30,
+                "report_name": "eq_fr_picking",
+                "name": "Picking",
+                "model": "stock.picking",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
         ]
         mock_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
@@ -300,8 +319,22 @@ class TestCollectYaml:
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
         mock_connection.list_fast_reports.return_value = [
-            {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order", "company": "TestCo", "export_type": "pdf"},
-            {"id": 20, "report_name": "eq_fr_invoice", "name": "Invoice", "model": "account.move", "company": "TestCo", "export_type": "pdf"},
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
+            {
+                "id": 20,
+                "report_name": "eq_fr_invoice",
+                "name": "Invoice",
+                "model": "account.move",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
         ]
         mock_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
@@ -338,7 +371,14 @@ class TestCollectYaml:
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
         mock_connection.list_fast_reports.return_value = [
-            {"id": 10, "report_name": "eq_fr_sale_order", "name": "Sales Order", "model": "sale.order", "company": "My Company", "export_type": "pdf"},
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale_order",
+                "name": "Sales Order",
+                "model": "sale.order",
+                "company": "My Company",
+                "export_type": "pdf",
+            },
         ]
         mock_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
@@ -360,7 +400,14 @@ class TestCollectYaml:
         mock_connection.collect_yaml = True
         mock_connection.disable_qweb = False
         mock_connection.list_fast_reports.return_value = [
-            {"id": 10, "report_name": "eq_fr_sale", "name": "Sales", "model": "sale.order", "company": "TestCo", "export_type": "pdf"},
+            {
+                "id": 10,
+                "report_name": "eq_fr_sale",
+                "name": "Sales",
+                "model": "sale.order",
+                "company": "TestCo",
+                "export_type": "pdf",
+            },
         ]
         mock_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
 
@@ -385,7 +432,12 @@ class TestSelectFlag:
         mock_connection.disable_qweb = False
         mock_utils.create_connection_from_env.return_value = (mock_connection, "/fake/.env")
         mock_utils.list_yaml_reports.return_value = [
-            {"filename": "eq_fr_sale_order.yaml", "report_name": "eq_fr_core_sale_order", "model": "sale.order", "yaml_object": {"report_name": "eq_fr_core_sale_order"}},
+            {
+                "filename": "eq_fr_sale_order.yaml",
+                "report_name": "eq_fr_core_sale_order",
+                "model": "sale.order",
+                "yaml_object": {"report_name": "eq_fr_core_sale_order"},
+            },
         ]
         mock_utils.build_reports_from_yaml_objects.return_value = []
 
@@ -416,7 +468,12 @@ class TestSelectFlag:
         mock_utils.list_yaml_reports.return_value = [
             {"filename": "sale.yaml", "report_name": "eq_fr_sale", "model": "sale.order", "yaml_object": yaml1},
             {"filename": "invoice.yaml", "report_name": "eq_fr_invoice", "model": "account.move", "yaml_object": yaml2},
-            {"filename": "picking.yaml", "report_name": "eq_fr_picking", "model": "stock.picking", "yaml_object": yaml3},
+            {
+                "filename": "picking.yaml",
+                "report_name": "eq_fr_picking",
+                "model": "stock.picking",
+                "yaml_object": yaml3,
+            },
         ]
         mock_utils.build_reports_from_yaml_objects.return_value = []
 
