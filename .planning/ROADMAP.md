@@ -28,7 +28,13 @@
   3. `from odoo_fast_report_mapper import OdooConnection` (or equivalent consolidated path) resolves without error
   4. `from odoo_fast_report_mapper.progress import ProgressBar` raises `ImportError` — dead API is removed
   5. All remaining tests pass (369 minus the legitimately removed P-08/P-09 tests)
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 01-01-PLAN.md — Coverage baseline and pre-flight green verification (D-13)
+- [ ] 01-02-PLAN.md — Create leaf private submodules: _exceptions, _lang_utils, _logging, _yaml_dumper, _progress
+- [ ] 01-03-PLAN.md — Create merged _connection.py (OdooConnection) and _utils.py
+- [ ] 01-04-PLAN.md — Create merged _report.py (Report class)
+- [ ] 01-05-PLAN.md — Switch imports, rename CLI to _cli.py, merge tests, delete old files, verify all success criteria
 
 ### Phase 1.1: Correctness Bug Fixes (INSERTED)
 **Goal**: The correctness bugs surfaced by the baseline review are fixed in the consolidated codebase — no unguarded crashes, no silent data corruption, no bypassed dependency checks, and connection/config parsing fails loudly instead of silently mis-handling input. Each fix is locked in by a regression test.
@@ -85,7 +91,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Consolidation | 0/3 | Not started | - |
+| 1. Package Consolidation | 0/5 | Not started | - |
 | 1.1 Correctness Bug Fixes *(inserted)* | 0/? | Not started | - |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
