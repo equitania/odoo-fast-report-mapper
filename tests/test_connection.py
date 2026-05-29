@@ -1614,6 +1614,34 @@ class TestAddFieldToDictionary:
         # Dependency collection is skipped — IR_FIELDS.search must never be called
         mock_ir_fields.search.assert_not_called()
 
+    def test_empty_field_search_skips_and_returns_dict(self):
+        """BUG-08: When IR_FIELDS.search returns [], field entry is recorded but browse is never called; no AttributeError."""
+        conn = _make_connection()
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = [1]
+        mock_ir_fields = MagicMock()
+        mock_ir_fields.search.return_value = []
+        _setup_env(conn, {"ir.model": mock_ir_model, "ir.model.fields": mock_ir_fields})
+
+        result = conn.add_field_to_dictionary({}, report_id=1, model_name="sale.order", field_name="no_such_field", company_id=False)
+
+        # The field entry is still recorded (no data loss)
+        assert result == {1: {"sale.order": ["no_such_field"]}}
+        # browse must never be called when search returns empty
+        mock_ir_fields.browse.assert_not_called()
+
+    def test_empty_modules_string_excluded_from_dependencies(self):
+        """BUG-09: When field_obj.modules is '' (base-module field), no empty string appears in dependencies."""
+        conn = _make_connection()
+        self._setup_field_env(conn, modules="")
+
+        result = conn.add_field_to_dictionary({}, 100, "sale.order", "name", False)
+
+        # No empty string in dependencies
+        assert "" not in result.get(100, {}).get("dependencies", [])
+        # No falsy entries at all in the dependencies list
+        assert all(m for m in result.get(100, {}).get("dependencies", []))
+
 
 # ---------------------------------------------------------------------------
 # 16. TestCollectCalculatedFields
