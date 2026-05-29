@@ -28,9 +28,9 @@ stopped_at: Phase 1.1 complete (7/7) — ready to discuss Phase 02
 Phase: 02
 Plan: Not started
 **Phase**: 1.1 — Correctness Bug Fixes (INSERTED)
-**Plan**: 7 of 7 — EXECUTED
-**Status**: Phase 1.1 complete (7/7 executed)
-**Progress**: Phase 1 complete (5/5); Phase 1.1 complete (7/7 executed)
+**Plan**: 7 of 7 executed + 1 gap plan (01.1-08) PENDING
+**Status**: Phase 1.1 complete; gap-closure plan 01.1-08 (BUG-08/09 from code review) planned, awaiting execution
+**Progress**: Phase 1 complete (5/5); Phase 1.1 (7/7 executed, 1 gap plan pending) — run `/gsd:execute-phase 1.1 --gaps-only`
 
 ```
 [Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
