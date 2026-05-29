@@ -100,9 +100,9 @@
 
 > Gap-Closure 29.05.2026 nach dem Phase-1.1-Code-Review (`01.1-REVIEW.md`, standard). CR-02/CR-03 sind echte Korrektheits-Lücken direkt neben dem BUG-01-Fix, die der enge BUG-01-Scope (`model_id`-Guard) nicht abdeckte. Captain-Entscheidung: als Gap-Plans in Phase 1.1 schließen.
 
-- [ ] **BUG-08** (Review CR-02): `add_field_to_dictionary()` ruft `IR_FIELDS.browse(field_id).modules` ungeschützt auf (`_connection.py:668-670`). Bei leerem `IR_FIELDS.search()`-Ergebnis liefert Odoo `.modules = False`, und `False.replace(" ", "")` crasht mit `AttributeError` mitten im Collect-Lauf — ein Geschwister-Crash zum bereits behobenen BUG-01. Fix: `field_id`/`field_obj.modules` vor `.replace()` guarden (skip-and-warn analog BUG-01); Regressionstest für den Leer-Fall.
+- [x] **BUG-08** (Review CR-02): `add_field_to_dictionary()` ruft `IR_FIELDS.browse(field_id).modules` ungeschützt auf (`_connection.py:668-670`). Bei leerem `IR_FIELDS.search()`-Ergebnis liefert Odoo `.modules = False`, und `False.replace(" ", "")` crasht mit `AttributeError` mitten im Collect-Lauf — ein Geschwister-Crash zum bereits behobenen BUG-01. Fix: `field_id`/`field_obj.modules` vor `.replace()` guarden (skip-and-warn analog BUG-01); Regressionstest für den Leer-Fall.
 
-- [ ] **BUG-09** (Review CR-03): `add_field_to_dictionary()` injiziert leeren String in jede Dependency-Liste (`_connection.py:670`). Base-Modul-Felder haben `modules == ""`; `"".replace(" ", "").split(",")` → `[""]`, das `list(set(...))`-Dedup übersteht und in jeder exportierten YAML landet → spurious `check_module("")`-RPC bei jedem Import. Fix: leere/whitespace-only `modules` herausfiltern bevor die Dependency-Liste gebaut wird; Regressionstest prüft, dass `""` nie in `dependencies` landet.
+- [x] **BUG-09** (Review CR-03): `add_field_to_dictionary()` injiziert leeren String in jede Dependency-Liste (`_connection.py:670`). Base-Modul-Felder haben `modules == ""`; `"".replace(" ", "").split(",")` → `[""]`, das `list(set(...))`-Dedup übersteht und in jeder exportierten YAML landet → spurious `check_module("")`-RPC bei jedem Import. Fix: leere/whitespace-only `modules` herausfiltern bevor die Dependency-Liste gebaut wird; Regressionstest prüft, dass `""` nie in `dependencies` landet.
 
 ---
 
@@ -172,8 +172,8 @@ Diese Items haben Wert, sind aber nach v1.0:
 | BUG-05 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-06 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-07 | Phase 1.1 — Correctness Bug Fixes | Complete |
-| BUG-08 | Phase 1.1 — Correctness Bug Fixes (gap closure) | Pending |
-| BUG-09 | Phase 1.1 — Correctness Bug Fixes (gap closure) | Pending |
+| BUG-08 | Phase 1.1 — Correctness Bug Fixes (gap closure) | Complete |
+| BUG-09 | Phase 1.1 — Correctness Bug Fixes (gap closure) | Complete |
 
 **Coverage: 36/36 requirements mapped** (DEAD-04 is not in scope — it is an explicit exclusion documented in REQUIREMENTS.md; progress_bar() stays. BUG-01..BUG-07 added 27.05.2026 from the baseline review; BUG-08..BUG-09 added 29.05.2026 as gap closure from the Phase 1.1 code review — see Correctness-Bug-Fixes section.)
 
