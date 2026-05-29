@@ -51,7 +51,7 @@ Plans:
   8. All existing tests still pass after the fixes.
 **Plans**: 7 plans
 Plans:
-- [ ] 01.1-01-PLAN.md — BUG-01: add_field_to_dictionary IndexError guard (skip-and-warn on empty IR_MODEL.search)
+- [x] 01.1-01-PLAN.md — BUG-01: add_field_to_dictionary IndexError guard (skip-and-warn on empty IR_MODEL.search)
 - [ ] 01.1-02-PLAN.md — BUG-02: remove broken self_clean call from add_calculated_fields
 - [ ] 01.1-03-PLAN.md — BUG-03: formalize check_dependencies return annotation + map_reports dependency-blocking regression test
 - [ ] 01.1-04-PLAN.md — BUG-04: build_name_search_domain ValueError on empty name_dict
@@ -100,7 +100,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
-| 1.1 Correctness Bug Fixes *(inserted)* | 0/7 | Not started | - |
+| 1.1 Correctness Bug Fixes *(inserted)* | 1/7 | In Progress|  |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
