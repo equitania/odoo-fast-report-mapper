@@ -666,8 +666,14 @@ class OdooConnection:
             logger.warning(f"Model '{model_name}' not found — skipping dependency collection")
             return data_dictionary
         field_id = IR_FIELDS.search([("model_id", "=", model_id[0]), ("name", "=", field_name)])
+        if not field_id:
+            logger.debug(f"Field '{field_name}' on '{model_name}' not found in ir.model.fields — skipping dependency")
+            return data_dictionary
         field_obj = IR_FIELDS.browse(field_id)
-        modules_dependencies = field_obj.modules.replace(" ", "").split(",")
+        raw_modules = field_obj.modules.replace(" ", "").split(",")
+        modules_dependencies = [m for m in raw_modules if m]
+        if not modules_dependencies:
+            return data_dictionary
         if "dependencies" in data_dictionary[report_id]:
             data_dictionary[report_id]["dependencies"].extend(modules_dependencies)
             # using set()
