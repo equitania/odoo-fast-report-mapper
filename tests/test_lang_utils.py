@@ -3,6 +3,8 @@
 
 """Tests for odoo_fast_report_mapper/_lang_utils.py - Language utility functions."""
 
+import pytest
+
 from odoo_fast_report_mapper._lang_utils import (
     LEGACY_LANG_MAP,
     build_name_search_domain,
@@ -154,9 +156,9 @@ class TestBuildNameSearchDomain:
         assert ("name", "=ilike", "Ventes") in result
         assert ("name", "=ilike", "Ventes (PDF)") in result
 
-    def test_empty_dict(self):
-        result = build_name_search_domain({})
-        assert result == []
+    def test_empty_dict_raises_value_error(self):
+        with pytest.raises(ValueError, match="empty name_dict"):
+            build_name_search_domain({})
 
     def test_domain_structure_is_valid_odoo_format(self):
         """Verify the domain structure follows Odoo's prefix notation."""
