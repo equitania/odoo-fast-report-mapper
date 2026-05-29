@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Phase 01.1 executing
-last_updated: "2026-05-29T09:25:33.886Z"
+last_updated: "2026-05-29T09:28:53.700Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   percent: 20
 ---
 
@@ -25,11 +25,11 @@ progress:
 ## Current Position
 
 Phase: 1.1 (Correctness Bug Fixes (INSERTED)) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 **Phase**: 1.1 — Correctness Bug Fixes (INSERTED)
-**Plan**: 5 of 7 — EXECUTED
-**Status**: Phase 1.1 executing (5/7 executed)
-**Progress**: Phase 1 complete (5/5); Phase 1.1 executing (5/7 executed)
+**Plan**: 6 of 7 — EXECUTED
+**Status**: Phase 1.1 executing (6/7 executed)
+**Progress**: Phase 1 complete (5/5); Phase 1.1 executing (6/7 executed)
 
 ```
 [Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
@@ -77,6 +77,7 @@ Plan: 6 of 7
 | Empty odoo_report_helper/ namespace dir required explicit rmdir | git rm removes files but leaves directories; empty dir with __pycache__ was treated as namespace package by Python |
 | Do NOT call self_clean on dict-valued containers | self_clean uses dict.fromkeys which iterates keys only, destroying nested {function_name: [params]} structure in calculated_fields |
 | ValueError on empty name_dict in build_name_search_domain | Fail loudly per D-02; empty dict is always a broken YAML (never a legitimate runtime state), so raising ValueError before any Odoo RPC call prevents silent overwrite of unintended report records |
+| dict[str, str] annotation on entry_name with isinstance+truthy guard | Per-key validation excluded (D-09); isinstance+truthy only is sufficient to prevent dict object reaching Odoo name field |
 
 ### Architectural Facts (for plan authors)
 
@@ -98,8 +99,8 @@ None.
 
 ## Session Continuity
 
-**Last action**: Plan 01.1-03 executed — BUG-03 fixed (4b19c8f) — 2026-05-29
-**Next action**: Execute Phase 1.1 Plan 04 (next remaining bug fix)
+**Last action**: Plan 01.1-06 executed — BUG-06 fixed (1be3c90) — 2026-05-29
+**Next action**: Execute Phase 1.1 Plan 07 (final plan in phase 1.1)
 
 ---
 
