@@ -17,6 +17,7 @@ from odoo_fast_report_mapper._utils import (
     build_reports_from_yaml_objects,
     collect_all_reports,
     create_connection_from_env,
+    create_odoo_connection_from_yaml_object,
     create_report_object_from_yaml_object,
     generate_env_template,
     list_yaml_reports,
@@ -724,3 +725,38 @@ class TestParseYamlFolderWithFilenames:
         without_names = parse_yaml_folder(YAML_TEST_DIR)
         contents_from_with_names = [obj for _, obj in with_names]
         assert contents_from_with_names == without_names
+
+
+# ---------------------------------------------------------------------------
+# create_odoo_connection_from_yaml_object (BUG-07 regression tests)
+# ---------------------------------------------------------------------------
+
+
+class TestCreateConnectionFromYamlObject:
+    """Regression tests for create_odoo_connection_from_yaml_object() — BUG-07.
+
+    Verifies that api_key in the YAML Server config is honoured and that
+    auth_method is passed correctly to OdooConnection.
+    """
+
+    def test_api_key_sets_auth_method_api_key(self, mock_odoorpc, sample_connection_yaml_data):
+        """api_key in YAML → auth_method='api_key', credential = api_key value."""
+        sample_connection_yaml_data["Server"]["api_key"] = "my-api-key"
+        conn = create_odoo_connection_from_yaml_object(sample_connection_yaml_data)
+        assert conn.auth_method == "api_key"
+        assert conn.password == "my-api-key"
+
+    def test_password_only_sets_auth_method_password(self, mock_odoorpc, sample_connection_yaml_data):
+        """No api_key in YAML → auth_method='password', credential = password value."""
+        # sample_connection_yaml_data has password='test_password' and no api_key
+        conn = create_odoo_connection_from_yaml_object(sample_connection_yaml_data)
+        assert conn.auth_method == "password"
+        assert conn.password == "test_password"
+
+    def test_api_key_wins_when_both_set(self, mock_odoorpc, sample_connection_yaml_data):
+        """Both api_key and password in YAML → api_key wins silently."""
+        sample_connection_yaml_data["Server"]["api_key"] = "api-key-wins"
+        # password='test_password' already present from fixture
+        conn = create_odoo_connection_from_yaml_object(sample_connection_yaml_data)
+        assert conn.auth_method == "api_key"
+        assert conn.password == "api-key-wins"
