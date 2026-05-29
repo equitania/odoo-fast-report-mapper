@@ -79,6 +79,8 @@ def build_name_search_domain(name_dict: dict) -> list:
     Returns:
         Odoo domain list with OR operators.
     """
+    if not name_dict:
+        raise ValueError("Cannot build name search domain from empty name_dict")
     all_variants = []
     for name in name_dict.values():
         all_variants.append(("name", "=ilike", name))
