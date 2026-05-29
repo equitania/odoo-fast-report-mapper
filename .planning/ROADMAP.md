@@ -61,14 +61,23 @@ Plans:
 
 ### Phase 2: Type Safety
 **Goal**: mypy --strict odoo_fast_report_mapper/ exits with zero errors — no ignores, no baseline suppressions.
-**Depends on**: Phase 1
+**Depends on**: Phase 1, Phase 1.1
 **Requirements**: TYPE-01, TYPE-02, TYPE-03
 **Success Criteria** (what must be TRUE):
-  1. `mypy --strict odoo_fast_report_mapper/` reports 0 errors (was 13 baseline errors in v0.9.7)
-  2. Every public function and method has a complete type annotation (no `Any` without explicit `# type: ignore` justification)
+  1. `uv run mypy odoo_fast_report_mapper/` reports 0 errors (130 baseline errors post-Phase-1.1 eliminated)
+  2. Every public function and method has a complete type annotation (no implicit `Any`; explicit `Any` requires `# Any: <reason>`)
   3. `pyproject.toml` `[tool.mypy]` section contains `strict = true` — the CI command uses no override flags
-  4. All existing tests still pass after annotation additions
-**Plans**: TBD
+  4. All existing tests still pass after annotation additions (347 tests)
+**Plans**: 8 plans
+Plans:
+- [ ] 02-01-PLAN.md — mypy strict setup: pyproject.toml, _odoo_types.py, __future__ project-wide, _yaml_dumper + _progress annotated
+- [ ] 02-02-PLAN.md — Annotate _lang_utils.py (7 errors)
+- [ ] 02-03-PLAN.md — Annotate _logging.py (19 errors)
+- [ ] 02-04-PLAN.md — Annotate _report.py (10 errors)
+- [ ] 02-05-PLAN.md — Annotate _utils.py (26 errors)
+- [ ] 02-06-PLAN.md — Annotate _connection.py Part 1: lines 1–496 (~30 errors)
+- [ ] 02-07-PLAN.md — Annotate _connection.py Part 2: lines 497–873 (~34 errors), remove override block
+- [ ] 02-08-PLAN.md — Annotate _cli.py (10 errors), remove all remaining overrides, enable CI enforcement
 
 ### Phase 3: Performance
 **Goal**: The collect flow makes at most the minimum necessary RPC calls — the 2 extra search calls per field are eliminated and a regression test enforces the limit in CI.
@@ -101,7 +110,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
-| 2. Type Safety | 0/1 | Not started | - |
+| 2. Type Safety | 0/8 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
