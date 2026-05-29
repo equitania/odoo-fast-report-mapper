@@ -275,16 +275,28 @@ def create_odoo_connection_from_yaml_object(yaml_object):
     """
     from ._connection import OdooConnection  # noqa: PLC0415
 
+    server = yaml_object["Server"]
+
+    # Authentication: api_key takes precedence over password (mirrors create_connection_from_env).
+    # When both are set, api_key wins silently (D-06 — no warning for YAML-based config).
+    if server.get("api_key"):
+        credential = server["api_key"]
+        auth_method = "api_key"
+    else:
+        credential = server["password"]
+        auth_method = "password"
+
     eq_odoo_connection_object = OdooConnection(
-        normalize_language_code(yaml_object["Server"]["language"]),
-        (yaml_object["Server"].get("collect_yaml", False)),
-        (yaml_object["Server"].get("disable_qweb", True)),
-        yaml_object["Server"].get("workflow", 0),
-        yaml_object["Server"]["url"],
-        yaml_object["Server"]["port"],
-        yaml_object["Server"]["user"],
-        yaml_object["Server"]["password"],
-        yaml_object["Server"]["database"],
+        normalize_language_code(server["language"]),
+        server.get("collect_yaml", False),
+        server.get("disable_qweb", True),
+        server.get("workflow", 0),
+        server["url"],
+        server["port"],
+        server["user"],
+        credential,
+        server["database"],
+        auth_method=auth_method,
     )
     return eq_odoo_connection_object
 
