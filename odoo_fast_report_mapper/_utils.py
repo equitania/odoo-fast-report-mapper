@@ -79,31 +79,41 @@ def prepare_connection(url, port):
 
     port = int(port)
     _protocol = "jsonrpc+ssl"
-    if url.startswith("https"):
-        url = url.replace("https:", "")
+    if parsed.scheme == "https":
         if port <= 0:
             port = 443
 
-    elif url.startswith("http:"):
-        url = url.replace("http:", "")
+    elif parsed.scheme == "http":
         _protocol = "jsonrpc"
         _helper_logger.warning(
             "Connecting via plain HTTP (no TLS) to %s. "
             "Credentials will be transmitted unencrypted. "
             "Use https:// for production connections.",
-            url.lstrip("/"),
+            parsed.hostname or url,
         )
 
-    while url and url.startswith("/"):
-        url = url[1:]
+    if parsed.hostname is not None:
+        # urlparse successfully extracted a hostname — use it directly.
+        # This strips scheme, path, query, fragment, and credentials.
+        # Also strip any trailing backslashes that urlparse leaves in the
+        # hostname field for URLs like "https://host.example.com\\".
+        hostname = parsed.hostname.rstrip("\\")
+    else:
+        # No scheme present — fall back to the raw URL value with manual
+        # slash/backslash stripping (e.g. "odoo.example.com").
+        raw = url
+        while raw and raw.startswith("/"):
+            raw = raw[1:]
+        while raw and raw.endswith("/"):
+            raw = raw[:-1]
+        while raw and raw.endswith("\\"):
+            raw = raw[:-1]
+        hostname = raw
 
-    while url and url.endswith("/"):
-        url = url[:-1]
+    if not hostname:
+        raise ValueError(f"Cannot parse hostname from URL: {url!r}")
 
-    while url and url.endswith("\\"):
-        url = url[:-1]
-
-    connection = ODOO(url, port=port, protocol=_protocol)
+    connection = ODOO(hostname, port=port, protocol=_protocol)
     return connection
 
 
