@@ -11,7 +11,7 @@ class Report:
     # Note: this class has no base class after consolidation. No super-init call is needed.
     def __init__(
         self,
-        entry_name,
+        entry_name: dict[str, str],
         report_name: str,
         report_type: str,
         model_name: str,
@@ -29,6 +29,10 @@ class Report:
         calculated_fields=None,
         eq_multiprint="standard",
     ):
+        if not isinstance(entry_name, dict) or not entry_name:
+            raise TypeError(
+                f"entry_name must be a non-empty dict mapping language codes to names, got {type(entry_name).__name__}"
+            )
         if calculated_fields is None:
             calculated_fields = {}
         if model_fields is None:
