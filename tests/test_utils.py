@@ -525,6 +525,13 @@ class TestPrepareConnection:
             prepare_connection("odoo.example.com", 443)
             mock_odoo.assert_called_once_with("odoo.example.com", port=443, protocol="jsonrpc+ssl")
 
+    def test_url_with_path_component_strips_path(self):
+        """BUG-05 regression: path components must not reach OdooRPC."""
+        with patch("odoo_fast_report_mapper._utils.ODOO") as mock_odoo:
+            mock_odoo.return_value = object()
+            prepare_connection("https://host.example.com/web", 443)
+            mock_odoo.assert_called_once_with("host.example.com", port=443, protocol="jsonrpc+ssl")
+
 
 # ---------------------------------------------------------------------------
 # self_clean tests
