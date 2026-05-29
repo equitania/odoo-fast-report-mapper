@@ -662,6 +662,9 @@ class OdooConnection:
         IR_FIELDS = self.connection.env["ir.model.fields"]
         IR_MODEL = self.connection.env["ir.model"]
         model_id = IR_MODEL.search([("model", "=", model_name)])
+        if not model_id:
+            logger.warning(f"Model '{model_name}' not found — skipping dependency collection")
+            return data_dictionary
         field_id = IR_FIELDS.search([("model_id", "=", model_id[0]), ("name", "=", field_name)])
         field_obj = IR_FIELDS.browse(field_id)
         modules_dependencies = field_obj.modules.replace(" ", "").split(",")

@@ -1583,6 +1583,21 @@ class TestAddFieldToDictionary:
         assert "company_id" in result[100]
         assert 3 in result[100]["company_id"]
 
+    def test_empty_model_search_skips_and_returns_dict(self):
+        """When IR_MODEL.search returns [], field is still recorded but dependencies are skipped; IR_FIELDS.search not called."""
+        conn = _make_connection()
+        mock_ir_model = MagicMock()
+        mock_ir_model.search.return_value = []
+        mock_ir_fields = MagicMock()
+        _setup_env(conn, {"ir.model": mock_ir_model, "ir.model.fields": mock_ir_fields})
+
+        result = conn.add_field_to_dictionary({}, report_id=1, model_name="missing.model", field_name="id", company_id=False)
+
+        # The field entry is recorded (no data loss), but no crash occurs
+        assert result == {1: {"missing.model": ["id"]}}
+        # Dependency collection is skipped — IR_FIELDS.search must never be called
+        mock_ir_fields.search.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # 16. TestCollectCalculatedFields
