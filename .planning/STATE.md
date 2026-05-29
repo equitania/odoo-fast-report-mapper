@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Phase 01 complete
-last_updated: "2026-05-29T09:12:40.410Z"
+status: Phase 01.1 executing
+last_updated: "2026-05-29T09:30:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 12
-  completed_plans: 6
-  percent: 20
+  completed_plans: 7
+  percent: 23
 ---
 
 # STATE — odoo-fast-report-mapper
@@ -25,11 +25,11 @@ progress:
 ## Current Position
 
 Phase: 1.1 (Correctness Bug Fixes (INSERTED)) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 **Phase**: 1.1 — Correctness Bug Fixes (INSERTED)
-**Plan**: 0 of 7 — PLANNED, ready to execute
-**Status**: Phase 1.1 planned (7 plans in 2 waves) — ready to execute
-**Progress**: Phase 1 complete (5/5); Phase 1.1 planned (0/7 executed)
+**Plan**: 2 of 7 — EXECUTED
+**Status**: Phase 1.1 executing (2/7 executed)
+**Progress**: Phase 1 complete (5/5); Phase 1.1 executing (2/7 executed)
 
 ```
 [Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
@@ -51,6 +51,7 @@ Plan: 2 of 7
 | Phase 01-package-consolidation P03 | 15 | 3 tasks | 2 files |
 | Phase 01-package-consolidation P04 | 8 | 2 tasks | 1 files |
 | Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P01 | 10m | 2 tasks | 2 files |
+| Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P02 | 8m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Plan: 2 of 7
 | Explicit params in merged OdooConnection.__init__ | Replaces *args/**kwargs pass-through — eliminates silent positional-arg reordering risk (R-01) |
 | test_connection.py patches _connection.prepare_connection | prepare_connection is bound at import time in _connection.py; patching _utils.prepare_connection would miss the already-bound reference |
 | Empty odoo_report_helper/ namespace dir required explicit rmdir | git rm removes files but leaves directories; empty dir with __pycache__ was treated as namespace package by Python |
+| Do NOT call self_clean on dict-valued containers | self_clean uses dict.fromkeys which iterates keys only, destroying nested {function_name: [params]} structure in calculated_fields |
 
 ### Architectural Facts (for plan authors)
 
@@ -92,8 +94,8 @@ None.
 
 ## Session Continuity
 
-**Last action**: Plan 01-05 executed — Phase 1 consolidation complete (79c1fcd) — 2026-05-28
-**Next action**: Execute Phase 1.1 (Correctness Bug Fixes) or Phase 2 (Type Safety)
+**Last action**: Plan 01.1-02 executed — BUG-02 fixed (251ac1d) — 2026-05-29
+**Next action**: Execute Phase 1.1 Plan 03 (BUG-03: check_dependencies return-type annotation)
 
 ---
 

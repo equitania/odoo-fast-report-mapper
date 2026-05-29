@@ -84,9 +84,9 @@
 
 > Hinzugefügt 27.05.2026 nach dem Baseline-Code-Review (`.planning/BASELINE-REVIEW.md`, v0.9.7.3, deep). Der ursprüngliche v1.0-Scope war reines Tech-Debt-Cleanup; diese Bugs sind echte Korrektheitsfehler (Crashes, stille Datenkorruption, umgangene Validierung), die das Cleanup-Vorhaben sonst unverändert überlebt hätten. Bewusste Scope-Erweiterung per Captain-Entscheidung. Werden in Phase 1.1 — nach der Konsolidierung — in der finalen Package-Struktur behoben.
 
-- [ ] **BUG-01** (Review CR-02): `add_field_to_dictionary()` indiziert `IR_MODEL.search()` ungeschützt (`model_id[0]`). Leeres Suchergebnis → `IndexError` mitten in der Iteration, `data_dictionary` bleibt korrupt. Fix: Ergebnis vor Zugriff prüfen; Regressionstest für den Leer-Fall.
+- [x] **BUG-01** (Review CR-02): `add_field_to_dictionary()` indiziert `IR_MODEL.search()` ungeschützt (`model_id[0]`). Leeres Suchergebnis → `IndexError` mitten in der Iteration, `data_dictionary` bleibt korrupt. Fix: Ergebnis vor Zugriff prüfen; Regressionstest für den Leer-Fall.
 
-- [ ] **BUG-02** (Review CR-03): `self_clean()` zerstört Calculated-Field-Parameter — `list(dict.fromkeys(value))` iteriert nur die Keys eines Inner-Dicts. `{"eq_get_payment_terms": ["p1","p2"]}` wird zu `["eq_get_payment_terms"]`. Fix: verschachtelte Struktur erhalten; Regressionstest prüft Unversehrtheit.
+- [x] **BUG-02** (Review CR-03): `self_clean()` zerstört Calculated-Field-Parameter — `list(dict.fromkeys(value))` iteriert nur die Keys eines Inner-Dicts. `{"eq_get_payment_terms": ["p1","p2"]}` wird zu `["eq_get_payment_terms"]`. Fix: verschachtelte Struktur erhalten; Regressionstest prüft Unversehrtheit.
 
 - [ ] **BUG-03** (Review CR-04): `check_dependencies` gibt `Tuple[bool, list]` zurück, Basis-`map_reports` nutzt den Wert als Bool — `bool((False, [...]))` ist immer `True`, Dependency-Check wird still umgangen. Fix: Contract zwischen Methode und Caller angleichen; Regressionstest beweist, dass eine fehlende Dependency den Lauf stoppt.
 
@@ -159,8 +159,8 @@ Diese Items haben Wert, sind aber nach v1.0:
 | GATE-03 | Phase 4 — Release Preparation | Pending |
 | GATE-04 | Phase 4 — Release Preparation | Pending |
 | GATE-05 | Phase 4 — Release Preparation | Pending |
-| BUG-01 | Phase 1.1 — Correctness Bug Fixes | Pending |
-| BUG-02 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-01 | Phase 1.1 — Correctness Bug Fixes | Complete |
+| BUG-02 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-03 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-04 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-05 | Phase 1.1 — Correctness Bug Fixes | Pending |
