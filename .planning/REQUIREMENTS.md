@@ -92,7 +92,7 @@
 
 - [x] **BUG-04** (Review WR-03): `build_name_search_domain({})` liefert `[]` → unbegrenzte „alle Reports für Modell"-Suche statt lautem Fehler. Fix: leeren Input guarden / laut scheitern.
 
-- [ ] **BUG-05** (Review WR-04): `prepare_connection` URL-Parsing via `str.replace("https:", "")` behält Pfad-Komponenten (`https://host/web` → Host `host/web`). Fix: Schema + Pfad korrekt strippen.
+- [x] **BUG-05** (Review WR-04): `prepare_connection` URL-Parsing via `str.replace("https:", "")` behält Pfad-Komponenten (`https://host/web` → Host `host/web`). Fix: Schema + Pfad korrekt strippen.
 
 - [ ] **BUG-06** (Review WR-05): `Report.__init__` annotiert `entry_name: str`, erhält zur Laufzeit aber ein `dict` — Basis-`self_ensure()` würde ein dict-Objekt in Odoos `name`-Feld schreiben. Fix: Typ-/Laufzeit-Handling angleichen.
 
@@ -163,7 +163,7 @@ Diese Items haben Wert, sind aber nach v1.0:
 | BUG-02 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-03 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-04 | Phase 1.1 — Correctness Bug Fixes | Complete |
-| BUG-05 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-05 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-06 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-07 | Phase 1.1 — Correctness Bug Fixes | Pending |
 

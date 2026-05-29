@@ -55,7 +55,7 @@ Plans:
 - [x] 01.1-02-PLAN.md — BUG-02: remove broken self_clean call from add_calculated_fields
 - [ ] 01.1-03-PLAN.md — BUG-03: formalize check_dependencies return annotation + map_reports dependency-blocking regression test
 - [x] 01.1-04-PLAN.md — BUG-04: build_name_search_domain ValueError on empty name_dict
-- [ ] 01.1-05-PLAN.md — BUG-05: prepare_connection urlparse.hostname-based extraction replacing str.replace loop
+- [x] 01.1-05-PLAN.md — BUG-05: prepare_connection urlparse.hostname-based extraction replacing str.replace loop
 - [ ] 01.1-06-PLAN.md — BUG-06: Report.__init__ entry_name dict[str, str] guard + fixture updates
 - [ ] 01.1-07-PLAN.md — BUG-07: create_odoo_connection_from_yaml_object api_key support
 
@@ -100,7 +100,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
-| 1.1 Correctness Bug Fixes *(inserted)* | 3/7 | In Progress|  |
+| 1.1 Correctness Bug Fixes *(inserted)* | 4/7 | In Progress|  |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
