@@ -200,7 +200,7 @@ class OdooConnection:
             return False
         return report_ids[0]
 
-    def check_dependencies(self, dependencies):
+    def check_dependencies(self, dependencies) -> tuple[bool, list[str]]:
         """
         Check if all dependencies (modules) are installed, if one isn't, return False.
 
