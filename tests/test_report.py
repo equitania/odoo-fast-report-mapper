@@ -597,15 +597,30 @@ class TestAddFields:
 class TestAddCalculatedFields:
     """Verify add_calculated_fields behavior."""
 
+    def test_calculated_fields_parameter_list_preserved(self):
+        """BUG-02 regression: parameter lists must survive add_calculated_fields intact.
+
+        self_clean() on a dict iterates over keys only, so
+        {"eq_get_payment_terms": ["p1","p2"]} would become ["eq_get_payment_terms"].
+        The fix removes the broken self_clean call from add_calculated_fields.
+        """
+        report = _make_report()
+        report.add_calculated_fields(
+            {"payment_text": {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}}
+        )
+        assert report._calculated_fields["payment_text"] == {
+            "eq_get_payment_terms": ["partner_id.lang", "currency_id"]
+        }
+
     def test_add_calculated_fields_single(self, minimal_report):
-        """After add_calculated_fields + self_clean, the inner dict is
-        reduced to a list of its keys because self_clean applies
-        list(dict.fromkeys(value)) on every value."""
+        """Parameter lists inside calculated field dicts must be preserved intact."""
         calc = {"payment_text": {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}}
         minimal_report.add_calculated_fields(calc)
         assert "payment_text" in minimal_report._calculated_fields
-        # self_clean converts the inner dict to a list of its keys
-        assert minimal_report._calculated_fields["payment_text"] == ["eq_get_payment_terms"]
+        # Inner dict must be preserved as-is — values are {function_name: [params]}, not lists
+        assert minimal_report._calculated_fields["payment_text"] == {
+            "eq_get_payment_terms": ["partner_id.lang", "currency_id"]
+        }
 
     def test_add_calculated_fields_multiple(self, minimal_report):
         calc = {

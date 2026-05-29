@@ -126,7 +126,7 @@ class Report:
 
     def add_calculated_fields(self, field_dict):
         """
-        Add calculated fields for the report and clean them.
+        Add calculated fields for the report.
         :param field_dict: Dictionary of calculated fields e.g.:
         Example:
         {
@@ -136,7 +136,8 @@ class Report:
         """
         for field_name, content in field_dict.items():
             self._calculated_fields[field_name] = content
-        self._calculated_fields = self_clean(self._calculated_fields)
+        # Do NOT call self_clean — values are dicts {function_name: [params]}, not lists;
+        # outer keys are unique by dict semantics, so no deduplication is needed.
 
     def add_dependencies(self, dependency_list: list):
         """
