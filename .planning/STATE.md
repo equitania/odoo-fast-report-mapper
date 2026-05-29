@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Phase 01.1 executing
-last_updated: "2026-05-29T09:28:53.700Z"
+last_updated: "2026-05-29T09:31:51.703Z"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 12
-  completed_plans: 11
-  percent: 20
+  completed_plans: 12
+  percent: 40
 ---
 
 # STATE — odoo-fast-report-mapper
@@ -27,9 +27,9 @@ progress:
 Phase: 1.1 (Correctness Bug Fixes (INSERTED)) — EXECUTING
 Plan: 7 of 7
 **Phase**: 1.1 — Correctness Bug Fixes (INSERTED)
-**Plan**: 6 of 7 — EXECUTED
-**Status**: Phase 1.1 executing (6/7 executed)
-**Progress**: Phase 1 complete (5/5); Phase 1.1 executing (6/7 executed)
+**Plan**: 7 of 7 — EXECUTED
+**Status**: Phase 1.1 complete (7/7 executed)
+**Progress**: Phase 1 complete (5/5); Phase 1.1 complete (7/7 executed)
 
 ```
 [Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
@@ -55,6 +55,7 @@ Plan: 7 of 7
 | Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P04 | 5m | 2 tasks | 2 files |
 | Phase 01.1 P05 | 5m | 2 tasks | 2 files |
 | Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P03 | 5m | 2 tasks | 2 files |
+| Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P07 | 5m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ Plan: 7 of 7
 | Do NOT call self_clean on dict-valued containers | self_clean uses dict.fromkeys which iterates keys only, destroying nested {function_name: [params]} structure in calculated_fields |
 | ValueError on empty name_dict in build_name_search_domain | Fail loudly per D-02; empty dict is always a broken YAML (never a legitimate runtime state), so raising ValueError before any Odoo RPC call prevents silent overwrite of unintended report records |
 | dict[str, str] annotation on entry_name with isinstance+truthy guard | Per-key validation excluded (D-09); isinstance+truthy only is sufficient to prevent dict object reaching Odoo name field |
+| api_key wins silently over password in YAML config | D-06 — no warning when both set, consistent with env-loader design |
 
 ### Architectural Facts (for plan authors)
 
@@ -99,8 +101,8 @@ None.
 
 ## Session Continuity
 
-**Last action**: Plan 01.1-06 executed — BUG-06 fixed (1be3c90) — 2026-05-29
-**Next action**: Execute Phase 1.1 Plan 07 (final plan in phase 1.1)
+**Last action**: Plan 01.1-07 executed — BUG-07 fixed (054b930) — 2026-05-29
+**Next action**: Phase 1.1 complete — advance to Phase 2 (Type Safety)
 
 ---
 

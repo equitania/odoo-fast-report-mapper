@@ -96,7 +96,7 @@
 
 - [x] **BUG-06** (Review WR-05): `Report.__init__` annotiert `entry_name: str`, erhält zur Laufzeit aber ein `dict` — Basis-`self_ensure()` würde ein dict-Objekt in Odoos `name`-Feld schreiben. Fix: Typ-/Laufzeit-Handling angleichen.
 
-- [ ] **BUG-07** (Review WR-07): `create_odoo_connection_from_yaml_object` hardcodet `auth_method='password'` — ein API-Key in der YAML wird still als Passwort behandelt. Fix: konfigurierte Auth-Methode respektieren.
+- [x] **BUG-07** (Review WR-07): `create_odoo_connection_from_yaml_object` hardcodet `auth_method='password'` — ein API-Key in der YAML wird still als Passwort behandelt. Fix: konfigurierte Auth-Methode respektieren.
 
 ---
 
@@ -165,7 +165,7 @@ Diese Items haben Wert, sind aber nach v1.0:
 | BUG-04 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-05 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-06 | Phase 1.1 — Correctness Bug Fixes | Complete |
-| BUG-07 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-07 | Phase 1.1 — Correctness Bug Fixes | Complete |
 
 **Coverage: 34/34 requirements mapped** (DEAD-04 is not in scope — it is an explicit exclusion documented in REQUIREMENTS.md; progress_bar() stays. BUG-01..BUG-07 added 27.05.2026 from the baseline review — see Correctness-Bug-Fixes section.)
 

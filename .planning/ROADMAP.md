@@ -9,7 +9,7 @@
 ## Phases
 
 - [x] **Phase 1: Package Consolidation** - Dissolve odoo_report_helper/ into a single package, remove dead progress-bar APIs, eliminate circular import (completed 2026-05-28)
-- [ ] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins
+- [x] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins (completed 2026-05-29)
 - [ ] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase
 - [ ] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary()
 - [ ] **Phase 4: Release Preparation** - MIGRATION.md, docs refresh, CI matrix hardening, all release-quality gates
@@ -57,7 +57,7 @@ Plans:
 - [x] 01.1-04-PLAN.md — BUG-04: build_name_search_domain ValueError on empty name_dict
 - [x] 01.1-05-PLAN.md — BUG-05: prepare_connection urlparse.hostname-based extraction replacing str.replace loop
 - [x] 01.1-06-PLAN.md — BUG-06: Report.__init__ entry_name dict[str, str] guard + fixture updates
-- [ ] 01.1-07-PLAN.md — BUG-07: create_odoo_connection_from_yaml_object api_key support
+- [x] 01.1-07-PLAN.md — BUG-07: create_odoo_connection_from_yaml_object api_key support
 
 ### Phase 2: Type Safety
 **Goal**: mypy --strict odoo_fast_report_mapper/ exits with zero errors — no ignores, no baseline suppressions.
@@ -100,7 +100,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
-| 1.1 Correctness Bug Fixes *(inserted)* | 6/7 | In Progress|  |
+| 1.1 Correctness Bug Fixes *(inserted)* | 7/7 | Complete   | 2026-05-29 |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
