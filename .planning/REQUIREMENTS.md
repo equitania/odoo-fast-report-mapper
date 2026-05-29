@@ -88,7 +88,7 @@
 
 - [x] **BUG-02** (Review CR-03): `self_clean()` zerstört Calculated-Field-Parameter — `list(dict.fromkeys(value))` iteriert nur die Keys eines Inner-Dicts. `{"eq_get_payment_terms": ["p1","p2"]}` wird zu `["eq_get_payment_terms"]`. Fix: verschachtelte Struktur erhalten; Regressionstest prüft Unversehrtheit.
 
-- [ ] **BUG-03** (Review CR-04): `check_dependencies` gibt `Tuple[bool, list]` zurück, Basis-`map_reports` nutzt den Wert als Bool — `bool((False, [...]))` ist immer `True`, Dependency-Check wird still umgangen. Fix: Contract zwischen Methode und Caller angleichen; Regressionstest beweist, dass eine fehlende Dependency den Lauf stoppt.
+- [x] **BUG-03** (Review CR-04): `check_dependencies` gibt `Tuple[bool, list]` zurück, Basis-`map_reports` nutzt den Wert als Bool — `bool((False, [...]))` ist immer `True`, Dependency-Check wird still umgangen. Fix: Contract zwischen Methode und Caller angleichen; Regressionstest beweist, dass eine fehlende Dependency den Lauf stoppt.
 
 - [x] **BUG-04** (Review WR-03): `build_name_search_domain({})` liefert `[]` → unbegrenzte „alle Reports für Modell"-Suche statt lautem Fehler. Fix: leeren Input guarden / laut scheitern.
 
@@ -161,7 +161,7 @@ Diese Items haben Wert, sind aber nach v1.0:
 | GATE-05 | Phase 4 — Release Preparation | Pending |
 | BUG-01 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-02 | Phase 1.1 — Correctness Bug Fixes | Complete |
-| BUG-03 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-03 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-04 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-05 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-06 | Phase 1.1 — Correctness Bug Fixes | Pending |
