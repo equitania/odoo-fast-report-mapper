@@ -37,7 +37,7 @@ def minimal_report():
     Uses dependencies=[] (not False) so that add_dependencies works correctly.
     """
     return Report(
-        entry_name="test_entry",
+        entry_name={"de_DE": "test_entry"},
         report_name="test_report",
         report_type="fast_report",
         model_name="sale.order",
@@ -50,7 +50,7 @@ def minimal_report():
 def full_report():
     """Return a Report with all arguments explicitly set."""
     return Report(
-        entry_name="custom_entry",
+        entry_name={"de_DE": "custom_entry", "en_US": "custom_entry"},
         report_name="custom_report",
         report_type="qweb-pdf",
         model_name="account.move",
@@ -181,8 +181,8 @@ class TestReportConstructorExplicit:
         report = _make_report(company_id=[1, 3])
         assert report.company_id == [1, 3]
 
-    def test_entry_name_string(self, full_report):
-        assert full_report.entry_name == "custom_entry"
+    def test_entry_name_dict(self, full_report):
+        assert full_report.entry_name == {"de_DE": "custom_entry", "en_US": "custom_entry"}
 
     def test_report_name(self, full_report):
         assert full_report.report_name == "custom_report"
@@ -221,21 +221,21 @@ class TestMutableDefaultArguments:
     """Ensure that None-default mutable arguments are isolated between instances."""
 
     def test_dependencies_not_shared(self):
-        r1 = Report("a", "r1", "fast_report", "res.partner", False)
-        r2 = Report("b", "r2", "fast_report", "res.partner", False)
+        r1 = Report({"de_DE": "a"}, "r1", "fast_report", "res.partner", False)
+        r2 = Report({"de_DE": "b"}, "r2", "fast_report", "res.partner", False)
         if r1._dependencies:
             r1._dependencies.append("sale")
         assert r2._dependencies == [] or r2._dependencies is False
 
     def test_model_fields_not_shared(self):
-        r1 = Report("a", "r1", "fast_report", "res.partner", False)
-        r2 = Report("b", "r2", "fast_report", "res.partner", False)
+        r1 = Report({"de_DE": "a"}, "r1", "fast_report", "res.partner", False)
+        r2 = Report({"de_DE": "b"}, "r2", "fast_report", "res.partner", False)
         r1._fields["res.partner"] = ["id"]
         assert r2._fields == {}
 
     def test_calculated_fields_not_shared(self):
-        r1 = Report("a", "r1", "fast_report", "res.partner", False)
-        r2 = Report("b", "r2", "fast_report", "res.partner", False)
+        r1 = Report({"de_DE": "a"}, "r1", "fast_report", "res.partner", False)
+        r2 = Report({"de_DE": "b"}, "r2", "fast_report", "res.partner", False)
         r1._calculated_fields["total"] = {"fn": ["x"]}
         assert r2._calculated_fields == {}
 
@@ -557,7 +557,7 @@ class TestAddFields:
 
     def test_add_fields_merges_with_existing(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -570,7 +570,7 @@ class TestAddFields:
 
     def test_add_fields_overwrites_existing_model_fields(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -634,7 +634,7 @@ class TestAddCalculatedFields:
 
     def test_add_calculated_fields_merges_with_existing(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -664,7 +664,7 @@ class TestAddDependencies:
 
     def test_add_dependencies_merges_with_existing(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -676,7 +676,7 @@ class TestAddDependencies:
 
     def test_add_dependencies_deduplicates_across_existing(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -692,7 +692,7 @@ class TestAddDependencies:
 
     def test_add_dependencies_empty_list_preserves_existing(self):
         report = Report(
-            entry_name="e",
+            entry_name={"de_DE": "e"},
             report_name="r",
             report_type="fast_report",
             model_name="sale.order",
@@ -707,3 +707,34 @@ class TestAddDependencies:
         minimal_report.add_dependencies(["account"])
         minimal_report.add_dependencies(["sale", "stock"])
         assert set(minimal_report._dependencies) == {"sale", "account", "stock"}
+
+
+# ---------------------------------------------------------------------------
+# BUG-06 regression: entry_name isinstance guard
+# ---------------------------------------------------------------------------
+
+
+class TestReportEntryNameGuard:
+    """Regression tests for BUG-06: entry_name must be a non-empty dict."""
+
+    _required_kwargs = {
+        "report_name": "eq_fr_test",
+        "report_type": "fast_report",
+        "model_name": "sale.order",
+        "company_id": False,
+    }
+
+    def test_string_entry_name_raises_type_error(self):
+        """Passing a plain string must raise TypeError with informative message."""
+        with pytest.raises(TypeError, match="entry_name must be a non-empty dict"):
+            Report(entry_name="not_a_dict", **self._required_kwargs)
+
+    def test_empty_dict_entry_name_raises_type_error(self):
+        """Passing an empty dict must raise TypeError (non-empty guard)."""
+        with pytest.raises(TypeError, match="entry_name must be a non-empty dict"):
+            Report(entry_name={}, **self._required_kwargs)
+
+    def test_valid_dict_entry_name_accepted(self):
+        """A non-empty dict must be accepted and stored as-is."""
+        report = Report(entry_name={"de_DE": "Test"}, **self._required_kwargs)
+        assert report.entry_name == {"de_DE": "Test"}
