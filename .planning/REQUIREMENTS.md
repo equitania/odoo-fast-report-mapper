@@ -90,7 +90,7 @@
 
 - [ ] **BUG-03** (Review CR-04): `check_dependencies` gibt `Tuple[bool, list]` zurück, Basis-`map_reports` nutzt den Wert als Bool — `bool((False, [...]))` ist immer `True`, Dependency-Check wird still umgangen. Fix: Contract zwischen Methode und Caller angleichen; Regressionstest beweist, dass eine fehlende Dependency den Lauf stoppt.
 
-- [ ] **BUG-04** (Review WR-03): `build_name_search_domain({})` liefert `[]` → unbegrenzte „alle Reports für Modell"-Suche statt lautem Fehler. Fix: leeren Input guarden / laut scheitern.
+- [x] **BUG-04** (Review WR-03): `build_name_search_domain({})` liefert `[]` → unbegrenzte „alle Reports für Modell"-Suche statt lautem Fehler. Fix: leeren Input guarden / laut scheitern.
 
 - [ ] **BUG-05** (Review WR-04): `prepare_connection` URL-Parsing via `str.replace("https:", "")` behält Pfad-Komponenten (`https://host/web` → Host `host/web`). Fix: Schema + Pfad korrekt strippen.
 
@@ -162,7 +162,7 @@ Diese Items haben Wert, sind aber nach v1.0:
 | BUG-01 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-02 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-03 | Phase 1.1 — Correctness Bug Fixes | Pending |
-| BUG-04 | Phase 1.1 — Correctness Bug Fixes | Pending |
+| BUG-04 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-05 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-06 | Phase 1.1 — Correctness Bug Fixes | Pending |
 | BUG-07 | Phase 1.1 — Correctness Bug Fixes | Pending |
