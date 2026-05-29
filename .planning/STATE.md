@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: ready_to_plan
-last_updated: 2026-05-29T09:42:44.663Z
+last_updated: "2026-05-29T13:25:31.874Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 13
+  completed_plans: 13
   percent: 40
-stopped_at: Phase 1.1 complete (7/7) — ready to discuss Phase 02
 ---
 
 # STATE — odoo-fast-report-mapper
@@ -28,9 +27,9 @@ stopped_at: Phase 1.1 complete (7/7) — ready to discuss Phase 02
 Phase: 02
 Plan: Not started
 **Phase**: 1.1 — Correctness Bug Fixes (INSERTED)
-**Plan**: 7 of 7 executed + 1 gap plan (01.1-08) PENDING
-**Status**: Phase 1.1 complete; gap-closure plan 01.1-08 (BUG-08/09 from code review) planned, awaiting execution
-**Progress**: Phase 1 complete (5/5); Phase 1.1 (7/7 executed, 1 gap plan pending) — run `/gsd:execute-phase 1.1 --gaps-only`
+**Plan**: 8 of 8 executed (gap plan 01.1-08 complete)
+**Status**: Phase 1.1 fully complete; all 8 plans executed including gap-closure plan 01.1-08 (BUG-08/BUG-09)
+**Progress**: Phase 1 complete (5/5); Phase 1.1 complete (8/8) — advance to Phase 02 (Type Safety)
 
 ```
 [Phase 1: Consolidation] ✓ → [Phase 2: Type Safety] → [Phase 3: Performance] → [Phase 4: Release Prep]
@@ -57,6 +56,7 @@ Plan: Not started
 | Phase 01.1 P05 | 5m | 2 tasks | 2 files |
 | Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P03 | 5m | 2 tasks | 2 files |
 | Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P07 | 5m | 2 tasks | 2 files |
+| Phase 01.1-correctness-bug-fixes-resolve-data-corruption-and-crash-bugs P08 | 5m | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -81,6 +81,7 @@ Plan: Not started
 | ValueError on empty name_dict in build_name_search_domain | Fail loudly per D-02; empty dict is always a broken YAML (never a legitimate runtime state), so raising ValueError before any Odoo RPC call prevents silent overwrite of unintended report records |
 | dict[str, str] annotation on entry_name with isinstance+truthy guard | Per-key validation excluded (D-09); isinstance+truthy only is sufficient to prevent dict object reaching Odoo name field |
 | api_key wins silently over password in YAML config | D-06 — no warning when both set, consistent with env-loader design |
+| logger.debug for missing field_id in add_field_to_dictionary | Field absence is routine for computed fields (no ir.model.fields row); lower severity than missing model (which uses logger.warning) |
 
 ### Architectural Facts (for plan authors)
 
@@ -102,8 +103,8 @@ None.
 
 ## Session Continuity
 
-**Last action**: Plan 01.1-07 executed — BUG-07 fixed (054b930) — 2026-05-29
-**Next action**: Phase 1.1 complete — advance to Phase 2 (Type Safety)
+**Last action**: Plan 01.1-08 executed — BUG-08 and BUG-09 fixed (5ec6a4b, cc94b80) — 2026-05-29
+**Next action**: Phase 1.1 fully complete (8/8) — advance to Phase 02 (Type Safety)
 
 ---
 

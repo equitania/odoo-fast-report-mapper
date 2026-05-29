@@ -100,7 +100,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
-| 1.1 Correctness Bug Fixes *(inserted)* | 7/7 | Complete    | 2026-05-29 |
+| 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 0/1 | Not started | - |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
