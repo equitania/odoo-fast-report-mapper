@@ -29,6 +29,7 @@ A Python CLI tool (PyPI package) that maps YAML report definitions to Odoo `ir.a
 - ✓ Differentiated error messages (file-missing vs incomplete vs invalid) — v0.9.7.2
 - ✓ GitHub Actions CI on Python 3.12 + 3.13 (ruff + ruff format + mypy + pytest) — v0.9.6
 - ✓ Security hardening: `yaml.safe_load` only, path-traversal guards, port validation, HTTP plaintext warning, password cleared after login — v0.9.x
+- ✓ Correctness hardening (BUG-01..BUG-07): empty-search guards, calculated-field preservation, dependency-check contract, loud failures on empty/malformed connection+config input, dict-typed `entry_name` guard, YAML api_key auth honored — each locked by a regression test — Phase 1.1
 
 ### Active
 
@@ -117,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-11 after initialization*
+*Last updated: 2026-05-29 after Phase 1.1 (Correctness Bug Fixes) completion*
