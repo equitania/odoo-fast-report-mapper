@@ -541,6 +541,22 @@ class TestCheckDependencies:
         else:
             assert result is False
 
+    def test_map_reports_skips_report_when_dependency_missing(self):
+        """map_reports must not call ir.actions.report.create when a dependency is missing."""
+        conn = _make_connection()
+        env = _make_map_reports_env(conn)
+
+        # Override ir.module.module: "sale" found, "account" missing
+        mock_ir_module = MagicMock()
+        mock_ir_module.search.side_effect = [[1], []]
+        _setup_env(conn, {**env, "ir.module.module": mock_ir_module})
+
+        report = _make_simple_report(dependencies=["sale", "account"])
+        failed = conn.map_reports([report])
+
+        assert len(failed) == 1
+        env["ir.actions.report"].create.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # 9. TestMapReports
