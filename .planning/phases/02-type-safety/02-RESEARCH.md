@@ -766,14 +766,10 @@ dev = [
 ]
 ```
 
-Also remove `odoo_report_helper/` from the CI mypy invocation in `.github/workflows/test.yml`:
-```yaml
-# Current (stale — odoo_report_helper/ no longer exists)
-run: uv run mypy odoo_fast_report_mapper/ odoo_report_helper/
-
-# After Plan 02-01
-run: uv run mypy odoo_fast_report_mapper/
-```
+**SUPERSEDED (2026-05-29, Captain decision):** Phase 2 makes **NO changes to
+`.github/workflows/test.yml`**. The dead `odoo_report_helper/` CI path and `continue-on-error: true`
+removal are deferred to Phase 4 (CI work). Phase 2's quality gate is local: `uv run mypy
+odoo_fast_report_mapper/` (strict via pyproject.toml config) + `uv run pytest`. See Open Questions Q2.
 
 ---
 
@@ -801,7 +797,7 @@ ASVS controls not applicable to a type-annotation phase. Security domain: SKIPPE
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`_connection.py` split threshold**
    - What we know: 64 errors, 873 LOC, natural seam at line 496 (setup vs. mapping)
@@ -809,13 +805,20 @@ ASVS controls not applicable to a type-annotation phase. Security domain: SKIPPE
      in Part 2 will require TypedDict imports that entangle heavily with Part 1
    - Recommendation: Keep as two plans (02-06, 02-07). If entanglement is found at execution time,
      merge into one plan — both are valid.
+   - **RESOLVED (2026-05-29):** Two-plan split confirmed (02-06 = Part 1, 02-07 = Part 2). If
+     entanglement surfaces at execution time the executor may merge them — both paths are valid.
 
 2. **CI workflow `mypy` command**
    - What we know: `.github/workflows/test.yml` still invokes `mypy odoo_fast_report_mapper/ odoo_report_helper/` with `continue-on-error: true`
    - What's unclear: Is CI-02 (removing `continue-on-error: true`) in Phase 4 or Phase 2?
-   - Recommendation: Plan 02-01 removes `odoo_report_helper/` from the command (dead path) and
-     removes `continue-on-error: true` only after all modules are clean (Plan 02-08). This
-     satisfies TYPE-03 without waiting for Phase 4.
+   - **RESOLVED (2026-05-29, Captain decision):** CI changes are **Phase 4 only — Phase 2 makes
+     NO changes to `.github/workflows/test.yml` in any plan.** The Captain's release workflow is
+     local testing on the Mac (`uv run mypy` + `uv run pytest`) followed by `uv publish`, not
+     CI-gated. TYPE-03 ("CI command uses no override flags") is satisfied purely by `strict = true`
+     living in `pyproject.toml` (config-correctness) plus the zero-internal-override assertion in
+     Plan 02-08 — no CI YAML edit is required to meet it. **Do NOT touch the dead `odoo_report_helper/`
+     CI path or `continue-on-error: true` in Phase 2; both are deferred to Phase 4.** The earlier
+     recommendation in this question is superseded.
 
 ---
 
@@ -858,4 +861,4 @@ ASVS controls not applicable to a type-annotation phase. Security domain: SKIPPE
 | UTF-8 encoding for all files | CLAUDE.md §UTF-8 | Annotations of docstrings must preserve German umlauts |
 | Never run `uv publish` | CLAUDE.md / PROJECT.md | Not applicable to Phase 2 |
 | Push to both `origin` (GitLab) and `upstream` (GitHub) | CLAUDE.md §Git Push Strategy | Each Phase 2 commit must push to both remotes |
-| `continue-on-error: true` in CI mypy step | `.github/workflows/test.yml` | Must be removed when final plan clears all errors |
+| `continue-on-error: true` in CI mypy step | `.github/workflows/test.yml` | **Phase 4 only — NOT touched in Phase 2.** Captain release workflow is local-test + `uv publish`, not CI-gated (decision 2026-05-29). |
