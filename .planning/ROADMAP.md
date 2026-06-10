@@ -83,7 +83,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — mypy strict setup: pyproject.toml, _odoo_types.py, __future__ project-wide, _yaml_dumper + _progress annotated
+- [x] 02-01-PLAN.md — mypy strict setup: pyproject.toml, _odoo_types.py, __future__ project-wide, _yaml_dumper + _progress annotated
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -148,7 +148,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
-| 2. Type Safety | 0/8 | Not started | - |
+| 2. Type Safety | 1/8 | In Progress|  |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
