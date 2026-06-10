@@ -11,6 +11,8 @@ language handling in report name dictionaries.
 
 from __future__ import annotations
 
+from typing import Any
+
 # Backward compatibility mapping: legacy keys -> Odoo locale codes
 LEGACY_LANG_MAP = {
     "ger": "de_DE",
@@ -30,7 +32,7 @@ def normalize_language_code(lang_code: str) -> str:
     return LEGACY_LANG_MAP.get(lang_code, lang_code)
 
 
-def normalize_name_dict(name_dict: dict) -> dict:
+def normalize_name_dict(name_dict: dict[str, str]) -> dict[str, str]:
     """Convert legacy name dict keys to Odoo locale codes.
 
     {'ger': 'X', 'eng': 'Y'} -> {'de_DE': 'X', 'en_US': 'Y'}
@@ -48,7 +50,7 @@ def normalize_name_dict(name_dict: dict) -> dict:
     return normalized
 
 
-def get_primary_lang(name_dict: dict, preferred_lang: str = "de_DE") -> str:
+def get_primary_lang(name_dict: dict[str, str], preferred_lang: str = "de_DE") -> str:
     """Return primary language code from name dict.
 
     Priority: preferred_lang > any key sharing the language prefix > first key.
@@ -69,7 +71,7 @@ def get_primary_lang(name_dict: dict, preferred_lang: str = "de_DE") -> str:
     return next(iter(name_dict))
 
 
-def build_name_search_domain(name_dict: dict) -> list:
+def build_name_search_domain(name_dict: dict[str, str]) -> list[Any]:  # Any: Odoo domain tuples contain mixed types (str, str, str)
     """Build an OR-domain for searching by all name variants.
 
     Returns Odoo domain list that matches any name value from the dict,
@@ -94,7 +96,11 @@ def build_name_search_domain(name_dict: dict) -> list:
     return or_operators + all_variants
 
 
-def resolve_attachment_value(attachment, company_lang, fallback_lang=None):
+def resolve_attachment_value(
+    attachment: str | dict[str, str],
+    company_lang: str,
+    fallback_lang: str | None = None,
+) -> str:
     """Resolve per-language attachment dict to single string value.
 
     Unlike print_report_name (translatable, written per language via with_context),
