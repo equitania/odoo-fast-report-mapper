@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Literal
+
 from ._lang_utils import get_primary_lang
 from ._utils import self_clean
 
@@ -17,20 +19,20 @@ class Report:
         report_name: str,
         report_type: str,
         model_name: str,
-        company_id,
-        eq_export_type="pdf",
-        print_report_name="Report",
-        attachment="Report.pdf",
-        eq_ignore_images=True,
-        eq_handling_html_fields="standard",
-        multi=False,
-        attachment_use=False,
-        eq_print_button=False,
-        dependencies=False,
-        model_fields=None,
-        calculated_fields=None,
-        eq_multiprint="standard",
-    ):
+        company_id: list[int] | Literal[False],
+        eq_export_type: str = "pdf",
+        print_report_name: str | dict[str, str] = "Report",
+        attachment: str | dict[str, str] = "Report.pdf",
+        eq_ignore_images: bool = True,
+        eq_handling_html_fields: str = "standard",
+        multi: bool = False,
+        attachment_use: bool = False,
+        eq_print_button: bool = False,
+        dependencies: list[str] | Literal[False] = False,
+        model_fields: dict[str, list[str]] | None = None,
+        calculated_fields: dict[str, Any] | None = None,
+        eq_multiprint: str = "standard",
+    ) -> None:
         if not isinstance(entry_name, dict) or not entry_name:
             raise TypeError(
                 f"entry_name must be a non-empty dict mapping language codes to names, got {type(entry_name).__name__}"
@@ -55,10 +57,10 @@ class Report:
         self._fields = model_fields
         self._calculated_fields = calculated_fields
         self._dependencies = dependencies
-        self._data_dictionary = {}
+        self._data_dictionary: dict[str, Any] = {}  # Any: mixed Odoo field values
         self.company_id = company_id
 
-    def self_ensure(self):
+    def self_ensure(self) -> None:
         """
         Before mapping the fields, the value dictionary for Odoo must be set.
         """
@@ -88,7 +90,7 @@ class Report:
             "eq_print_button": self.eq_print_button,
         }
 
-    def ensure_data_for_yaml(self):
+    def ensure_data_for_yaml(self) -> dict[str, Any]:
         yaml_data = {
             "name": self.entry_name,
             "report_name": self.report_name,
@@ -116,7 +118,7 @@ class Report:
             }
         return yaml_data
 
-    def add_fields(self, field_dict: dict):
+    def add_fields(self, field_dict: dict[str, list[str]]) -> None:
         """
         Set fields for the report and clean them (remove duplicates).
         Example:
@@ -130,7 +132,7 @@ class Report:
             self._fields[model] = fields
         self._fields = self_clean(self._fields)
 
-    def add_calculated_fields(self, field_dict):
+    def add_calculated_fields(self, field_dict: dict[str, Any]) -> None:
         """
         Add calculated fields for the report.
         :param field_dict: Dictionary of calculated fields e.g.:
@@ -145,10 +147,11 @@ class Report:
         # Do NOT call self_clean — values are dicts {function_name: [params]}, not lists;
         # outer keys are unique by dict semantics, so no deduplication is needed.
 
-    def add_dependencies(self, dependency_list: list):
+    def add_dependencies(self, dependency_list: list[str]) -> None:
         """
         Add dependencies to self._dependencies
         """
-        self._dependencies = self._dependencies + dependency_list
+        existing: list[str] = self._dependencies if isinstance(self._dependencies, list) else []
+        self._dependencies = existing + dependency_list
         # Remove duplicates
         self._dependencies = list(set(self._dependencies))
