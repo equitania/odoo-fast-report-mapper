@@ -10,6 +10,8 @@ with no inheritance hierarchy. The circular import
 (odoo_report_helper -> lang_utils -> odoo_fast_report_mapper) is eliminated.
 """
 
+from __future__ import annotations
+
 import os
 import urllib.error
 from datetime import datetime

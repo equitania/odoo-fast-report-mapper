@@ -3,6 +3,8 @@
 
 """Report data container for FastReport YAML-to-Odoo mapping."""
 
+from __future__ import annotations
+
 from ._lang_utils import get_primary_lang
 from ._utils import self_clean
 

@@ -50,8 +50,9 @@ dev = [
     "pytest>=9.0",
     "pytest-cov>=7.0",
     "pytest-mock>=3.6.0",
-    "mypy>=1.0",
+    "mypy>=1.18",
     "types-PyYAML>=6.0.0",
+    "types-tqdm>=4.66.0",
     "build>=1.0.0",
 ]
 test = [
@@ -114,6 +115,35 @@ exclude_lines = [
 
 [tool.mypy]
 python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-ignore_missing_imports = true
+strict = true
+# warn_return_any and warn_unused_configs are subsumed by strict = true
+# ignore_missing_imports removed — replaced by targeted follow_untyped_imports override below
+
+[[tool.mypy.overrides]]
+module = "odoorpc_toolbox.*"
+follow_untyped_imports = true   # reads source annotations from 0.7.3; no py.typed needed
+
+# Per-module override ramp (removed one-by-one as each plan completes):
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._lang_utils"
+ignore_errors = true  # Plan 02-02
+
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._logging"
+ignore_errors = true  # Plan 02-03
+
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._report"
+ignore_errors = true  # Plan 02-04
+
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._utils"
+ignore_errors = true  # Plan 02-05
+
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._connection"
+ignore_errors = true  # Plan 02-06 and 02-07
+
+[[tool.mypy.overrides]]
+module = "odoo_fast_report_mapper._cli"
+ignore_errors = true  # Plan 02-08 (final)

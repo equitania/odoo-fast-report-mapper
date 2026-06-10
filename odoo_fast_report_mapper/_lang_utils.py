@@ -9,6 +9,8 @@ and Odoo locale codes (de_DE/en_US), plus helper functions for dynamic
 language handling in report name dictionaries.
 """
 
+from __future__ import annotations
+
 # Backward compatibility mapping: legacy keys -> Odoo locale codes
 LEGACY_LANG_MAP = {
     "ger": "de_DE",
