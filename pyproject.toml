@@ -125,10 +125,6 @@ follow_untyped_imports = true   # reads source annotations from 0.7.3; no py.typ
 
 # Per-module override ramp (removed one-by-one as each plan completes):
 [[tool.mypy.overrides]]
-module = "odoo_fast_report_mapper._utils"
-ignore_errors = true  # Plan 02-05
-
-[[tool.mypy.overrides]]
 module = "odoo_fast_report_mapper._connection"
 ignore_errors = true  # Plan 02-06 and 02-07
 
