@@ -17,7 +17,7 @@ import logging
 import logging.handlers
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 
 # ANSI color codes for console output
@@ -55,7 +55,7 @@ class ColoredFormatter(logging.Formatter):
         "CRITICAL": LogColors.BOLD_RED,
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         """Format log record with color."""
         # Save original levelname
         levelname = record.levelname
@@ -84,26 +84,28 @@ class LoggerManager:
     - Colored console output
     """
 
-    _instance: Optional["LoggerManager"] = None
+    _instance: LoggerManager | None = None
+    _initialized: bool
+    _loggers: dict[str, logging.Logger]
 
-    def __new__(cls):
+    def __new__(cls) -> LoggerManager:
         """Singleton pattern to ensure only one instance exists."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the logger manager."""
         if self._initialized:
             return
 
         self._initialized = True
-        self._loggers: dict = {}
-        self._log_dir = Path.home() / ".odoo-fast-report-mapper" / "logs"
-        self._log_level = logging.INFO
-        self._console_handler = None
-        self._file_handler = None
+        self._loggers = {}
+        self._log_dir: Path = Path.home() / ".odoo-fast-report-mapper" / "logs"
+        self._log_level: int = logging.INFO
+        self._console_handler: logging.StreamHandler[Any] | None = None
+        self._file_handler: logging.handlers.RotatingFileHandler | None = None
 
     def setup_logger(
         self,
@@ -152,6 +154,7 @@ class LoggerManager:
             console_handler = logging.StreamHandler(sys.stdout)
             console_handler.setLevel(level)
 
+            formatter: logging.Formatter
             if colored_output and sys.stdout.isatty():
                 formatter = ColoredFormatter(console_format, datefmt=date_format)
             else:
@@ -195,7 +198,7 @@ class LoggerManager:
             return self.setup_logger(name)
         return self._loggers[name]
 
-    def set_level(self, level: int):
+    def set_level(self, level: int) -> None:
         """
         Set logging level for all loggers.
 
@@ -262,7 +265,7 @@ def setup_logging(
     )
 
 
-def set_log_level(level: int):
+def set_log_level(level: int) -> None:
     """
     Set the logging level globally.
 
@@ -278,16 +281,16 @@ def get_log_file_path() -> Path:
 
 
 # Convenience functions for common log levels
-def enable_debug_logging():
+def enable_debug_logging() -> None:
     """Enable DEBUG level logging."""
     set_log_level(logging.DEBUG)
 
 
-def enable_verbose_logging():
+def enable_verbose_logging() -> None:
     """Enable INFO level logging (verbose)."""
     set_log_level(logging.INFO)
 
 
-def enable_quiet_logging():
+def enable_quiet_logging() -> None:
     """Enable WARNING level logging (quiet mode)."""
     set_log_level(logging.WARNING)
