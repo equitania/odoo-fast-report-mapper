@@ -1607,7 +1607,9 @@ class TestAddFieldToDictionary:
         mock_ir_fields = MagicMock()
         _setup_env(conn, {"ir.model": mock_ir_model, "ir.model.fields": mock_ir_fields})
 
-        result = conn.add_field_to_dictionary({}, report_id=1, model_name="missing.model", field_name="id", company_id=False)
+        result = conn.add_field_to_dictionary(
+            {}, report_id=1, model_name="missing.model", field_name="id", company_id=False
+        )
 
         # The field entry is recorded (no data loss), but no crash occurs
         assert result == {1: {"missing.model": ["id"]}}
@@ -1623,7 +1625,9 @@ class TestAddFieldToDictionary:
         mock_ir_fields.search.return_value = []
         _setup_env(conn, {"ir.model": mock_ir_model, "ir.model.fields": mock_ir_fields})
 
-        result = conn.add_field_to_dictionary({}, report_id=1, model_name="sale.order", field_name="no_such_field", company_id=False)
+        result = conn.add_field_to_dictionary(
+            {}, report_id=1, model_name="sale.order", field_name="no_such_field", company_id=False
+        )
 
         # The field entry is still recorded (no data loss)
         assert result == {1: {"sale.order": ["no_such_field"]}}

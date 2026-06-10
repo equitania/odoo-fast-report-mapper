@@ -173,9 +173,8 @@ def start_odoo_fast_report_mapper(yaml_path, env_path, select):
     # Show connection summary and ask for confirmation
     workflow_label = WORKFLOW_LABELS.get(connection.workflow, f"Unknown ({connection.workflow})")
     if connection.auth_method == "api_key":
-        key_value = connection.password or ""
-        key_prefix = (key_value[:4] + "…") if len(key_value) > 4 else "…"
-        auth_label = f"API-Key ({key_prefix})"
+        # Never echo any part of the key — terminal history and CI logs may leak it
+        auth_label = "API-Key (set, ****)"
     else:
         auth_label = "Password"
 

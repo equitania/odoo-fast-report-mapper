@@ -605,12 +605,8 @@ class TestAddCalculatedFields:
         The fix removes the broken self_clean call from add_calculated_fields.
         """
         report = _make_report()
-        report.add_calculated_fields(
-            {"payment_text": {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}}
-        )
-        assert report._calculated_fields["payment_text"] == {
-            "eq_get_payment_terms": ["partner_id.lang", "currency_id"]
-        }
+        report.add_calculated_fields({"payment_text": {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}})
+        assert report._calculated_fields["payment_text"] == {"eq_get_payment_terms": ["partner_id.lang", "currency_id"]}
 
     def test_add_calculated_fields_single(self, minimal_report):
         """Parameter lists inside calculated field dicts must be preserved intact."""
