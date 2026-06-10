@@ -14,6 +14,8 @@ from __future__ import annotations
 import copy
 import logging
 import os
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlparse
 
 import yaml
@@ -68,7 +70,7 @@ ODOO_WORKFLOW=0
 _helper_logger = logging.getLogger(__name__)
 
 
-def prepare_connection(url, port):
+def prepare_connection(url: str, port: int | str) -> ODOO:
     """
     Build the OdooRPC connection object.
 
@@ -79,11 +81,11 @@ def prepare_connection(url, port):
     if parsed.scheme and parsed.scheme not in ("http", "https"):
         raise ValueError(f"URL scheme must be http or https, got: {parsed.scheme!r}")
 
-    port = int(port)
+    port_int = int(port)
     _protocol = "jsonrpc+ssl"
     if parsed.scheme == "https":
-        if port <= 0:
-            port = 443
+        if port_int <= 0:
+            port_int = 443
 
     elif parsed.scheme == "http":
         _protocol = "jsonrpc"
@@ -115,11 +117,11 @@ def prepare_connection(url, port):
     if not hostname:
         raise ValueError(f"Cannot parse hostname from URL: {url!r}")
 
-    connection = ODOO(hostname, port=port, protocol=_protocol)
+    connection = ODOO(hostname, port=port_int, protocol=_protocol)
     return connection
 
 
-def fire_all_functions(function_list: list):
+def fire_all_functions(function_list: list[Callable[[], None]]) -> None:
     """
     Execute each function in a list.
 
@@ -129,7 +131,7 @@ def fire_all_functions(function_list: list):
         func()
 
 
-def self_clean(input_dictionary: dict) -> dict:
+def self_clean(input_dictionary: dict[str, list[str]]) -> dict[str, list[str]]:
     """
     Remove duplicates in dictionary.
 
@@ -142,7 +144,7 @@ def self_clean(input_dictionary: dict) -> dict:
     return return_dict
 
 
-def parse_yaml(yaml_file):
+def parse_yaml(yaml_file: str) -> dict[str, Any] | bool:
     """
     Parse yaml file to object and return it.
 
@@ -151,14 +153,14 @@ def parse_yaml(yaml_file):
     """
     with open(yaml_file, encoding="utf-8") as stream:
         try:
-            return yaml.safe_load(stream)
+            return yaml.safe_load(stream)  # type: ignore[no-any-return]
         except yaml.YAMLError as exc:
             _helper_logger.error(f"YAML parsing error in file: {yaml_file}")
             _helper_logger.exception(exc)
             return False
 
 
-def parse_yaml_folder_with_filenames(path):
+def parse_yaml_folder_with_filenames(path: str) -> list[tuple[str, dict[str, Any]]]:
     """
     Parse multiple yaml files and return them with their filenames.
 
@@ -169,7 +171,7 @@ def parse_yaml_folder_with_filenames(path):
     if not os.path.isdir(resolved_path):
         raise FileNotFoundError(f"Directory not found: {path}")
 
-    yaml_objects = []
+    yaml_objects: list[tuple[str, dict[str, Any]]] = []
     for file in sorted(os.listdir(resolved_path)):
         if file.endswith(".yaml"):
             file_path = os.path.realpath(os.path.join(resolved_path, file))
@@ -178,12 +180,12 @@ def parse_yaml_folder_with_filenames(path):
                 _helper_logger.warning(f"Skipping file outside target directory: {file}")
                 continue
             yaml_object = parse_yaml(file_path)
-            if yaml_object:
+            if yaml_object and isinstance(yaml_object, dict):
                 yaml_objects.append((file, yaml_object))
     return yaml_objects
 
 
-def parse_yaml_folder(path):
+def parse_yaml_folder(path: str) -> list[dict[str, Any]]:
     """
     Parse multiple yaml files to list of objects and return them.
 
@@ -198,7 +200,7 @@ def parse_yaml_folder(path):
 # ---------------------------------------------------------------------------
 
 
-def generate_env_template(target_dir=None):
+def generate_env_template(target_dir: str | None = None) -> str:
     """
     Generate .env template file in target directory.
 
@@ -226,7 +228,7 @@ def generate_env_template(target_dir=None):
     return env_file
 
 
-def create_report_object_from_yaml_object(yaml_object):
+def create_report_object_from_yaml_object(yaml_object: dict[str, Any]) -> Any:
     """
     Create Report object from yaml_object.
 
@@ -268,7 +270,7 @@ def create_report_object_from_yaml_object(yaml_object):
     return report
 
 
-def create_odoo_connection_from_yaml_object(yaml_object):
+def create_odoo_connection_from_yaml_object(yaml_object: dict[str, Any]) -> Any:
     """
     Create OdooConnection object from yaml_object.
 
@@ -303,7 +305,10 @@ def create_odoo_connection_from_yaml_object(yaml_object):
     return eq_odoo_connection_object
 
 
-def convert_all_yaml_objects(yaml_objects: list, converting_function):
+def convert_all_yaml_objects(
+    yaml_objects: list[dict[str, Any]],
+    converting_function: Callable[[dict[str, Any]], Any],
+) -> list[Any]:
     """
     Convert list of yaml_objects through a converting function.
 
@@ -311,14 +316,14 @@ def convert_all_yaml_objects(yaml_objects: list, converting_function):
     :param: Function with which the yaml_objects should be converted
     :return: list of objects
     """
-    local_object_list = []
+    local_object_list: list[Any] = []
     for yaml_object in yaml_objects:
         local_object = converting_function(yaml_object)
         local_object_list.append(local_object)
     return local_object_list
 
 
-def build_reports_from_yaml_objects(yaml_objects):
+def build_reports_from_yaml_objects(yaml_objects: list[dict[str, Any]]) -> list[Any]:
     """
     Convert raw YAML dicts to Report objects, handling multi-company expansion.
 
@@ -328,9 +333,10 @@ def build_reports_from_yaml_objects(yaml_objects):
     :param: yaml_objects: list of parsed YAML dicts
     :return: list of Report objects
     """
-    filtered_yaml_report_objects = []
+    filtered_yaml_report_objects: list[dict[str, Any]] = []
     for original in yaml_objects:
-        if original.get("company_id") and len(original.get("company_id")) > 1:
+        company_id_val = original.get("company_id")
+        if company_id_val and len(company_id_val) > 1:
             base_template = copy.deepcopy(original)
             company_ids = base_template.pop("company_id")
             for company_id in company_ids:
@@ -342,7 +348,7 @@ def build_reports_from_yaml_objects(yaml_objects):
     return convert_all_yaml_objects(filtered_yaml_report_objects, create_report_object_from_yaml_object)
 
 
-def list_yaml_reports(path):
+def list_yaml_reports(path: str) -> list[dict[str, Any]]:
     """
     List all YAML report files with metadata for interactive display.
 
@@ -350,7 +356,7 @@ def list_yaml_reports(path):
     :return: list of dicts with keys: filename, report_name, model, yaml_object
     """
     yaml_items = parse_yaml_folder_with_filenames(path)
-    result = []
+    result: list[dict[str, Any]] = []
     for filename, yaml_obj in yaml_items:
         result.append(
             {
@@ -363,7 +369,7 @@ def list_yaml_reports(path):
     return result
 
 
-def collect_all_reports(path):
+def collect_all_reports(path: str) -> list[Any]:
     """
     Get all yaml objects from path and convert them into report objects.
 
@@ -377,7 +383,7 @@ def collect_all_reports(path):
         raise PathDoesNotExistError("ERROR: Please check your Path" + " " + str(ex)) from ex
 
 
-def create_connection_from_env(env_path=None):
+def create_connection_from_env(env_path: str | None = None) -> tuple[Any, str]:
     """
     Create OdooConnection object from environment variables (.env file).
 
@@ -404,6 +410,7 @@ def create_connection_from_env(env_path=None):
     from ._connection import OdooConnection  # noqa: PLC0415
 
     # Determine .env file path
+    dotenv_path: str
     if env_path:
         # If env_path is a directory, append .env filename
         if os.path.isdir(env_path):
@@ -466,17 +473,23 @@ def create_connection_from_env(env_path=None):
         logger.error(error_msg)
         raise ValueError(error_msg)
 
-    # Get required values
-    url = os.getenv("ODOO_URL")
+    # Get required values — all vars validated above via missing_vars check
+    url = os.getenv("ODOO_URL", "")
+    port_str = os.getenv("ODOO_PORT")
+    if port_str is None:
+        raise ValueError("ODOO_PORT environment variable not set")
     try:
-        port = int(os.getenv("ODOO_PORT"))
+        port = int(port_str)
         if port < 1 or port > 65535:
             raise ValueError(f"Port must be between 1 and 65535, got: {port}")
     except (ValueError, TypeError) as e:
-        raise ValueError(f"Invalid ODOO_PORT value: {os.getenv('ODOO_PORT')} — {e}") from e
-    user = os.getenv("ODOO_USER")
-    database = os.getenv("ODOO_DATABASE")
-    language = normalize_language_code(os.getenv("ODOO_LANGUAGE"))
+        raise ValueError(f"Invalid ODOO_PORT value: {port_str} — {e}") from e
+    user = os.getenv("ODOO_USER", "")
+    database = os.getenv("ODOO_DATABASE", "")
+    language_raw = os.getenv("ODOO_LANGUAGE")
+    if language_raw is None:
+        raise ValueError("ODOO_LANGUAGE environment variable not set")
+    language = normalize_language_code(language_raw)
 
     # Get optional values with defaults
     collect_yaml = os.getenv("ODOO_COLLECT_YAML", "False").lower() in (
@@ -520,7 +533,7 @@ def create_connection_from_env(env_path=None):
     return connection, dotenv_path
 
 
-def collect_all_connections(path):
+def collect_all_connections(path: str) -> list[Any]:
     """
     DEPRECATED: Get all yaml objects from path and convert them into connection objects.
 
