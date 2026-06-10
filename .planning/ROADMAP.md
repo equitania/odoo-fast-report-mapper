@@ -87,8 +87,8 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — Annotate _lang_utils.py (7 errors)
-- [ ] 02-03-PLAN.md — Annotate _logging.py (19 errors)
+- [x] 02-02-PLAN.md — Annotate _lang_utils.py (7 errors)
+- [x] 02-03-PLAN.md — Annotate _logging.py (19 errors)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -148,7 +148,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
-| 2. Type Safety | 1/8 | In Progress|  |
+| 2. Type Safety | 3/8 | In Progress|  |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
