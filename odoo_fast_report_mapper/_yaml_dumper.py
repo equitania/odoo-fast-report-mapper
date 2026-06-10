@@ -3,11 +3,13 @@
 
 """Custom YAML dumper with consistent indentation formatting."""
 
+from __future__ import annotations
+
 import yaml
 
 
 class YAMLDumper(yaml.Dumper):
     """Custom YAML dumper for consistent indentation formatting."""
 
-    def increase_indent(self, flow=False, indentless=False):
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
         return super().increase_indent(flow, False)

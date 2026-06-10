@@ -9,6 +9,8 @@ functions from eq_utils.py into a single, self-contained module. All cross-packa
 imports have been eliminated — only relative imports from _* sibling modules are used.
 """
 
+from __future__ import annotations
+
 import copy
 import logging
 import os

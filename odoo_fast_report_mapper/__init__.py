@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .__version__ import (
     __author__,
     __author_email__,

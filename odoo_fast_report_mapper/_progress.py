@@ -3,6 +3,8 @@
 
 """Progress bar context manager for long-running operations. Internal use only."""
 
+from __future__ import annotations
+
 import sys
 from collections.abc import Iterable
 from typing import Any
@@ -17,7 +19,7 @@ def progress_bar(
     total: int | None = None,
     disable: bool = False,
     colour: str | None = None,
-) -> Iterable[Any]:
+) -> tqdm[Any]:
     """
     Wrap an iterable with a progress bar.
 
