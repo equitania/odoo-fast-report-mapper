@@ -868,7 +868,12 @@ class OdooConnection:
                             report.company_id[0],
                         )
                     else:
-                        report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
+                        report_id = self._search_report(
+                            report.model_name,
+                            report.entry_name,
+                            IR_ACTIONS_REPORT,
+                            company_id=report.company_id[0],
+                        )
                 else:
                     IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
