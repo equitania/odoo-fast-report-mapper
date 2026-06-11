@@ -892,29 +892,28 @@ class OdooConnection:
                 # Get module from report model
                 IR_REPORT_MODEL = self.connection.env[report.model_name]
 
-                if report_object:
-                    # Get all report model records ids
-                    report_model_records_ids = IR_REPORT_MODEL.search([])
-                    try:
-                        if not len(report_model_records_ids):
-                            logger.warning(f"No records for model {report.model_name}")
-                            logger.info(f"Using demo data to test report: {report.report_name}")
-                            # Render Fast Report for demo example databases
-                            res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
-                        else:
-                            # Render Fast Report for a random report model record, without creating attachment
-                            res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(
-                                report_object.ids,
-                                [choice(report_model_records_ids)],
-                                create_attachment=False,
-                            )
-                        logger.info(f"Report rendering successful: {report.report_name}")
-                    except FileNotFoundError:
-                        logger.warning(f"No demo data to test report: {report.report_name}")
-                    except RPCError as ex:
-                        logger.error(f"Report {report.report_name} not rendering correctly")
-                        logger.error("Exception occurred during rendering")
-                        logger.exception(ex)
+                # Get all report model records ids
+                report_model_records_ids = IR_REPORT_MODEL.search([])
+                try:
+                    if not len(report_model_records_ids):
+                        logger.warning(f"No records for model {report.model_name}")
+                        logger.info(f"Using demo data to test report: {report.report_name}")
+                        # Render Fast Report for demo example databases
+                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report_empty_db(report_object.ids)
+                    else:
+                        # Render Fast Report for a random report model record, without creating attachment
+                        res, content_format = IR_ACTIONS_REPORT.eq_render_fast_report(
+                            report_object.ids,
+                            [choice(report_model_records_ids)],
+                            create_attachment=False,
+                        )
+                    logger.info(f"Report rendering successful: {report.report_name}")
+                except FileNotFoundError:
+                    logger.warning(f"No demo data to test report: {report.report_name}")
+                except RPCError as ex:
+                    logger.error(f"Report {report.report_name} not rendering correctly")
+                    logger.error("Exception occurred during rendering")
+                    logger.exception(ex)
         finally:
             self.connection.env.user.company_id = original_company_yaml_user
 
