@@ -123,7 +123,15 @@ Plans:
   3. `add_field_to_dictionary()` no longer calls `IR_MODEL.search()` + `IR_FIELDS.search()` per field — verified by the Mock-Counter test
   4. `pytest --collect-only` shows the benchmark test in the suite and `pytest tests/` (without --benchmark-skip) makes CI fail if the threshold is exceeded
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Baseline benchmark: create test_benchmark_rpc.py, measure current call counts, document RPC_CEILING placeholder
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Fix _connection.py (modules param, delete 2 search calls) + finalize regression test with RPC_CEILING=0
 
 ### Phase 4: Release Preparation
 
@@ -149,7 +157,7 @@ Plans:
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
-| 3. Performance | 0/1 | Not started | - |
+| 3. Performance | 0/2 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
 ---
