@@ -11,8 +11,9 @@ import pytest
 
 from odoo_fast_report_mapper._connection import OdooConnection
 
-# PLACEHOLDER — set to measured after-fix value in plan 03-02. -1 means not yet established.
-RPC_CEILING: int = -1
+# After fix: add_field_to_dictionary makes 0 IR_MODEL.search + 0 IR_FIELDS.search calls per field.
+# Outer legitimate calls (IR_ACTIONS_REPORT.search + IR_MODEL_FIELDS.search outer) are not counted here.
+RPC_CEILING: int = 0
 
 # ---------------------------------------------------------------------------
 # Helpers (copied verbatim from tests/test_connection.py)
@@ -109,16 +110,14 @@ def _build_report_mock(report_name, model_name):
 # ---------------------------------------------------------------------------
 
 
-def test_rpc_baseline_call_count(tmp_path):
-    """BASELINE: measure current IR_MODEL.search and IR_FIELDS.search call counts.
+def test_collect_rpc_call_count(tmp_path):
+    """PERF-01/PERF-02/PERF-03: after fix, IR_MODEL.search count must be 0 for 10x50 collect run.
 
-    Runs collect_report_entries with 10 report mocks, each with 50 field objects.
-    Prints BASELINE call counts to stdout — NO assertion on counts (measurement only).
-    The test passes on the current (unfixed) codebase.
+    Runs collect_report_entries with 10 report mocks, each with 50 field objects (500 total fields).
+    Asserts that add_field_to_dictionary no longer calls ir.model.search or fires extra
+    ir.model.fields.search calls — only the single outer all_report_field_ids search is allowed.
 
-    PERF-01, PERF-04: This Wave 1 task establishes the infrastructure and documents
-    the BEFORE state. Wave 2 (plan 03-02) converts this into an asserting regression
-    test after the fix is applied.
+    RPC_CEILING = 0 means: zero inner IR_MODEL.search calls after the fix (PERF-04).
     """
     conn = _make_connection()
 
@@ -165,9 +164,9 @@ def test_rpc_baseline_call_count(tmp_path):
 
     mock_ir_model_fields.browse.side_effect = _fields_browse
 
-    # --- ir.model mock (used inside add_field_to_dictionary for IR_MODEL.search) ---
+    # --- ir.model mock (only used inside add_field_to_dictionary; must be 0 calls after fix) ---
     mock_ir_model = MagicMock()
-    mock_ir_model.search.return_value = [1]  # non-empty so inner search proceeds
+    mock_ir_model.search.return_value = [1]
 
     # --- res.company mock ---
     mock_res_company = MagicMock()
@@ -201,42 +200,41 @@ def test_rpc_baseline_call_count(tmp_path):
 
     conn.collect_report_entries(str(output_dir))
 
-    # --- Baseline measurement (no assertion on counts) ---
-    print(f"BASELINE ir.model.search calls: {mock_ir_model.search.call_count}")
-    print(f"BASELINE ir.model.fields.search total calls: {mock_ir_model_fields.search.call_count}")
-    print(f"  (includes 1 outer search + inner dependency searches per field)")
-    print(f"  n_reports={n_reports}, n_fields_per_report={n_fields_per_report}, total_fields={n_reports * n_fields_per_report}")
+    # --- Regression assertions (PERF-02/PERF-03): zero inner search calls after fix ---
+    assert mock_ir_model.search.call_count == RPC_CEILING, (
+        f"add_field_to_dictionary must not call ir.model.search after fix — "
+        f"got {mock_ir_model.search.call_count} calls (RPC_CEILING={RPC_CEILING})"
+    )
+    assert mock_ir_model_fields.search.call_count == 1, (
+        f"ir.model.fields.search must be called exactly once (outer field ID fetch) — "
+        f"got {mock_ir_model_fields.search.call_count}"
+    )
 
 
-def test_add_field_to_dictionary_calls_ir_model_search_currently():
-    """BEFORE state: add_field_to_dictionary currently fires 2 RPC calls per field.
+def test_add_field_to_dictionary_zero_rpc_calls():
+    """PERF-02/PERF-03: After fix, add_field_to_dictionary accepts modules param and performs 0 RPC calls.
 
-    Asserts mock_ir_model.search.call_count == 1 and mock_ir_fields.search.call_count == 1
-    to document the current (pre-fix) behavior explicitly.
-
-    This test documents the BEFORE state and will be DELETED in plan 03-02 once
-    the fix is applied (the fix makes both counts 0).
+    Verifies the new modules parameter is used correctly and that no env access occurs.
     """
     conn = _make_connection()
 
     mock_ir_model = MagicMock()
-    mock_ir_model.search.return_value = [1]
-
     mock_ir_fields = MagicMock()
-    mock_ir_fields.search.return_value = [10]
-
-    mock_field_obj = MagicMock()
-    mock_field_obj.modules = "sale"
-    mock_ir_fields.browse.return_value = mock_field_obj
-
     _setup_env(conn, {"ir.model.fields": mock_ir_fields, "ir.model": mock_ir_model})
 
-    conn.add_field_to_dictionary({}, 100, "sale.order", "amount_total", False)
+    result = conn.add_field_to_dictionary({}, 100, "sale.order", "amount_total", False, modules=["sale", "account"])
 
-    # BEFORE: each call fires 1 IR_MODEL.search + 1 IR_FIELDS.search
-    assert mock_ir_model.search.call_count == 1, (
-        f"Expected 1 IR_MODEL.search call (BEFORE state), got {mock_ir_model.search.call_count}"
+    # Verify result contains the correct field entry and dependencies
+    assert 100 in result
+    assert "sale.order" in result[100]
+    assert "amount_total" in result[100]["sale.order"]
+    assert "dependencies" in result[100]
+    assert set(result[100]["dependencies"]) == {"sale", "account"}
+
+    # Verify zero RPC calls — modules param eliminates both searches
+    assert mock_ir_model.search.call_count == 0, (
+        "add_field_to_dictionary must not call ir.model.search — modules param eliminates this RPC call"
     )
-    assert mock_ir_fields.search.call_count == 1, (
-        f"Expected 1 IR_FIELDS.search call (BEFORE state), got {mock_ir_fields.search.call_count}"
+    assert mock_ir_fields.search.call_count == 0, (
+        "add_field_to_dictionary must not call ir.model.fields.search — modules param eliminates this RPC call"
     )
