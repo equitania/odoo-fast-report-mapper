@@ -634,6 +634,8 @@ class OdooConnection:
                 model_id = field_object.model_id
                 model_name = model_id.model
                 field_name = field_object.name
+                raw_modules = field_object.modules or ""
+                modules = [m for m in raw_modules.replace(" ", "").split(",") if m]
 
                 # Add field to dictionary
                 for report_action_id in report_action_ids:
@@ -664,6 +666,7 @@ class OdooConnection:
                         model_name,
                         field_name,
                         report_company_id,
+                        modules,
                     )
         for report_action_id, fields in data_dictionary.items():
             # Create report object
@@ -692,6 +695,7 @@ class OdooConnection:
         model_name: str,
         field_name: str,
         company_id: int | Literal[False],
+        modules: list[str] | None = None,  # resolved by caller from field_object.modules; None means no dependency info
     ) -> dict[Any, Any]:
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
@@ -704,30 +708,14 @@ class OdooConnection:
                 data_dictionary[report_id]["company_id"] = [company_id]
             elif company_id not in data_dictionary[report_id]["company_id"]:
                 data_dictionary[report_id]["company_id"].append(company_id)
-        # Collect dependencies
-        IR_FIELDS = self.connection.env["ir.model.fields"]
-        IR_MODEL = self.connection.env["ir.model"]
-        model_id = IR_MODEL.search([("model", "=", model_name)])
-        if not model_id:
-            logger.warning(f"Model '{model_name}' not found — skipping dependency collection")
-            return data_dictionary
-        field_id = IR_FIELDS.search([("model_id", "=", model_id[0]), ("name", "=", field_name)])
-        if not field_id:
-            logger.debug(f"Field '{field_name}' on '{model_name}' not found in ir.model.fields — skipping dependency")
-            return data_dictionary
-        field_obj = IR_FIELDS.browse(field_id)
-        raw_modules = field_obj.modules.replace(" ", "").split(",")
-        modules_dependencies = [m for m in raw_modules if m]
+        modules_dependencies = modules or []
         if not modules_dependencies:
             return data_dictionary
         if "dependencies" in data_dictionary[report_id]:
             data_dictionary[report_id]["dependencies"].extend(modules_dependencies)
-            # using set()
-            # to remove duplicated
-            # from list
             data_dictionary[report_id]["dependencies"] = list(set(data_dictionary[report_id]["dependencies"]))
         else:
-            data_dictionary[report_id]["dependencies"] = modules_dependencies
+            data_dictionary[report_id]["dependencies"] = list(modules_dependencies)
         return data_dictionary
 
     def _collect_calculated_fields(self, eq_calculated_field_objects: Any) -> dict[str, Any]:  # Any: odoorpc recordset
