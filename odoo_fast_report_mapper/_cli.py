@@ -23,7 +23,7 @@ WORKFLOW_LABELS = {
 }
 
 
-def print_banner():
+def print_banner() -> None:
     """Print professional banner with version information"""
     banner = """
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -41,7 +41,7 @@ def print_banner():
     click.echo()
 
 
-def init_callback(ctx, param, value):
+def init_callback(ctx: click.Context, param: click.Parameter, value: bool) -> None:
     """Handle --init flag before other prompts."""
     if not value:
         return
@@ -81,7 +81,7 @@ def init_callback(ctx, param, value):
     default=False,
     help="Show interactive table of YAML files and select which to process (e.g. 1,3,5 or 'all').",
 )
-def start_odoo_fast_report_mapper(yaml_path, env_path, select):
+def start_odoo_fast_report_mapper(yaml_path: str, env_path: str | None, select: bool) -> None:
     """Odoo FastReport Mapper - Map, test and manage FastReport entries in Odoo.
 
     \b
