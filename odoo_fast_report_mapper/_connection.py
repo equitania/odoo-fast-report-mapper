@@ -80,6 +80,7 @@ class OdooConnection:
         Try to login into the Odoo system and set parameters to optimize the connection.
         """
         try:
+            assert self.password is not None, "Password must be set before login"  # cleared to None after login
             self.connection.login(self.database, self.username, self.password)
             # Change settings to make the connection faster
             self.connection.config["auto_commit"] = True  # No need for manual commits
@@ -502,8 +503,8 @@ class OdooConnection:
             'payment_text': {'eq_get_payment_terms': ['partner_id.lang', 'currency_id']}
         }
         """
-        IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-        REPORT_CALC = self.connection.env["eq_calculated_field_value"]
+        IR_ACTIONS_REPORT: Any = self.connection.env["ir.actions.report"]  # Any: odoorpc proxy
+        REPORT_CALC: Any = self.connection.env["eq_calculated_field_value"]  # Any: odoorpc proxy
         parameters_as_string = ", ".join(parameters)
         parameters_as_string = parameters_as_string.strip()
         value_dict = {
@@ -531,7 +532,7 @@ class OdooConnection:
         else:
             REPORT_CALC.write(calculated_field_id, value_dict)
 
-    def list_fast_reports(self):
+    def list_fast_reports(self) -> list[dict[str, Any]]:
         """List all FastReport entries across all user companies.
 
         Returns:
@@ -579,11 +580,11 @@ class OdooConnection:
 
         return results
 
-    def collect_all_report_entries(self, output_path):
+    def collect_all_report_entries(self, output_path: str) -> None:
         """Backward-compatible wrapper for collect_report_entries."""
         self.collect_report_entries(output_path)
 
-    def collect_report_entries(self, output_path, report_ids=None):
+    def collect_report_entries(self, output_path: str, report_ids: list[int] | None = None) -> None:
         """Collect FastReport entries from Odoo and write them as YAML files.
 
         Args:
@@ -595,8 +596,8 @@ class OdooConnection:
             if self.connection.env.user.company_ids
             else self.connection.env.user.company_id.ids
         )
-        report_name_id_combination = dict()
-        data_dictionary = {}
+        report_name_id_combination: dict[str, int] = {}
+        data_dictionary: dict[Any, Any] = {}  # Any: keys are int report IDs, values are nested Odoo report field data (Tier 2)
         for company_id in company_ids:
             # Change the current company in the env
             self.connection.env.user.company_id = company_id
@@ -606,7 +607,7 @@ class OdooConnection:
             else:
                 IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
             data_dictionary_keys = list(data_dictionary.keys())
-            search_domain = [
+            search_domain: list[Any] = [  # Any: Odoo domain tuples have mixed value types
                 ("report_type", "=", "fast_report"),
                 ("id", "not in", data_dictionary_keys),
             ]
@@ -684,7 +685,14 @@ class OdooConnection:
                 continue
             self.write_yaml(output_name, eq_yaml_data)
 
-    def add_field_to_dictionary(self, data_dictionary, report_id, model_name, field_name, company_id):
+    def add_field_to_dictionary(
+        self,
+        data_dictionary: dict[Any, Any],
+        report_id: Any,  # Any: Odoo record ID (int or odoorpc proxy)
+        model_name: str,
+        field_name: str,
+        company_id: int | Literal[False],
+    ) -> dict[Any, Any]:
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
@@ -722,7 +730,7 @@ class OdooConnection:
             data_dictionary[report_id]["dependencies"] = modules_dependencies
         return data_dictionary
 
-    def _collect_calculated_fields(self, eq_calculated_field_objects):
+    def _collect_calculated_fields(self, eq_calculated_field_objects: Any) -> dict[str, Any]:  # Any: odoorpc recordset
         """
         Get calculated fields from eq_calculated_field model objects.
 
@@ -742,7 +750,7 @@ class OdooConnection:
             }
         return eq_calculated_field_dict
 
-    def create_eq_report_object(self, action_id, field_dictionary):
+    def create_eq_report_object(self, action_id: Any, field_dictionary: dict[str, Any]) -> Any:  # Any: Report object (circular import avoided)
         # Lazy import to avoid forward-reference before _report.py exists in Wave 3
         from ._report import Report  # noqa: PLC0415
 
@@ -768,14 +776,13 @@ class OdooConnection:
         report_type = action_object.report_type
         eq_export_type = action_object.eq_export_type
         # Collect print_report_name in all installed languages (same pattern as name)
-        print_report_name = {}
+        _prn_dict: dict[str, Any] = {}
         for lang in installed_langs:
             lang_code = lang["code"]
             translated_prn = action_object.with_context(lang=lang_code).print_report_name
             if translated_prn:
-                print_report_name[lang_code] = translated_prn
-        if not print_report_name:
-            print_report_name = action_object.print_report_name or ""
+                _prn_dict[lang_code] = translated_prn
+        print_report_name: dict[str, Any] | str = _prn_dict if _prn_dict else action_object.print_report_name or ""
         model_name = action_object.model
         eq_ignore_images = action_object.eq_ignore_images
         eq_handling_html_fields = action_object.eq_handling_html_fields
@@ -815,7 +822,7 @@ class OdooConnection:
         )
         return eq_report_obj
 
-    def write_yaml(self, file_name, data):
+    def write_yaml(self, file_name: str, data: dict[str, Any]) -> None:
         """
         Write data to YAML file with UTF-8 encoding and custom formatting.
 
@@ -832,13 +839,13 @@ class OdooConnection:
                 sort_keys=False,
             )
 
-    def is_boolean(self, object_to_be_checked):
+    def is_boolean(self, object_to_be_checked: Any) -> bool:
         return bool(isinstance(object_to_be_checked, bool))
 
-    def is_dict(self, object_to_be_checked):
+    def is_dict(self, object_to_be_checked: Any) -> bool:
         return bool(isinstance(object_to_be_checked, dict))
 
-    def test_fast_report_rendering(self, report_list: list):
+    def test_fast_report_rendering(self, report_list: list[Any]) -> None:
         """
         Test FastReport rendering in the Odoo system.
 
@@ -866,9 +873,12 @@ class OdooConnection:
                     IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
                     report_id = self._search_report(report.model_name, report.entry_name, IR_ACTIONS_REPORT)
                 # Get report action record
-                report_object = IR_ACTIONS_REPORT.browse(report_id) if report_id else False
+                if not report_id:
+                    logger.warning(f"Report {report.report_name} not created or is not type FastReport")
+                    continue
+                report_object: Any = IR_ACTIONS_REPORT.browse(report_id)  # Any: odoorpc proxy — browse returns Model
                 # Check if the report has been created and is type Fast Report
-                if not report_id or report_object.report_type != "fast_report":
+                if report_object.report_type != "fast_report":
                     logger.warning(f"Report {report.report_name} not created or is not type FastReport")
                     continue
 
@@ -903,7 +913,7 @@ class OdooConnection:
         finally:
             self.connection.env.user.company_id = original_company_yaml_user
 
-    def disable_qweb_reports(self):
+    def disable_qweb_reports(self) -> None:
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         report_ids = IR_ACTIONS_REPORT.search(
             [
