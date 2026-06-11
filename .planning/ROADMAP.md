@@ -127,7 +127,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Baseline benchmark: create test_benchmark_rpc.py, measure current call counts, document RPC_CEILING placeholder
+- [x] 03-01-PLAN.md — Baseline benchmark: create test_benchmark_rpc.py, measure current call counts, document RPC_CEILING placeholder
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -157,7 +157,7 @@ Plans:
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
-| 3. Performance | 0/2 | Not started | - |
+| 3. Performance | 1/2 | In Progress|  |
 | 4. Release Preparation | 0/2 | Not started | - |
 
 ---
