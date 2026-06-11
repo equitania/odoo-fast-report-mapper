@@ -39,4 +39,5 @@ class LanguageRecord(TypedDict, total=True):
     """res.lang record from get_installed_languages."""
 
     code: str
+    iso_code: str
     name: str
