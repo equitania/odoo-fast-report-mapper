@@ -67,6 +67,9 @@ version = { attr = "odoo_fast_report_mapper.__version__.__version__" }
 [tool.setuptools.packages.find]
 include = ["odoo_fast_report_mapper*"]
 
+[tool.setuptools.package-data]
+odoo_fast_report_mapper = ["py.typed"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
