@@ -408,7 +408,7 @@ def test_collect_rpc_call_count(tmp_path):
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact ceiling value for PERF-04**
    - What we know: after the fix, inner `IR_MODEL.search + IR_FIELDS.search = 0` per field.
@@ -420,6 +420,7 @@ def test_collect_rpc_call_count(tmp_path):
    - Recommendation: **Wave 0 task must measure and log the baseline count BEFORE the
      fix, then measure AFTER the fix and set `RPC_CEILING` to the after-fix count + 0
      tolerance.**
+   - **RESOLVED: Wave 1 measures baseline; Wave 2 sets `RPC_CEILING = 0` (inner search count after fix).**
 
 2. **Should `add_field_to_dictionary` lose its `self` reference entirely?**
    - What we know: after removing the two RPC calls, `add_field_to_dictionary` no longer
@@ -429,6 +430,7 @@ def test_collect_rpc_call_count(tmp_path):
      further cleanup).
    - Recommendation: leave as instance method in this phase (minimal diff, easier
      review). Document as a v2.0 candidate.
+   - **RESOLVED: Leave as instance method in Phase 3; `@staticmethod` is a v2.0 candidate.**
 
 ---
 
