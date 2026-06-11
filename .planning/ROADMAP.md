@@ -11,7 +11,7 @@
 - [x] **Phase 1: Package Consolidation** - Dissolve odoo_report_helper/ into a single package, remove dead progress-bar APIs, eliminate circular import (completed 2026-05-28)
 - [x] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins (completed 2026-05-29)
 - [x] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase (completed 2026-06-11)
-- [ ] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary()
+- [x] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary() (completed 2026-06-11)
 - [ ] **Phase 4: Release Preparation** - MIGRATION.md, docs refresh, CI matrix hardening, all release-quality gates
 
 ---
@@ -131,7 +131,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Fix _connection.py (modules param, delete 2 search calls) + finalize regression test with RPC_CEILING=0
+- [x] 03-02-PLAN.md — Fix _connection.py (modules param, delete 2 search calls) + finalize regression test with RPC_CEILING=0
 
 ### Phase 4: Release Preparation
 
@@ -157,7 +157,7 @@ Plans:
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
-| 3. Performance | 1/2 | In Progress|  |
+| 3. Performance | 2/2 | Complete   | 2026-06-11 |
 | 4. Release Preparation | 0/2 | Not started | - |
 
 ---
