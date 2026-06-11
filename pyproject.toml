@@ -122,8 +122,3 @@ strict = true
 [[tool.mypy.overrides]]
 module = "odoorpc_toolbox.*"
 follow_untyped_imports = true   # reads source annotations from 0.7.3; no py.typed needed
-
-# Per-module override ramp (removed one-by-one as each plan completes):
-[[tool.mypy.overrides]]
-module = "odoo_fast_report_mapper._cli"
-ignore_errors = true  # Plan 02-08 (final)
