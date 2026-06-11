@@ -475,9 +475,7 @@ def create_connection_from_env(env_path: str | None = None) -> tuple[Any, str]:
 
     # Get required values — all vars validated above via missing_vars check
     url = os.getenv("ODOO_URL", "")
-    port_str = os.getenv("ODOO_PORT")
-    if port_str is None:
-        raise ValueError("ODOO_PORT environment variable not set")
+    port_str = os.getenv("ODOO_PORT", "")  # guaranteed non-empty by missing_vars check above
     try:
         port = int(port_str)
         if port < 1 or port > 65535:
