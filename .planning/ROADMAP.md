@@ -10,7 +10,7 @@
 
 - [x] **Phase 1: Package Consolidation** - Dissolve odoo_report_helper/ into a single package, remove dead progress-bar APIs, eliminate circular import (completed 2026-05-28)
 - [x] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins (completed 2026-05-29)
-- [ ] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase
+- [x] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase (completed 2026-06-11)
 - [ ] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary()
 - [ ] **Phase 4: Release Preparation** - MIGRATION.md, docs refresh, CI matrix hardening, all release-quality gates
 
@@ -105,7 +105,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-08-PLAN.md — Annotate _cli.py (10 errors), remove all remaining overrides, enable CI enforcement
+- [x] 02-08-PLAN.md — Annotate _cli.py (10 errors), remove all remaining overrides, enable CI enforcement
 
 **Cross-cutting constraints:**
 
@@ -148,7 +148,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
-| 2. Type Safety | 7/8 | In Progress|  |
+| 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
