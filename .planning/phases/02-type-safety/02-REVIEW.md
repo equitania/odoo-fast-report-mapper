@@ -227,3 +227,22 @@ Or, since `get_logger` is re-exported via `__init__.py`:
 _Reviewed: 2026-06-11T09:00:38Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+## Fixes Applied
+
+**Fixed at:** 2026-06-11T09:30:00Z
+**Fixed by:** Claude (gsd-code-fixer)
+
+| Finding | Status | Commit | Notes |
+|---------|--------|--------|-------|
+| CR-01 | fixed | 0bbc73e | Passed `company_id=report.company_id[0]` in `test_fast_report_rendering` v17+ branch |
+| CR-02 | fixed | 5d166c6 | Added `iso_code: str` field to `LanguageRecord` TypedDict |
+| WR-01 | fixed | f2b574b | Removed dead `if report_object:` guard and dedented body |
+| WR-02 | fixed | 22194ff | Removed redundant `if port_str is None` check after `missing_vars` guard |
+| WR-03 | fixed | ad90c81 | Replaced `list(set(...))` with `sorted(set(...))` in `add_dependencies` |
+| IN-01 | skipped | — | Out of scope (Info) |
+| IN-02 | skipped | — | Out of scope (Info) |
+
+**Post-fix verification:**
+- mypy: `Success: no issues found in 12 source files`
+- pytest: `347 passed in 0.95s`
