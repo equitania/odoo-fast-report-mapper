@@ -16,6 +16,7 @@ import os
 import urllib.error
 from datetime import datetime
 from random import choice
+from typing import Any, Literal, cast
 
 import yaml
 from odoorpc_toolbox import RPCError
@@ -23,6 +24,7 @@ from odoorpc_toolbox import RPCError
 from ._exceptions import OdooConnectionError
 from ._lang_utils import build_name_search_domain, get_primary_lang, resolve_attachment_value
 from ._logging import get_logger
+from ._odoo_types import IrModelFieldsRecord, IrModelRecord, ReportAction
 from ._progress import progress_bar
 from ._utils import prepare_connection
 from ._yaml_dumper import YAMLDumper
@@ -38,21 +40,21 @@ class OdooConnection:
 
     def __init__(
         self,
-        language,
-        collect_yaml,
-        disable_qweb,
-        workflow,
-        url,
-        port,
-        username,
-        password,
-        database,
+        language: str,
+        collect_yaml: bool,
+        disable_qweb: bool,
+        workflow: int,
+        url: str,
+        port: int,
+        username: str,
+        password: str,
+        database: str,
         auth_method: str = "password",
-    ):
+    ) -> None:
         self.url = url
         self.port = port
         self.username = username
-        self.password = password
+        self.password: str | None = password  # cleared to None after login for security
         self.database = database
         self.version = ""
         self.language = language
@@ -67,13 +69,13 @@ class OdooConnection:
             self.password = None
             raise OdooConnectionError("ERROR: Please check your parameters and your connection" + " " + str(ex)) from ex
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"OdooConnection(username={self.username!r}, database={self.database!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
-    def login(self):
+    def login(self) -> None:
         """
         Try to login into the Odoo system and set parameters to optimize the connection.
         """
@@ -90,7 +92,7 @@ class OdooConnection:
         except RPCError as ex:
             raise OdooConnectionError("ERROR: Please check your parameters and your connection" + " " + str(ex)) from ex
 
-    def _get_fast_report_ids(self):
+    def _get_fast_report_ids(self) -> list[int]:
         """
         Returns all report IDs that have report_type = fast_report.
 
@@ -98,9 +100,9 @@ class OdooConnection:
         """
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         report_ids = IR_ACTIONS_REPORT.search([("report_type", "=", "fast_report")])
-        return report_ids
+        return cast(list[int], report_ids)  # Any: Odoo RPC returns list of int IDs
 
-    def check_module(self, module_name):
+    def check_module(self, module_name: str) -> bool:
         """
         Search for module in Odoo and return True when it is installed, else return false.
 
@@ -132,7 +134,7 @@ class OdooConnection:
                 "Use ODOO_PASSWORD instead, or upgrade the Odoo server."
             )
 
-    def get_installed_languages(self):
+    def get_installed_languages(self) -> list[dict[str, Any]]:
         """Query res.lang for all active languages in Odoo.
 
         Returns:
@@ -153,7 +155,7 @@ class OdooConnection:
         logger.info(f"Installed languages: {[lang['code'] for lang in languages]}")
         return languages
 
-    def get_company_language(self, company_id):
+    def get_company_language(self, company_id: int) -> str:
         """Look up company language from res.company.partner_id.lang.
 
         Cached per company_id. Falls back to self.language when the partner
@@ -166,7 +168,7 @@ class OdooConnection:
             Odoo locale code string (e.g. 'de_DE').
         """
         if not hasattr(self, "_company_lang_cache"):
-            self._company_lang_cache = {}
+            self._company_lang_cache: dict[int, str] = {}
         if company_id in self._company_lang_cache:
             return self._company_lang_cache[company_id]
         try:
@@ -180,7 +182,13 @@ class OdooConnection:
         self._company_lang_cache[company_id] = lang
         return lang
 
-    def _search_report_v13(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None, company_id=None):
+    def _search_report_v13(
+        self,
+        model_name: str,
+        report_name: dict[str, str],
+        IR_ACTIONS_REPORT: Any | None = None,  # Any: odoorpc proxy object, no typed class
+        company_id: int | None = None,
+    ) -> int | Literal[False]:
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
@@ -188,9 +196,15 @@ class OdooConnection:
         report_ids = IR_ACTIONS_REPORT.search([("model", "=ilike", model_name)] + name_domain + company_domain)
         if len(report_ids) == 0:
             return False
-        return report_ids[0]
+        return cast(int, report_ids[0])  # Any: Odoo RPC returns int ID
 
-    def _search_report(self, model_name, report_name: dict, IR_ACTIONS_REPORT=None, company_id=None):
+    def _search_report(
+        self,
+        model_name: str,
+        report_name: dict[str, str],
+        IR_ACTIONS_REPORT: Any | None = None,  # Any: odoorpc proxy object, no typed class
+        company_id: int | None = None,
+    ) -> int | Literal[False]:
         if not IR_ACTIONS_REPORT:
             IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         name_domain = build_name_search_domain(report_name)
@@ -200,9 +214,9 @@ class OdooConnection:
         report_ids = IR_ACTIONS_REPORT.search(domain)
         if len(report_ids) == 0:
             return False
-        return report_ids[0]
+        return cast(int, report_ids[0])  # Any: Odoo RPC returns int ID
 
-    def check_dependencies(self, dependencies) -> tuple[bool, list[str]]:
+    def check_dependencies(self, dependencies: list[str] | Literal[False]) -> tuple[bool, list[str]]:
         """
         Check if all dependencies (modules) are installed, if one isn't, return False.
 
@@ -218,7 +232,7 @@ class OdooConnection:
                 return False, not_installed_modules
         return True, not_installed_modules
 
-    def map_reports(self, report_list: list):
+    def map_reports(self, report_list: list[Any]) -> list[tuple[str, str]]:
         """
         Create/Write reports into the Odoo system with their fields and properties.
 
@@ -227,8 +241,8 @@ class OdooConnection:
         IR_MODEL = self.connection.env["ir.model"]
         IR_MODEL_FIELDS = self.connection.env["ir.model.fields"]
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
-        models_fields = dict()
-        model_name_ids = dict()
+        models_fields: dict[int, dict[int, list[int]]] = {}
+        model_name_ids: dict[str, int] = {}
         failed_reports = []
 
         # Fetch installed languages once for multi-language translation
@@ -255,7 +269,12 @@ class OdooConnection:
         self._write_field_mappings(models_fields, IR_MODEL)
         return failed_reports
 
-    def _create_or_update_report(self, report, IR_ACTIONS_REPORT, installed_lang_codes):
+    def _create_or_update_report(
+        self,
+        report: Any,  # Any: Report object — forward import to avoid circular ref
+        IR_ACTIONS_REPORT: Any,  # Any: odoorpc proxy object, no typed class
+        installed_lang_codes: set[str],
+    ) -> tuple[Any, bool]:
         """Search for existing report and create or update it in Odoo.
 
         Handles dependency check, company switching, report search, create/update,
@@ -322,7 +341,12 @@ class OdooConnection:
 
         return report_object, True
 
-    def _set_report_translations(self, report, report_object, installed_lang_codes):
+    def _set_report_translations(
+        self,
+        report: Any,  # Any: Report object — forward import to avoid circular ref
+        report_object: Any,  # Any: odoorpc proxy object, no typed class
+        installed_lang_codes: set[str],
+    ) -> None:
         """Write name and print_report_name translations per installed language.
 
         Args:
@@ -350,7 +374,15 @@ class OdooConnection:
                     report_object.with_context(lang=lang_code).write({"print_report_name": report.print_report_name})
             logger.debug("    print_report_name configured")
 
-    def _map_report_fields(self, report, report_object, IR_MODEL, IR_MODEL_FIELDS, models_fields, model_name_ids):
+    def _map_report_fields(
+        self,
+        report: Any,  # Any: Report object — forward import to avoid circular ref
+        report_object: Any,  # Any: odoorpc proxy object, no typed class
+        IR_MODEL: Any,  # Any: odoorpc proxy object, no typed class
+        IR_MODEL_FIELDS: Any,  # Any: odoorpc proxy object, no typed class
+        models_fields: dict[int, dict[int, list[int]]],
+        model_name_ids: dict[str, int],
+    ) -> None:
         """Iterate report fields, search model/field IDs, and build models_fields dict.
 
         Also sets calculated fields for the report.
@@ -414,7 +446,11 @@ class OdooConnection:
                         report_company_id,
                     )
 
-    def _write_field_mappings(self, models_fields, IR_MODEL):
+    def _write_field_mappings(
+        self,
+        models_fields: dict[int, dict[int, list[int]]],
+        IR_MODEL: Any,  # Any: odoorpc proxy object, no typed class
+    ) -> None:
         """Write accumulated field mappings to Odoo models.
 
         Args:
@@ -450,13 +486,13 @@ class OdooConnection:
 
     def set_calculated_fields(
         self,
-        field_name,
-        function_name,
-        parameters,
-        report_name,
-        report_model,
-        report_company_id,
-    ):
+        field_name: str,
+        function_name: str,
+        parameters: list[str],
+        report_name: dict[str, str],
+        report_model: str,
+        report_company_id: int | Literal[False],
+    ) -> None:
         """
         Set calculated fields for the report and clean them.
 
