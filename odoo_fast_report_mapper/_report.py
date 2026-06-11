@@ -152,6 +152,5 @@ class Report:
         Add dependencies to self._dependencies
         """
         existing: list[str] = self._dependencies if isinstance(self._dependencies, list) else []
-        self._dependencies = existing + dependency_list
-        # Remove duplicates
-        self._dependencies = list(set(self._dependencies))
+        # Remove duplicates with deterministic ordering for reproducible YAML output
+        self._dependencies = sorted(set(existing + dependency_list))
