@@ -31,6 +31,7 @@ A Python CLI tool (PyPI package) that maps YAML report definitions to Odoo `ir.a
 - ✓ Security hardening: `yaml.safe_load` only, path-traversal guards, port validation, HTTP plaintext warning, password cleared after login — v0.9.x
 - ✓ Correctness hardening (BUG-01..BUG-07): empty-search guards, calculated-field preservation, dependency-check contract, loud failures on empty/malformed connection+config input, dict-typed `entry_name` guard, YAML api_key auth honored — each locked by a regression test — Phase 1.1
 - ✓ **TYPE-01**: mypy `--strict` passes with 0 errors and zero internal overrides; full annotation coverage incl. TypedDict RPC shapes, PEP 561 `py.typed` marker shipped — Phase 2
+- ✓ **PERF-01**: RPC-call count benchmarked and reduced — `add_field_to_dictionary()` no longer issues the 2 extra search calls per field (1000 redundant calls per 10×50 collect run eliminated); regression test `tests/test_benchmark_rpc.py` enforces `RPC_CEILING=0` in CI — Phase 3
 
 ### Active
 
@@ -38,7 +39,6 @@ A Python CLI tool (PyPI package) that maps YAML report definitions to Odoo `ir.a
 
 - [ ] **CONS-01**: Consolidate two-package layout — dissolve `odoo_report_helper/` into `odoo_fast_report_mapper/` (eliminates circular import)
 - [ ] **CONS-02**: Remove dead-but-public API — `ProgressBar`, `ReportProgress`, `create_progress_bar` and their tests (~350 LOC)
-- [ ] **PERF-01**: Benchmark `add_field_to_dictionary()` RPC-call count and reduce to a defined target (eliminate the 2 extra `browse()` calls per field)
 - [ ] **DOCS-01**: Write `MIGRATION.md` with Before/After examples for every breaking change (import paths, removed classes, deprecated patterns)
 - [ ] **DOCS-02**: Refresh `README.md` (DE + EN), `SKILL.md`, `CLAUDE.md`, `RELEASE_NOTES.md` to v1.0 reality
 - [ ] **CI-01**: Extend CI matrix to include Python 3.14 once it reaches GA (fallback: keep at 3.12 + 3.13 if 3.14 not stable at release time)
@@ -118,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-11 after Phase 2 (Type Safety) completion*
+*Last updated: 2026-06-11 after Phase 3 (Performance) completion*
