@@ -101,7 +101,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-07-PLAN.md — Annotate _connection.py Part 2: lines 497–873 (~34 errors), remove override block
+- [x] 02-07-PLAN.md — Annotate _connection.py Part 2: lines 497–873 (~34 errors), remove override block
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -148,7 +148,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Package Consolidation | 5/5 | Complete   | 2026-05-28 |
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
-| 2. Type Safety | 6/8 | In Progress|  |
+| 2. Type Safety | 7/8 | In Progress|  |
 | 3. Performance | 0/1 | Not started | - |
 | 4. Release Preparation | 0/2 | Not started | - |
 
