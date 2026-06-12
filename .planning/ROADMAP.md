@@ -142,11 +142,25 @@ Plans:
 
   1. `MIGRATION.md` exists at repo root with complete import-path mapping, before/after code snippets for every removed class, and a tqdm-direct-usage example
   2. `README.md`, `SKILL.md`, `CLAUDE.md`, and `RELEASE_NOTES.md` contain no references to `odoo_report_helper` as an active package
-  3. GitHub Actions CI workflow passes on Python 3.12 + 3.13 (+ 3.14 if stable) with mypy-strict and perf-benchmark checks as blocking steps
+  3. GitHub Actions CI workflow passes on Python 3.12 + 3.13 + 3.14 with mypy-strict and perf-benchmark checks as blocking steps
   4. `ruff check . && ruff format --check .` exits 0, `mypy --strict odoo_fast_report_mapper/` exits 0, all tests pass — all three in a single clean CI run
   5. `uv build` produces a wheel and sdist without errors or warnings
 
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+**Wave 1** *(independent, can run in parallel)*
+
+- [ ] 04-01-PLAN.md — Version bump to 1.0.0, pyproject.toml metadata (classifiers, Migration Guide URL), MANIFEST.in (MIGRATION.md in, CLAUDE.md out), git rm legacy planning files
+- [ ] 04-02-PLAN.md — CI workflow hardening: Python 3.14 matrix, mypy --strict blocking, perf job, build job
+
+**Wave 2** *(blocked on 04-01)*
+
+- [ ] 04-03-PLAN.md — Create MIGRATION.md (bilingual DE/EN) + prepend RELEASE_NOTES.md v1.0.0 entry
+- [ ] 04-04-PLAN.md — Update README.md, CLAUDE.md, SKILL.md to single-package v1.0 layout
+
+**Wave 3** *(blocked on all Wave 1 + 2 plans)*
+
+- [ ] 04-05-PLAN.md — Run all quality gates (GATE-01..GATE-05), Captain review checkpoint for MIGRATION.md (GATE-04), document branch-protection check names
 
 ---
 
@@ -158,7 +172,7 @@ Plans:
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
 | 3. Performance | 2/2 | Complete   | 2026-06-11 |
-| 4. Release Preparation | 0/2 | Not started | - |
+| 4. Release Preparation | 0/5 | Not started | - |
 
 ---
 
