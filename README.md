@@ -159,6 +159,10 @@ odoo-fr-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
 odoo-fr-mapper --yaml_path=./output
 ```
 
+### Weiterführende Abschnitte
+
+Architektur, Entwicklung (Setup, Tests, Code-Qualität), Troubleshooting, Ressourcen und Lizenz sind als gemeinsame englischsprachige Abschnitte am Ende dieses Dokuments zu finden: [Architecture](#architecture) · [Development](#development) · [Troubleshooting](#troubleshooting) · [Resources](#resources) · [License](#license) · [Support](#support)
+
 ---
 
 ## English Documentation
