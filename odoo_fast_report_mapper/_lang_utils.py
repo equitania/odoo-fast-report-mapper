@@ -71,7 +71,9 @@ def get_primary_lang(name_dict: dict[str, str], preferred_lang: str = "de_DE") -
     return next(iter(name_dict))
 
 
-def build_name_search_domain(name_dict: dict[str, str]) -> list[Any]:  # Any: Odoo domain tuples contain mixed types (str, str, str)
+def build_name_search_domain(
+    name_dict: dict[str, str],
+) -> list[Any]:  # Any: Odoo domain tuples contain mixed types (str, str, str)
     """Build an OR-domain for searching by all name variants.
 
     Returns Odoo domain list that matches any name value from the dict,

@@ -24,7 +24,6 @@ from odoorpc_toolbox import RPCError
 from ._exceptions import OdooConnectionError
 from ._lang_utils import build_name_search_domain, get_primary_lang, resolve_attachment_value
 from ._logging import get_logger
-from ._odoo_types import IrModelFieldsRecord, IrModelRecord, ReportAction
 from ._progress import progress_bar
 from ._utils import prepare_connection
 from ._yaml_dumper import YAMLDumper
@@ -597,7 +596,9 @@ class OdooConnection:
             else self.connection.env.user.company_id.ids
         )
         report_name_id_combination: dict[str, int] = {}
-        data_dictionary: dict[Any, Any] = {}  # Any: keys are int report IDs, values are nested Odoo report field data (Tier 2)
+        data_dictionary: dict[
+            Any, Any
+        ] = {}  # Any: keys are int report IDs, values are nested Odoo report field data (Tier 2)
         for company_id in company_ids:
             # Change the current company in the env
             self.connection.env.user.company_id = company_id
@@ -738,7 +739,9 @@ class OdooConnection:
             }
         return eq_calculated_field_dict
 
-    def create_eq_report_object(self, action_id: Any, field_dictionary: dict[str, Any]) -> Any:  # Any: Report object (circular import avoided)
+    def create_eq_report_object(
+        self, action_id: Any, field_dictionary: dict[str, Any]
+    ) -> Any:  # Any: Report object (circular import avoided)
         # Lazy import to avoid forward-reference before _report.py exists in Wave 3
         from ._report import Report  # noqa: PLC0415
 

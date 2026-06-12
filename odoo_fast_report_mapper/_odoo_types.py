@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, TypedDict
+from typing import Literal, TypedDict
 
 
 class IrModelRecord(TypedDict, total=True):

@@ -3,11 +3,7 @@
 
 """RPC call-count benchmark for collect_report_entries. PERF-01, PERF-03, PERF-04."""
 
-import os
-import urllib.error
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from odoo_fast_report_mapper._connection import OdooConnection
 
@@ -191,9 +187,7 @@ def test_collect_rpc_call_count(tmp_path):
         ir_module_module_guard() if key == "ir.module.module" else env_map[key]
     )
 
-    conn.get_installed_languages = MagicMock(
-        return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}]
-    )
+    conn.get_installed_languages = MagicMock(return_value=[{"code": "de_DE", "iso_code": "de", "name": "German"}])
 
     output_dir = tmp_path / "output"
     output_dir.mkdir()
