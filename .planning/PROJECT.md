@@ -93,13 +93,13 @@ A Python CLI tool (PyPI package) that maps YAML report definitions to Odoo `ir.a
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Two-Package-Konsolidierung statt nur circular-import fix | Vereinfacht das Mental Model, beseitigt Override-statt-Extend-Smell. Breaking-Change ist im v1.0-Major-Bump akzeptabel | — Pending |
-| P-08/P-09 hart entfernen statt Deprecation-Phase | Vor v1.0 deferred (v0.9.7). MIGRATION.md gibt Konsumenten klaren Pfad zu `tqdm` direkt | — Pending |
-| Mypy **strict mode** statt nur "baseline zu 0" | Stronger reife-statement für v1.0. Equitania-interne Code-Quality-Erwartung passt zu major release | — Pending |
-| Performance mit Benchmark + Zielwert (statt Code-Review-only) | Messbar, reproduzierbar, verhindert Regression in zukünftigen Releases. Test-Counter-Mock auf RPC-Schicht | — Pending |
-| MIGRATION.md als separates Dokument (nicht nur RELEASE_NOTES) | Public-PyPI-User brauchen Before/After-Beispiele, suchbar im Repo-Root | — Pending |
-| `uv publish` ausschließlich durch Captain | Sicherheitskontrolle gegen versehentlich falschen Release. Bleibt auch in v1.0+ Policy | — Pending |
-| v1.0 ist 100% Cleanup, keine neuen Features | Klare Trennung: v1.0 = stable + clean. v1.x = neue Features. Verhindert Scope-Creep | — Pending |
+| Two-Package-Konsolidierung statt nur circular-import fix | Vereinfacht das Mental Model, beseitigt Override-statt-Extend-Smell. Breaking-Change ist im v1.0-Major-Bump akzeptabel | ✓ Good (v1.0: Single Package, 0 zirkuläre Imports) |
+| P-08/P-09 hart entfernen statt Deprecation-Phase | Vor v1.0 deferred (v0.9.7). MIGRATION.md gibt Konsumenten klaren Pfad zu `tqdm` direkt | ✓ Good (v1.0: ~350 LOC tote API entfernt) |
+| Mypy **strict mode** statt nur "baseline zu 0" | Stronger reife-statement für v1.0. Equitania-interne Code-Quality-Erwartung passt zu major release | ✓ Good (v1.0: 0 Errors, 0 Overrides, py.typed) |
+| Performance mit Benchmark + Zielwert (statt Code-Review-only) | Messbar, reproduzierbar, verhindert Regression in zukünftigen Releases. Test-Counter-Mock auf RPC-Schicht | ✓ Good (v1.0: RPC_CEILING=0 CI-Gate) |
+| MIGRATION.md als separates Dokument (nicht nur RELEASE_NOTES) | Public-PyPI-User brauchen Before/After-Beispiele, suchbar im Repo-Root | ✓ Good (v1.0: bilingual, ships im sdist) |
+| `uv publish` ausschließlich durch Captain | Sicherheitskontrolle gegen versehentlich falschen Release. Bleibt auch in v1.0+ Policy | ✓ Good (Policy gehalten — kein automatisierter Publish) |
+| v1.0 ist 100% Cleanup, keine neuen Features | Klare Trennung: v1.0 = stable + clean. v1.x = neue Features. Verhindert Scope-Creep | ✓ Good (einzige Scope-Erweiterung: BUG-Fixes per Captain-Entscheidung) |
 
 ## Evolution
 
@@ -119,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-12 after Phase 4 (Release Preparation) completion — all v1.0 phases complete, verification passed 13/13, package built as 1.0.0; `uv publish` pending (Captain, local)*
+*Last updated: 2026-06-12 after v1.0 milestone — shipped 5 phases / 28 plans / 36 of 36 requirements; audit passed, security verified (threats_open: 0); dist/ 1.0.0 built, `uv publish` by Captain locally. Next milestone not yet planned.*
