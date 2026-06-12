@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.0.0 (12.06.2026)
+
+### Breaking Changes
+- Removed `odoo_report_helper` package — all public API now lives in `odoo_fast_report_mapper`
+  - `from odoo_report_helper.odoo_connection import OdooConnection` → `from odoo_fast_report_mapper._connection import OdooConnection`
+  - `from odoo_report_helper.report import Report` → `from odoo_fast_report_mapper._report import Report`
+  - `from odoo_report_helper.exceptions import PathDoesNotExistError` → `from odoo_fast_report_mapper.exceptions import PathDoesNotExistError`
+  - `from odoo_report_helper.utils import parse_yaml_folder` → `from odoo_fast_report_mapper.eq_utils import parse_yaml_folder`
+  - See [MIGRATION.md](MIGRATION.md) for full import-path mapping, removed classes, and before/after examples
+
+### Added
+- MIGRATION.md: bilingual DE/EN migration guide for users upgrading from pre-1.0 versions
+- `[project.urls]` in pyproject.toml: added "Migration Guide" link pointing to MIGRATION.md on GitHub
+
+### Changed
+- Version bumped to 1.0.0 (clean three-segment SemVer; future patches as 1.0.1)
+- Development Status classifier: "4 - Beta" → "5 - Production/Stable"
+- CI matrix extended to Python 3.14 (stable since Oct 2025)
+- mypy CI step: removed `continue-on-error: true`, now blocking; path fixed to `odoo_fast_report_mapper/` only
+- CI perf gate: RPC-count regression test (`tests/test_benchmark_rpc.py`) runs as blocking separate job
+
+### Removed
+- Legacy pre-GSD planning files: `IMPROVEMENT_PLAN.md`, `REVIEW.md`, `TASK_TRACKING.md` (history preserved in git)
+- `CLAUDE.md` removed from sdist (internal developer instructions; not for PyPI users)
+
 ## Version 0.9.7.3 (11.05.2026)
 
 ### Fixed
