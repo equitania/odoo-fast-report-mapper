@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/odoo-fast-report-mapper-equitania.svg)](https://badge.fury.io/py/odoo-fast-report-mapper-equitania)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Tests](https://img.shields.io/badge/tests-344%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-349%20passed-brightgreen.svg)]()
 
 > **Language / Sprache**: [DE](#deutsche-dokumentation) | [EN](#english-documentation)
 
@@ -14,6 +14,10 @@
 ### Projektübersicht
 
 Eine Python CLI-Bibliothek zur Erstellung, Verwaltung und Testung von FastReport-Einträgen in Odoo-Umgebungen. Unterstützt das [FastReport-Modul für Odoo](https://www.ownerp.com/odoo-fastreport) von Equitania Software GmbH.
+
+### Upgrade auf v1.0
+
+Nutzer, die von einer früheren Version upgraden, finden alle Breaking Changes und Import-Pfad-Anpassungen in der **[MIGRATION.md](MIGRATION.md)**.
 
 ### Hauptfunktionen
 
@@ -163,6 +167,10 @@ odoo-fr-mapper --yaml_path=./output
 
 A Python CLI library for creating, managing, and testing FastReport entries in Odoo environments. Supports the [FastReport module for Odoo](https://www.ownerp.com/odoo-fastreport) by Equitania Software GmbH.
 
+### Upgrading to v1.0
+
+Users upgrading from an earlier version will find all breaking changes and import path adjustments in **[MIGRATION.md](MIGRATION.md)**.
+
 ### Key Features
 
 - **Report Mapping**: Automatic creation and updating of `ir.actions.report` entries in Odoo
@@ -309,20 +317,17 @@ odoo-fr-mapper --yaml_path=./output
 
 ```
 odoo-fast-report-mapper/
-├── odoo_fast_report_mapper/          # Main package
-│   ├── odoo_fast_report_mapper.py   # CLI entry point (Click)
+├── odoo_fast_report_mapper/          # Main package (single-package layout as of v1.0)
+│   ├── __version__.py               # Version source (pyproject.toml dynamic)
+│   ├── _cli.py                      # CLI entry point (Click)
+│   ├── _connection.py               # OdooConnection base class
 │   ├── eq_odoo_connection.py        # EqOdooConnection: mapping, testing, collecting
 │   ├── eq_report.py                 # EqReport objects & validation
 │   ├── eq_utils.py                  # YAML collection, .env config, conversions
 │   ├── lang_utils.py                # Language normalization & multi-lang utilities
 │   ├── logging_config.py            # Centralized logging with color + rotation
 │   └── progress.py                  # tqdm-based progress tracking
-├── odoo_report_helper/              # Base helper package
-│   ├── odoo_connection.py           # OdooConnection base class (odoorpc-toolbox)
-│   ├── report.py                    # Report processing base
-│   ├── utils.py                     # YAML parsing, file utilities
-│   └── exceptions.py                # Custom exceptions
-├── tests/                           # Unit tests (344 tests)
+├── tests/                           # Unit tests (349 tests)
 ├── yaml_examples/                   # Configuration templates
 └── pyproject.toml                   # Package configuration
 ```
@@ -360,7 +365,7 @@ ruff format .
 ruff check .
 
 # Type checking
-mypy odoo_fast_report_mapper/ odoo_report_helper/
+mypy odoo_fast_report_mapper/
 
 # Build
 uv build
