@@ -14,13 +14,14 @@ authors = [
 ]
 keywords = ["odoo", "fastreport", "report", "pdf", "generator", "yaml", "mapping", "cli"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Office/Business",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Environment :: Console",
     "Natural Language :: English",
@@ -38,6 +39,7 @@ dependencies = [
 Homepage = "https://github.com/equitania/odoo-fast-report-mapper"
 "Bug Reports" = "https://github.com/equitania/odoo-fast-report-mapper/issues"
 Documentation = "https://www.ownerp.com/odoo-fastreport"
+"Migration Guide" = "https://github.com/equitania/odoo-fast-report-mapper/blob/main/MIGRATION.md"
 Company = "https://www.equitania.de"
 
 [project.scripts]
