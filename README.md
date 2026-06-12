@@ -318,15 +318,19 @@ odoo-fr-mapper --yaml_path=./output
 ```
 odoo-fast-report-mapper/
 ├── odoo_fast_report_mapper/          # Main package (single-package layout as of v1.0)
+│   ├── __init__.py                  # Public API re-exports (OdooConnection, Report, …)
 │   ├── __version__.py               # Version source (pyproject.toml dynamic)
 │   ├── _cli.py                      # CLI entry point (Click)
-│   ├── _connection.py               # OdooConnection base class
-│   ├── eq_odoo_connection.py        # EqOdooConnection: mapping, testing, collecting
-│   ├── eq_report.py                 # EqReport objects & validation
-│   ├── eq_utils.py                  # YAML collection, .env config, conversions
-│   ├── lang_utils.py                # Language normalization & multi-lang utilities
-│   ├── logging_config.py            # Centralized logging with color + rotation
-│   └── progress.py                  # tqdm-based progress tracking
+│   ├── _connection.py               # OdooConnection: all mapping, testing, collecting logic
+│   ├── _exceptions.py               # Custom exception classes
+│   ├── _lang_utils.py               # Language normalization & multi-lang utilities
+│   ├── _logging.py                  # Centralized logging configuration
+│   ├── _odoo_types.py               # TypedDict definitions for Odoo RPC shapes
+│   ├── _progress.py                 # tqdm-based progress wrapper
+│   ├── _report.py                   # Report object & validation
+│   ├── _utils.py                    # YAML collection, .env config, conversions
+│   ├── _yaml_dumper.py              # Custom YAML serializer
+│   └── py.typed                     # PEP 561 marker
 ├── tests/                           # Unit tests (349 tests)
 ├── yaml_examples/                   # Configuration templates
 └── pyproject.toml                   # Package configuration
@@ -335,7 +339,7 @@ odoo-fast-report-mapper/
 ### Data Flow
 
 ```
-YAML Config → Language Normalization → EqReport Objects → Odoo Connection
+YAML Config → Language Normalization → Report Objects → OdooConnection
   → Report Create/Update → Multi-Language Translations (via res.lang)
   → Field Mapping (eq_write_report_ids) → Calculated Fields
 ```

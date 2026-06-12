@@ -4,10 +4,10 @@
 
 ### Breaking Changes
 - Removed `odoo_report_helper` package — all public API now lives in `odoo_fast_report_mapper`
-  - `from odoo_report_helper.odoo_connection import OdooConnection` → `from odoo_fast_report_mapper._connection import OdooConnection`
-  - `from odoo_report_helper.report import Report` → `from odoo_fast_report_mapper._report import Report`
-  - `from odoo_report_helper.exceptions import PathDoesNotExistError` → `from odoo_fast_report_mapper.exceptions import PathDoesNotExistError`
-  - `from odoo_report_helper.utils import parse_yaml_folder` → `from odoo_fast_report_mapper.eq_utils import parse_yaml_folder`
+  - `from odoo_report_helper.odoo_connection import OdooConnection` → `from odoo_fast_report_mapper import OdooConnection`
+  - `from odoo_report_helper.report import Report` → `from odoo_fast_report_mapper import Report`
+  - `from odoo_report_helper.exceptions import PathDoesNotExistError` → `from odoo_fast_report_mapper import PathDoesNotExistError`
+  - `from odoo_report_helper.utils import parse_yaml_folder` → `from odoo_fast_report_mapper._utils import parse_yaml_folder`
   - See [MIGRATION.md](MIGRATION.md) for full import-path mapping, removed classes, and before/after examples
 
 ### Added
@@ -85,7 +85,7 @@
 - **P-08/P-09** `ProgressBar`, `create_progress_bar()`, and `ReportProgress` are unused internally but have full test coverage — treated as public PyPI API and kept; removal would be a breaking change for external consumers
 
 ### Tests
-- Total test count: 368 (up from 353): +11 API-key tests, +4 BLOCKER regression tests, +2 W-04 domain-shape regression tests, −2 obsolete `LOCALE_TO_LEGACY` tests
+- Total test count: 349 (up from 353, net): +11 API-key tests, +4 BLOCKER regression tests, +2 W-04 domain-shape regression tests, −2 obsolete `LOCALE_TO_LEGACY` tests
 
 ## Version 0.9.6 (04.05.2026)
 

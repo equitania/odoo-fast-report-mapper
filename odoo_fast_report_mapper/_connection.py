@@ -79,7 +79,10 @@ class OdooConnection:
         Try to login into the Odoo system and set parameters to optimize the connection.
         """
         try:
-            assert self.password is not None, "Password must be set before login"  # cleared to None after login
+            if self.password is None:
+                raise OdooConnectionError(
+                    "Password must be set before login (already cleared after a previous login call)"
+                )
             self.connection.login(self.database, self.username, self.password)
             # Change settings to make the connection faster
             self.connection.config["auto_commit"] = True  # No need for manual commits

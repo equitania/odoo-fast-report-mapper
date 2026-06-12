@@ -1,6 +1,7 @@
 include README.md
 include LICENSE.txt
 include MIGRATION.md
+include RELEASE_NOTES.md
 recursive-include yaml_examples *.yaml
 exclude CLAUDE.md
 prune *.egg-info

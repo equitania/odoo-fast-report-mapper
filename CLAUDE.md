@@ -15,18 +15,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
    - Handles command-line arguments for server and YAML paths
    - Orchestrates the mapping workflow
 
-2. **Connection Management** (`odoo_fast_report_mapper/_connection.py` + `eq_odoo_connection.py`):
-   - `OdooConnection` base class for odoorpc-toolbox integration
-   - `EqOdooConnection` subclass: report mapping, testing, collecting
-   - Handles login, dependency validation, calculated fields
+2. **Connection Management** (`odoo_fast_report_mapper/_connection.py`):
+   - `OdooConnection` — single merged class (no inheritance hierarchy as of v1.0)
+   - Handles login, report mapping, testing, collecting, dependency validation, and calculated fields
 
-3. **Report Processing** (`odoo_fast_report_mapper/eq_report.py`):
-   - Report object definitions and validation
+3. **Report Processing** (`odoo_fast_report_mapper/_report.py`):
+   - `Report` object definitions and validation
    - YAML-based report configuration processing
 
-4. **Utility Functions** (`odoo_fast_report_mapper/eq_utils.py`):
+4. **Utility Functions** (`odoo_fast_report_mapper/_utils.py`):
    - YAML file collection and parsing
-   - `.env`-based connection configuration management
+   - `.env`-based connection configuration management (`create_connection_from_env`)
 
 ### Configuration System
 
@@ -115,15 +114,19 @@ Supports multiple FastReport export formats:
 ```
 odoo-fast-report-mapper/
 ├── odoo_fast_report_mapper/          # Main package (single-package layout as of v1.0)
+│   ├── __init__.py                  # Public API re-exports (OdooConnection, Report, …)
 │   ├── __version__.py               # Version source (pyproject.toml dynamic)
 │   ├── _cli.py                      # CLI entry point (Click)
-│   ├── _connection.py               # OdooConnection base class
-│   ├── eq_odoo_connection.py        # EqOdooConnection: mapping, testing, collecting
-│   ├── eq_report.py                 # EqReport objects & validation
-│   ├── eq_utils.py                  # YAML collection, .env config, conversions
-│   ├── lang_utils.py                # Language normalization & multi-lang utilities
-│   ├── logging_config.py            # Centralized logging with color + rotation
-│   └── progress.py                  # tqdm-based progress tracking
+│   ├── _connection.py               # OdooConnection: all mapping, testing, collecting logic
+│   ├── _exceptions.py               # Custom exception classes
+│   ├── _lang_utils.py               # Language normalization & multi-lang utilities
+│   ├── _logging.py                  # Centralized logging configuration
+│   ├── _odoo_types.py               # TypedDict definitions for Odoo RPC shapes
+│   ├── _progress.py                 # tqdm-based progress wrapper
+│   ├── _report.py                   # Report object & validation
+│   ├── _utils.py                    # YAML collection, .env config, conversions
+│   ├── _yaml_dumper.py              # Custom YAML serializer
+│   └── py.typed                     # PEP 561 marker
 ├── tests/                           # Unit tests
 ├── yaml_examples/                   # Configuration templates
 │   └── reports_yaml/                # Report config examples

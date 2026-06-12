@@ -22,10 +22,10 @@ Alle Importe aus `odoo_report_helper` müssen auf `odoo_fast_report_mapper` umge
 
 | Altes Import (v0.9.x) | Neues Import (v1.0) |
 |----------------------|---------------------|
-| `from odoo_report_helper.odoo_connection import OdooConnection` | `from odoo_fast_report_mapper._connection import OdooConnection` |
-| `from odoo_report_helper.report import Report` | `from odoo_fast_report_mapper._report import Report` |
-| `from odoo_report_helper.exceptions import PathDoesNotExistError` | `from odoo_fast_report_mapper.exceptions import PathDoesNotExistError` |
-| `from odoo_report_helper.utils import parse_yaml_folder` | `from odoo_fast_report_mapper.eq_utils import parse_yaml_folder` |
+| `from odoo_report_helper.odoo_connection import OdooConnection` | `from odoo_fast_report_mapper import OdooConnection` |
+| `from odoo_report_helper.report import Report` | `from odoo_fast_report_mapper import Report` |
+| `from odoo_report_helper.exceptions import PathDoesNotExistError` | `from odoo_fast_report_mapper import PathDoesNotExistError` |
+| `from odoo_report_helper.utils import parse_yaml_folder` | `from odoo_fast_report_mapper._utils import parse_yaml_folder` |
 
 #### Vor/Nach-Beispiele
 
@@ -39,10 +39,10 @@ from odoo_report_helper.utils import parse_yaml_folder
 
 **Nach (v1.0):**
 ```python
-from odoo_fast_report_mapper._connection import OdooConnection
-from odoo_fast_report_mapper._report import Report
-from odoo_fast_report_mapper.exceptions import PathDoesNotExistError
-from odoo_fast_report_mapper.eq_utils import parse_yaml_folder
+from odoo_fast_report_mapper import OdooConnection
+from odoo_fast_report_mapper import Report
+from odoo_fast_report_mapper import PathDoesNotExistError
+from odoo_fast_report_mapper._utils import parse_yaml_folder  # interne API — kein öffentlicher Re-Export
 ```
 
 ---
@@ -117,8 +117,9 @@ Server:
   api_key: "your_api_key"     # hat Vorrang
 ```
 
-Dieses Verhalten entspricht dem bereits dokumentierten Verhalten des ENV-Loaders
-(`ODOO_API_KEY` hat Vorrang über `ODOO_PASSWORD`).
+> **Hinweis:** Der `.env`-basierte Loader (`ODOO_API_KEY` + `ODOO_PASSWORD`) gibt hingegen
+> eine `logger.warning` aus, wenn beide Variablen gesetzt sind. Dieser Unterschied ist
+> beabsichtigt (D-06).
 
 ---
 
@@ -173,10 +174,10 @@ All imports from `odoo_report_helper` must be updated to `odoo_fast_report_mappe
 
 | Old import (v0.9.x) | New import (v1.0) |
 |---------------------|-------------------|
-| `from odoo_report_helper.odoo_connection import OdooConnection` | `from odoo_fast_report_mapper._connection import OdooConnection` |
-| `from odoo_report_helper.report import Report` | `from odoo_fast_report_mapper._report import Report` |
-| `from odoo_report_helper.exceptions import PathDoesNotExistError` | `from odoo_fast_report_mapper.exceptions import PathDoesNotExistError` |
-| `from odoo_report_helper.utils import parse_yaml_folder` | `from odoo_fast_report_mapper.eq_utils import parse_yaml_folder` |
+| `from odoo_report_helper.odoo_connection import OdooConnection` | `from odoo_fast_report_mapper import OdooConnection` |
+| `from odoo_report_helper.report import Report` | `from odoo_fast_report_mapper import Report` |
+| `from odoo_report_helper.exceptions import PathDoesNotExistError` | `from odoo_fast_report_mapper import PathDoesNotExistError` |
+| `from odoo_report_helper.utils import parse_yaml_folder` | `from odoo_fast_report_mapper._utils import parse_yaml_folder` |
 
 #### Before/After Examples
 
@@ -190,10 +191,10 @@ from odoo_report_helper.utils import parse_yaml_folder
 
 **After (v1.0):**
 ```python
-from odoo_fast_report_mapper._connection import OdooConnection
-from odoo_fast_report_mapper._report import Report
-from odoo_fast_report_mapper.exceptions import PathDoesNotExistError
-from odoo_fast_report_mapper.eq_utils import parse_yaml_folder
+from odoo_fast_report_mapper import OdooConnection
+from odoo_fast_report_mapper import Report
+from odoo_fast_report_mapper import PathDoesNotExistError
+from odoo_fast_report_mapper._utils import parse_yaml_folder  # internal API — not re-exported publicly
 ```
 
 ---
@@ -257,7 +258,7 @@ Ensure all YAML report configurations contain valid `name` entries
 
 #### 3b. api_key takes precedence over password (YAML loader)
 
-When both `api_key` and `password` are set in the server YAML configuration,
+When both `api_key` and `password` are set in the **server YAML configuration**,
 `api_key` takes precedence silently. No warning is emitted.
 
 ```yaml
@@ -268,8 +269,8 @@ Server:
   api_key: "your_api_key"     # takes precedence
 ```
 
-This behavior matches the already-documented behavior of the ENV loader
-(`ODOO_API_KEY` takes precedence over `ODOO_PASSWORD`).
+> **Note:** The `.env`-based loader (`ODOO_API_KEY` + `ODOO_PASSWORD`) **does** emit a
+> `logger.warning` when both are set. This difference is intentional (D-06).
 
 ---
 
