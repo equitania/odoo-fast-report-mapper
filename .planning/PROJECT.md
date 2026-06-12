@@ -32,16 +32,17 @@ A Python CLI tool (PyPI package) that maps YAML report definitions to Odoo `ir.a
 - ✓ Correctness hardening (BUG-01..BUG-07): empty-search guards, calculated-field preservation, dependency-check contract, loud failures on empty/malformed connection+config input, dict-typed `entry_name` guard, YAML api_key auth honored — each locked by a regression test — Phase 1.1
 - ✓ **TYPE-01**: mypy `--strict` passes with 0 errors and zero internal overrides; full annotation coverage incl. TypedDict RPC shapes, PEP 561 `py.typed` marker shipped — Phase 2
 - ✓ **PERF-01**: RPC-call count benchmarked and reduced — `add_field_to_dictionary()` no longer issues the 2 extra search calls per field (1000 redundant calls per 10×50 collect run eliminated); regression test `tests/test_benchmark_rpc.py` enforces `RPC_CEILING=0` in CI — Phase 3
+- ✓ **CONS-01**: Two-package layout consolidated — `odoo_report_helper/` dissolved into `odoo_fast_report_mapper/` — Phase 1 (validated in Phase 4 docs/release pass)
+- ✓ **CONS-02**: Dead-but-public API removed — `ProgressBar`, `ReportProgress`, `create_progress_bar` and their tests — Phase 1 (migration path documented in MIGRATION.md, Phase 4)
+- ✓ **DOCS-01**: `MIGRATION.md` written — bilingual DE/EN, import-path mapping, Before/After snippets, tqdm example, Phase-1.1 behavior changes; ships in sdist — Phase 4
+- ✓ **DOCS-02**: `README.md` (DE + EN), `SKILL.md`, `CLAUDE.md`, `RELEASE_NOTES.md` refreshed to v1.0 reality (zero active `odoo_report_helper` references, real module trees) — Phase 4
+- ✓ **CI-01**: CI matrix extended to Python 3.12 + 3.13 + 3.14 (all blocking) with mypy `--strict` gate, RPC-count perf gate, and `uv build` job — Phase 4
 
 ### Active
 
 <!-- v1.0 — Reines Tech-Debt-Cleanup vor "Production-Ready" Statement. Breaking changes erlaubt. -->
 
-- [ ] **CONS-01**: Consolidate two-package layout — dissolve `odoo_report_helper/` into `odoo_fast_report_mapper/` (eliminates circular import)
-- [ ] **CONS-02**: Remove dead-but-public API — `ProgressBar`, `ReportProgress`, `create_progress_bar` and their tests (~350 LOC)
-- [ ] **DOCS-01**: Write `MIGRATION.md` with Before/After examples for every breaking change (import paths, removed classes, deprecated patterns)
-- [ ] **DOCS-02**: Refresh `README.md` (DE + EN), `SKILL.md`, `CLAUDE.md`, `RELEASE_NOTES.md` to v1.0 reality
-- [ ] **CI-01**: Extend CI matrix to include Python 3.14 once it reaches GA (fallback: keep at 3.12 + 3.13 if 3.14 not stable at release time)
+(none — all v1.0 requirements validated; Phase 4 complete on 2026-06-12. Release awaits Captain's local `uv publish`.)
 
 ### Out of Scope
 
@@ -118,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-11 after Phase 3 (Performance) completion*
+*Last updated: 2026-06-12 after Phase 4 (Release Preparation) completion — all v1.0 phases complete, verification passed 13/13, package built as 1.0.0; `uv publish` pending (Captain, local)*
