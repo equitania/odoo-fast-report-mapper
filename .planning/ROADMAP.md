@@ -155,8 +155,8 @@ Plans:
 
 **Wave 2** *(blocked on 04-01)*
 
-- [ ] 04-03-PLAN.md — Create MIGRATION.md (bilingual DE/EN) + prepend RELEASE_NOTES.md v1.0.0 entry
-- [ ] 04-04-PLAN.md — Update README.md, CLAUDE.md, SKILL.md to single-package v1.0 layout
+- [x] 04-03-PLAN.md — Create MIGRATION.md (bilingual DE/EN) + prepend RELEASE_NOTES.md v1.0.0 entry
+- [x] 04-04-PLAN.md — Update README.md, CLAUDE.md, SKILL.md to single-package v1.0 layout
 
 **Wave 3** *(blocked on all Wave 1 + 2 plans)*
 
@@ -172,7 +172,7 @@ Plans:
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
 | 3. Performance | 2/2 | Complete   | 2026-06-11 |
-| 4. Release Preparation | 2/5 | In Progress|  |
+| 4. Release Preparation | 4/5 | In Progress|  |
 
 ---
 
