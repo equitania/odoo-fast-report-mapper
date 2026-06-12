@@ -60,7 +60,7 @@
 
 - [ ] **DOCS-03**: `RELEASE_NOTES.md` mit v1.0-Eintrag — vollständiger Changelog, Breaking-Changes-Sektion ganz oben, Link zu MIGRATION.md.
 
-- [ ] **DOCS-04**: `SKILL.md` (`~/.claude/skills/fr-mapper/SKILL.md`) auf v1.0 aktualisiert — Project Structure Sektion zeigt nur ein Package, Version-History bekommt v1.0-Eintrag, Skill-Hierarchy-Tabelle aktualisiert.
+- [x] **DOCS-04**: `SKILL.md` (`~/.claude/skills/fr-mapper/SKILL.md`) auf v1.0 aktualisiert — Project Structure Sektion zeigt nur ein Package, Version-History bekommt v1.0-Eintrag, Skill-Hierarchy-Tabelle aktualisiert.
 
 - [ ] **DOCS-05**: Project `CLAUDE.md` aktualisiert — File-Structure-Block und Architecture-Sektion auf das single-Package-Layout.
 
@@ -74,11 +74,11 @@
 
 ### Release-Quality-Gates
 
-- [ ] **GATE-01**: Alle Tests grün (369 minus die legitim entfernten P-08/P-09-Tests). Test-Count nach Cleanup dokumentiert in RELEASE_NOTES.
-- [ ] **GATE-02**: Ruff check + format clean.
-- [ ] **GATE-03**: Mypy strict pass.
-- [ ] **GATE-04**: Migration-Guide manuell von Captain reviewed.
-- [ ] **GATE-05**: `uv build` produziert wheel + sdist ohne Fehler. **`uv publish` wird ausschließlich von Captain ausgeführt** — Claude führt diesen Befehl niemals aus.
+- [x] **GATE-01**: Alle Tests grün (369 minus die legitim entfernten P-08/P-09-Tests). Test-Count nach Cleanup dokumentiert in RELEASE_NOTES.
+- [x] **GATE-02**: Ruff check + format clean.
+- [x] **GATE-03**: Mypy strict pass.
+- [x] **GATE-04**: Migration-Guide manuell von Captain reviewed.
+- [x] **GATE-05**: `uv build` produziert wheel + sdist ohne Fehler. **`uv publish` wird ausschließlich von Captain ausgeführt** — Claude führt diesen Befehl niemals aus.
 
 ### Correctness-Bug-Fixes
 
@@ -155,16 +155,16 @@ Diese Items haben Wert, sind aber nach v1.0:
 | DOCS-01 | Phase 4 — Release Preparation | Pending |
 | DOCS-02 | Phase 4 — Release Preparation | Pending |
 | DOCS-03 | Phase 4 — Release Preparation | Pending |
-| DOCS-04 | Phase 4 — Release Preparation | Pending |
+| DOCS-04 | Phase 4 — Release Preparation | Complete |
 | DOCS-05 | Phase 4 — Release Preparation | Pending |
 | CI-01 | Phase 4 — Release Preparation | Pending |
 | CI-02 | Phase 4 — Release Preparation | Pending |
 | CI-03 | Phase 4 — Release Preparation | Pending |
-| GATE-01 | Phase 4 — Release Preparation | Pending |
-| GATE-02 | Phase 4 — Release Preparation | Pending |
-| GATE-03 | Phase 4 — Release Preparation | Pending |
-| GATE-04 | Phase 4 — Release Preparation | Pending |
-| GATE-05 | Phase 4 — Release Preparation | Pending |
+| GATE-01 | Phase 4 — Release Preparation | Complete |
+| GATE-02 | Phase 4 — Release Preparation | Complete |
+| GATE-03 | Phase 4 — Release Preparation | Complete |
+| GATE-04 | Phase 4 — Release Preparation | Complete |
+| GATE-05 | Phase 4 — Release Preparation | Complete |
 | BUG-01 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-02 | Phase 1.1 — Correctness Bug Fixes | Complete |
 | BUG-03 | Phase 1.1 — Correctness Bug Fixes | Complete |

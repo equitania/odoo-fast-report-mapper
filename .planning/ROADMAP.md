@@ -12,7 +12,7 @@
 - [x] **Phase 1.1: Correctness Bug Fixes** *(inserted)* - Fix data-corruption and crash bugs surfaced by the baseline review before type-safety work begins (completed 2026-05-29)
 - [x] **Phase 2: Type Safety** - Mypy strict mode passes with zero errors across the consolidated production codebase (completed 2026-06-11)
 - [x] **Phase 3: Performance** - Benchmark and eliminate the 2 extra RPC calls per field in add_field_to_dictionary() (completed 2026-06-11)
-- [ ] **Phase 4: Release Preparation** - MIGRATION.md, docs refresh, CI matrix hardening, all release-quality gates
+- [x] **Phase 4: Release Preparation** - MIGRATION.md, docs refresh, CI matrix hardening, all release-quality gates (completed 2026-06-12)
 
 ---
 
@@ -160,7 +160,7 @@ Plans:
 
 **Wave 3** *(blocked on all Wave 1 + 2 plans)*
 
-- [ ] 04-05-PLAN.md — Run all quality gates (GATE-01..GATE-05), Captain review checkpoint for MIGRATION.md (GATE-04), document branch-protection check names
+- [x] 04-05-PLAN.md — Run all quality gates (GATE-01..GATE-05), Captain review checkpoint for MIGRATION.md (GATE-04), document branch-protection check names
 
 ---
 
@@ -172,7 +172,7 @@ Plans:
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
 | 3. Performance | 2/2 | Complete   | 2026-06-11 |
-| 4. Release Preparation | 4/5 | In Progress|  |
+| 4. Release Preparation | 5/5 | Complete   | 2026-06-12 |
 
 ---
 
