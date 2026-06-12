@@ -31,46 +31,46 @@
 
 ### Type-Safety
 
-- [ ] **TYPE-01**: `mypy --strict odoo_fast_report_mapper/` läuft fehlerfrei für den gesamten Production-Code. Alle 13 baseline-Errors aus v0.9.7 sind aufgelöst, nicht nur ignoriert.
+- [x] **TYPE-01**: `mypy --strict odoo_fast_report_mapper/` läuft fehlerfrei für den gesamten Production-Code. Alle 13 baseline-Errors aus v0.9.7 sind aufgelöst, nicht nur ignoriert.
 
-- [ ] **TYPE-02**: Type-Annotations für alle Public-Funktionen und Methods. `from __future__ import annotations` wird projektweit eingeführt falls für lesbarere Annotations nötig.
+- [x] **TYPE-02**: Type-Annotations für alle Public-Funktionen und Methods. `from __future__ import annotations` wird projektweit eingeführt falls für lesbarere Annotations nötig.
 
-- [ ] **TYPE-03**: Mypy-Konfiguration in `pyproject.toml` aktualisiert auf `strict = true` (statt der aktuellen permissiven Konfiguration).
+- [x] **TYPE-03**: Mypy-Konfiguration in `pyproject.toml` aktualisiert auf `strict = true` (statt der aktuellen permissiven Konfiguration).
 
 ### Performance
 
-- [ ] **PERF-01**: Benchmark für `collect_report_entries()` etabliert — misst RPC-Call-Count gegen ein definiertes Sample (z.B. 10 Reports × 50 Fields). Implementiert via Mock-Counter auf der RPC-Schicht.
+- [x] **PERF-01**: Benchmark für `collect_report_entries()` etabliert — misst RPC-Call-Count gegen ein definiertes Sample (z.B. 10 Reports × 50 Fields). Implementiert via Mock-Counter auf der RPC-Schicht.
 
-- [ ] **PERF-02**: `add_field_to_dictionary()` macht maximal **0 zusätzliche** RPC-Calls pro Field (die 2 aktuellen `IR_MODEL.search()` + `IR_FIELDS.search()`-Calls werden eliminiert, z.B. durch Caching pro Modul oder Pre-Fetch).
+- [x] **PERF-02**: `add_field_to_dictionary()` macht maximal **0 zusätzliche** RPC-Calls pro Field (die 2 aktuellen `IR_MODEL.search()` + `IR_FIELDS.search()`-Calls werden eliminiert, z.B. durch Caching pro Modul oder Pre-Fetch).
 
-- [ ] **PERF-03**: Performance-Regression-Test im pytest-Suite — Benchmark-Test scheitert, falls die RPC-Call-Count über dem definierten Limit liegt. CI-enforced.
+- [x] **PERF-03**: Performance-Regression-Test im pytest-Suite — Benchmark-Test scheitert, falls die RPC-Call-Count über dem definierten Limit liegt. CI-enforced.
 
-- [ ] **PERF-04**: Konkrete Zielwerte dokumentiert: Sample-DB X Reports → max Y RPC-Calls insgesamt (genaue Zahlen werden in der Performance-Phase festgelegt nach Baseline-Messung).
+- [x] **PERF-04**: Konkrete Zielwerte dokumentiert: Sample-DB X Reports → max Y RPC-Calls insgesamt (genaue Zahlen werden in der Performance-Phase festgelegt nach Baseline-Messung).
 
 ### Documentation
 
-- [ ] **DOCS-01**: `MIGRATION.md` im Repo-Root erstellt. Enthält:
+- [x] **DOCS-01**: `MIGRATION.md` im Repo-Root erstellt. Enthält:
   - Vollständige Import-Pfad-Mapping `odoo_report_helper.X` → `odoo_fast_report_mapper.X`
   - Before/After-Beispiele für jede entfernte Klasse (`ProgressBar`, `ReportProgress`, `create_progress_bar`)
   - Konkrete Code-Snippets für Migration (z.B. `from tqdm import tqdm` Pattern statt `ProgressBar`)
   - Deprecation-Map mit Begründung
   - Mypy-Strict-Implikation für Konsumenten die Typecheck gegen die Lib laufen lassen
 
-- [ ] **DOCS-02**: `README.md` (DE + EN) auf v1.0-Stand: alle Verweise auf `odoo_report_helper` entfernt oder als historisch markiert. Aktuelle Architecture-Sektion. `MIGRATION.md` prominent verlinkt.
+- [x] **DOCS-02**: `README.md` (DE + EN) auf v1.0-Stand: alle Verweise auf `odoo_report_helper` entfernt oder als historisch markiert. Aktuelle Architecture-Sektion. `MIGRATION.md` prominent verlinkt.
 
-- [ ] **DOCS-03**: `RELEASE_NOTES.md` mit v1.0-Eintrag — vollständiger Changelog, Breaking-Changes-Sektion ganz oben, Link zu MIGRATION.md.
+- [x] **DOCS-03**: `RELEASE_NOTES.md` mit v1.0-Eintrag — vollständiger Changelog, Breaking-Changes-Sektion ganz oben, Link zu MIGRATION.md.
 
 - [x] **DOCS-04**: `SKILL.md` (`~/.claude/skills/fr-mapper/SKILL.md`) auf v1.0 aktualisiert — Project Structure Sektion zeigt nur ein Package, Version-History bekommt v1.0-Eintrag, Skill-Hierarchy-Tabelle aktualisiert.
 
-- [ ] **DOCS-05**: Project `CLAUDE.md` aktualisiert — File-Structure-Block und Architecture-Sektion auf das single-Package-Layout.
+- [x] **DOCS-05**: Project `CLAUDE.md` aktualisiert — File-Structure-Block und Architecture-Sektion auf das single-Package-Layout.
 
 ### CI / Tooling
 
-- [ ] **CI-01**: GitHub Actions CI-Matrix erweitert um Python 3.14 (falls Stable bis v1.0-Release). Fallback: Matrix bleibt Python 3.12 + 3.13 wenn 3.14 noch RC ist.
+- [x] **CI-01**: GitHub Actions CI-Matrix erweitert um Python 3.14 (falls Stable bis v1.0-Release). Fallback: Matrix bleibt Python 3.12 + 3.13 wenn 3.14 noch RC ist.
 
-- [ ] **CI-02**: Mypy-Strict-Check im CI-Workflow aktiv (statt der aktuellen permissiven Konfiguration).
+- [x] **CI-02**: Mypy-Strict-Check im CI-Workflow aktiv (statt der aktuellen permissiven Konfiguration).
 
-- [ ] **CI-03**: Performance-Benchmark-Test läuft im CI mit definiertem Threshold. Failure blockt Merge zu `develop`/`main`.
+- [x] **CI-03**: Performance-Benchmark-Test läuft im CI mit definiertem Threshold. Failure blockt Merge zu `develop`/`main`.
 
 ### Release-Quality-Gates
 
@@ -145,21 +145,21 @@ Diese Items haben Wert, sind aber nach v1.0:
 | DEAD-01 | Phase 1 — Package Consolidation | Complete |
 | DEAD-02 | Phase 1 — Package Consolidation | Complete |
 | DEAD-03 | Phase 1 — Package Consolidation | Complete |
-| TYPE-01 | Phase 2 — Type Safety | Pending |
-| TYPE-02 | Phase 2 — Type Safety | Pending |
-| TYPE-03 | Phase 2 — Type Safety | Pending |
-| PERF-01 | Phase 3 — Performance | Pending |
-| PERF-02 | Phase 3 — Performance | Pending |
-| PERF-03 | Phase 3 — Performance | Pending |
-| PERF-04 | Phase 3 — Performance | Pending |
-| DOCS-01 | Phase 4 — Release Preparation | Pending |
-| DOCS-02 | Phase 4 — Release Preparation | Pending |
-| DOCS-03 | Phase 4 — Release Preparation | Pending |
+| TYPE-01 | Phase 2 — Type Safety | Complete |
+| TYPE-02 | Phase 2 — Type Safety | Complete |
+| TYPE-03 | Phase 2 — Type Safety | Complete |
+| PERF-01 | Phase 3 — Performance | Complete |
+| PERF-02 | Phase 3 — Performance | Complete |
+| PERF-03 | Phase 3 — Performance | Complete |
+| PERF-04 | Phase 3 — Performance | Complete |
+| DOCS-01 | Phase 4 — Release Preparation | Complete |
+| DOCS-02 | Phase 4 — Release Preparation | Complete |
+| DOCS-03 | Phase 4 — Release Preparation | Complete |
 | DOCS-04 | Phase 4 — Release Preparation | Complete |
-| DOCS-05 | Phase 4 — Release Preparation | Pending |
-| CI-01 | Phase 4 — Release Preparation | Pending |
-| CI-02 | Phase 4 — Release Preparation | Pending |
-| CI-03 | Phase 4 — Release Preparation | Pending |
+| DOCS-05 | Phase 4 — Release Preparation | Complete |
+| CI-01 | Phase 4 — Release Preparation | Complete |
+| CI-02 | Phase 4 — Release Preparation | Complete |
+| CI-03 | Phase 4 — Release Preparation | Complete |
 | GATE-01 | Phase 4 — Release Preparation | Complete |
 | GATE-02 | Phase 4 — Release Preparation | Complete |
 | GATE-03 | Phase 4 — Release Preparation | Complete |
