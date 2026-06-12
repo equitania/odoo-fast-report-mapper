@@ -10,15 +10,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Main Components
 
-1. **CLI Interface** (`odoo_fast_report_mapper/odoo_fast_report_mapper.py`):
+1. **CLI Interface** (`odoo_fast_report_mapper/_cli.py`):
    - Entry point using Click framework
    - Handles command-line arguments for server and YAML paths
    - Orchestrates the mapping workflow
 
-2. **Connection Management** (`odoo_report_helper/odoo_connection.py`):
-   - `OdooConnection` class for odoorpc-toolbox integration
-   - Handles login, report mapping, and dependency validation
-   - Manages calculated fields and report testing
+2. **Connection Management** (`odoo_fast_report_mapper/_connection.py` + `eq_odoo_connection.py`):
+   - `OdooConnection` base class for odoorpc-toolbox integration
+   - `EqOdooConnection` subclass: report mapping, testing, collecting
+   - Handles login, dependency validation, calculated fields
 
 3. **Report Processing** (`odoo_fast_report_mapper/eq_report.py`):
    - Report object definitions and validation
@@ -26,13 +26,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 4. **Utility Functions** (`odoo_fast_report_mapper/eq_utils.py`):
    - YAML file collection and parsing
-   - Connection configuration management
+   - `.env`-based connection configuration management
 
 ### Configuration System
 
-The tool uses a two-folder configuration approach:
+The tool uses `.env`-based configuration:
 
-1. **Server Configuration** (`connection_yaml/`):
+1. **Server Configuration** (`.env` file):
    - Server connection details (URL, port, credentials)
    - Database and language settings
    - Workflow configuration (mapping, testing, or both)
@@ -114,22 +114,20 @@ Supports multiple FastReport export formats:
 
 ```
 odoo-fast-report-mapper/
-├── odoo_fast_report_mapper/          # Main package
-│   ├── odoo_fast_report_mapper.py   # CLI entry point
-│   ├── eq_odoo_connection.py        # Odoo connection wrapper
-│   ├── eq_report.py                 # Report objects
-│   ├── eq_utils.py                  # Utility functions
-│   └── MyDumper.py                  # YAML dumper
-├── odoo_report_helper/              # Helper package
-│   ├── odoo_connection.py           # Core connection class
-│   ├── report.py                    # Report processing
-│   ├── utils.py                     # Utility functions
-│   └── exceptions.py                # Custom exceptions
-├── yaml_examples/                   # Configuration templates
-│   ├── connection_yaml/             # Server config examples
-│   └── reports_yaml/                # Report config examples
+├── odoo_fast_report_mapper/          # Main package (single-package layout as of v1.0)
+│   ├── __version__.py               # Version source (pyproject.toml dynamic)
+│   ├── _cli.py                      # CLI entry point (Click)
+│   ├── _connection.py               # OdooConnection base class
+│   ├── eq_odoo_connection.py        # EqOdooConnection: mapping, testing, collecting
+│   ├── eq_report.py                 # EqReport objects & validation
+│   ├── eq_utils.py                  # YAML collection, .env config, conversions
+│   ├── lang_utils.py                # Language normalization & multi-lang utilities
+│   ├── logging_config.py            # Centralized logging with color + rotation
+│   └── progress.py                  # tqdm-based progress tracking
 ├── tests/                           # Unit tests
-└── pyproject.toml                  # Package configuration & build system
+├── yaml_examples/                   # Configuration templates
+│   └── reports_yaml/                # Report config examples
+└── pyproject.toml                   # Package configuration & build system
 ```
 
 ## Dependencies
@@ -140,7 +138,7 @@ odoo-fast-report-mapper/
 - **PyYAML** (>=5.4.1): YAML parsing and processing
 
 ### Python Requirements
-- Python >= 3.8
+- Python >= 3.12
 - UTF-8 encoding support for international characters
 
 ## Configuration Examples
