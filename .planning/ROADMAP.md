@@ -150,8 +150,8 @@ Plans:
 Plans:
 **Wave 1** *(independent, can run in parallel)*
 
-- [ ] 04-01-PLAN.md — Version bump to 1.0.0, pyproject.toml metadata (classifiers, Migration Guide URL), MANIFEST.in (MIGRATION.md in, CLAUDE.md out), git rm legacy planning files
-- [ ] 04-02-PLAN.md — CI workflow hardening: Python 3.14 matrix, mypy --strict blocking, perf job, build job
+- [x] 04-01-PLAN.md — Version bump to 1.0.0, pyproject.toml metadata (classifiers, Migration Guide URL), MANIFEST.in (MIGRATION.md in, CLAUDE.md out), git rm legacy planning files
+- [x] 04-02-PLAN.md — CI workflow hardening: Python 3.14 matrix, mypy --strict blocking, perf job, build job
 
 **Wave 2** *(blocked on 04-01)*
 
@@ -172,7 +172,7 @@ Plans:
 | 1.1 Correctness Bug Fixes *(inserted)* | 8/8 | Complete   | 2026-05-29 |
 | 2. Type Safety | 8/8 | Complete   | 2026-06-11 |
 | 3. Performance | 2/2 | Complete   | 2026-06-11 |
-| 4. Release Preparation | 0/5 | Not started | - |
+| 4. Release Preparation | 2/5 | In Progress|  |
 
 ---
 
