@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +38,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Mypy type check
-        run: uv run mypy odoo_fast_report_mapper/ odoo_report_helper/
-        continue-on-error: true
+        run: uv run mypy odoo_fast_report_mapper/ --strict
 
       - name: Pytest with coverage
         run: uv run pytest --cov --cov-report=term-missing --cov-report=xml
