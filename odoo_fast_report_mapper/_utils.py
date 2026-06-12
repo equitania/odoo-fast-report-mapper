@@ -144,20 +144,67 @@ def self_clean(input_dictionary: dict[str, list[str]]) -> dict[str, list[str]]:
     return return_dict
 
 
+def _safe_load_with_duplicate_check(text: str) -> tuple[Any, list[tuple[str, int]]]:
+    """
+    yaml.safe_load with duplicate mapping key detection.
+
+    PyYAML silently keeps the LAST value for duplicate mapping keys — a stray
+    second ``attachment: false`` in a report YAML overrode the multilingual
+    attachment expressions unnoticed. Last-wins behavior is preserved, but
+    every duplicate is reported so authoring errors surface immediately.
+
+    :param: text: YAML document text
+    :return: tuple (data, duplicates) where duplicates is a list of
+             (key, line_number) for every overridden key
+    """
+    duplicates: list[tuple[str, int]] = []
+
+    class _Loader(yaml.SafeLoader):
+        pass
+
+    def _construct_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False) -> dict[Any, Any]:
+        seen: set[Any] = set()
+        for key_node, _value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            try:
+                if key in seen:
+                    duplicates.append((str(key), key_node.start_mark.line + 1))
+                else:
+                    seen.add(key)
+            except TypeError:
+                # Unhashable key: SafeLoader.construct_mapping raises a proper
+                # ConstructorError below — skip duplicate tracking here
+                continue
+        return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+    _Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
+    # _Loader subclasses yaml.SafeLoader — as safe as yaml.safe_load()
+    return yaml.load(text, Loader=_Loader), duplicates
+
+
 def parse_yaml(yaml_file: str) -> dict[str, Any] | bool:
     """
     Parse yaml file to object and return it.
+
+    Duplicate mapping keys are logged as warnings (file + line number);
+    the resulting object keeps PyYAML's last-wins value.
 
     :param: yaml_file: path to yaml file
     :return: yaml_object
     """
     with open(yaml_file, encoding="utf-8") as stream:
         try:
-            return yaml.safe_load(stream)  # type: ignore[no-any-return]
+            yaml_object, duplicate_keys = _safe_load_with_duplicate_check(stream.read())
         except yaml.YAMLError as exc:
             _helper_logger.error(f"YAML parsing error in file: {yaml_file}")
             _helper_logger.exception(exc)
             return False
+    for key, line in duplicate_keys:
+        _helper_logger.warning(
+            f"Duplicate YAML key '{key}' (line {line}) in {yaml_file} — "
+            f"the last value wins, the earlier definition is silently ignored"
+        )
+    return yaml_object  # type: ignore[no-any-return]
 
 
 def parse_yaml_folder_with_filenames(path: str) -> list[tuple[str, dict[str, Any]]]:

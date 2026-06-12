@@ -3,6 +3,7 @@
 
 """Comprehensive tests for odoo_fast_report_mapper._utils module."""
 
+import logging
 import os
 from unittest.mock import patch
 
@@ -760,3 +761,79 @@ class TestCreateConnectionFromYamlObject:
         conn = create_odoo_connection_from_yaml_object(sample_connection_yaml_data)
         assert conn.auth_method == "api_key"
         assert conn.password == "api-key-wins"
+
+
+# ---------------------------------------------------------------------------
+# parse_yaml duplicate key detection
+# ---------------------------------------------------------------------------
+
+
+class _ListHandler(logging.Handler):
+    """Collect log records in a list — independent of global logging state."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(record)
+
+
+class TestParseYamlDuplicateKeys:
+    """Duplicate mapping keys must be logged — PyYAML silently keeps the last
+    value, which wiped the sale-order attachment expressions in v19-fast-report."""
+
+    @pytest.fixture()
+    def utils_log(self):
+        """Attach a capture handler directly to the package logger.
+
+        The package logger uses propagate=False and other tests reconfigure
+        global logging, so caplog/capsys are unreliable here.
+        """
+        logger = logging.getLogger("odoo_fast_report_mapper._utils")
+        handler = _ListHandler()
+        old_level = logger.level
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
+        yield handler
+        logger.removeHandler(handler)
+        logger.setLevel(old_level)
+
+    def test_duplicate_top_level_key_warns_and_keeps_last_value(self, tmp_path, utils_log):
+        """A duplicate top-level key should log a warning with file and line."""
+        yaml_file = tmp_path / "report.yaml"
+        yaml_file.write_text(
+            "attachment:\n  de_DE: expr\nreport_name: foo\nattachment: false\n",
+            encoding="utf-8",
+        )
+        result = parse_yaml(str(yaml_file))
+        assert result["attachment"] is False  # last-wins behavior unchanged
+        out = "\n".join(rec.getMessage() for rec in utils_log.records)
+        assert "Duplicate YAML key 'attachment'" in out
+        assert "line 4" in out
+        assert "report.yaml" in out
+
+    def test_duplicate_nested_key_warns(self, tmp_path, utils_log):
+        """Duplicates inside nested mappings (e.g. the name dict) are detected too."""
+        yaml_file = tmp_path / "report.yaml"
+        yaml_file.write_text("name:\n  de_DE: A\n  de_DE: B\n", encoding="utf-8")
+        result = parse_yaml(str(yaml_file))
+        assert result["name"]["de_DE"] == "B"
+        out = "\n".join(rec.getMessage() for rec in utils_log.records)
+        assert "Duplicate YAML key 'de_DE'" in out
+        assert "line 3" in out
+
+    def test_clean_yaml_logs_no_warning(self, tmp_path, utils_log):
+        """A file without duplicate keys should not produce any warning."""
+        yaml_file = tmp_path / "report.yaml"
+        yaml_file.write_text("report_name: foo\nreport_model: sale.order\n", encoding="utf-8")
+        result = parse_yaml(str(yaml_file))
+        assert result == {"report_name": "foo", "report_model": "sale.order"}
+        out = "\n".join(rec.getMessage() for rec in utils_log.records)
+        assert "Duplicate YAML key" not in out
+
+    def test_invalid_yaml_still_returns_false(self, tmp_path):
+        """Broken YAML keeps returning False (error contract unchanged)."""
+        yaml_file = tmp_path / "broken.yaml"
+        yaml_file.write_text("key: [\nbad: yaml\n  broken", encoding="utf-8")
+        assert parse_yaml(str(yaml_file)) is False

@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.0.1 (12.06.2026)
+
+### Added
+- Duplicate YAML key guard in `parse_yaml()`: PyYAML silently keeps the LAST value for duplicate mapping keys — a stray second `attachment: false` in a report YAML overrode the multilingual attachment expressions unnoticed (v19-fast-report, sale order: no Angebot-/Auftrag-PDFs were saved for months). `parse_yaml()` now detects duplicate keys at any nesting level via a SafeLoader subclass and logs a warning with file name and line number per duplicate; last-wins behavior is preserved. 4 new tests (353 total)
+
 ## Version 1.0.0 (12.06.2026)
 
 ### Breaking Changes
