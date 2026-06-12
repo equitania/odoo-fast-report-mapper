@@ -57,14 +57,17 @@ uv pip install -e .
 
 ### Running the Tool
 ```bash
-# Interactive mode (prompts for paths)
-odoo-fast-report-mapper
+# Generate .env template (first-time setup)
+odoo-fr-mapper --init
 
-# Direct execution with paths
-odoo-fast-report-mapper --server_path=./connection_yaml --yaml_path=./reports_yaml
+# Map all reports (connection from .env in current directory)
+odoo-fast-report-mapper --yaml_path=./reports_yaml
 
-# Development examples
-odoo-fast-report-mapper --server_path=$HOME/gitbase/dev-helpers/yaml/v16-yaml-con --yaml_path=$HOME/gitbase/fr-core-yaml/v16/yaml
+# Map selected reports interactively
+odoo-fr-mapper --yaml_path=./reports_yaml --select
+
+# Custom .env location
+odoo-fr-mapper --env_path=./connections/ --yaml_path=./yaml/
 ```
 
 ### Testing
@@ -146,18 +149,21 @@ odoo-fast-report-mapper/
 
 ## Configuration Examples
 
-### Server Configuration (config.yaml)
-```yaml
-Server:
-  url: https://odoo.example.com
-  port: 443
-  user: admin
-  password: your_password
-  database: your_db
-  language: ger                  # ger or eng
-  collect_yaml: False            # Collection mode
-  disable_qweb: True             # Disable QWeb reports
-  workflow: 0                    # 0=mapping, 1=testing, 2=both
+### Server Configuration (.env)
+```bash
+# Odoo Server Connection
+ODOO_URL=https://odoo.example.com
+ODOO_PORT=443
+ODOO_USER=admin
+ODOO_DATABASE=your_db
+ODOO_LANGUAGE=de_DE            # Odoo locale code (legacy: ger, eng)
+
+# Authentication — set ONE (ODOO_API_KEY takes precedence, Odoo >= 14)
+ODOO_PASSWORD=your_password
+# ODOO_API_KEY=your_api_key
+
+# Workflow: 0=mapping (default), 1=testing, 2=both
+ODOO_WORKFLOW=0
 ```
 
 ### Report Configuration (template.yaml)
