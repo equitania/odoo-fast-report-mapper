@@ -217,3 +217,14 @@ The tool includes comprehensive error handling for:
 - Semantic versioning in setup.py
 - Equitania Software GmbH copyright headers
 - GitHub repository synchronization
+
+### Branch Strategy
+- **Trunk = `develop`.** It is the single long-lived branch and the default branch on both
+  remotes (`origin/HEAD` and `upstream/HEAD` point to `develop`). All work merges into `develop`.
+- **No `staging` / `production` branches.** The old GitFlow stage/prod branches were retired
+  (they had been dead since 2020, 238 commits behind). Do **not** recreate them — feature work
+  uses short-lived topic branches off `develop`, merged via GitLab MR.
+- **Releases are tags, not branches:** bump the version, then tag `vX.Y.Z` on `develop` and push
+  the tag to **both** remotes. Publishing to PyPI is done locally with `uvpublish` (no CI release).
+- **Dual-remote rule:** push branches and tags to `origin` (GitLab, MR/source-of-truth) **and**
+  `upstream` (GitHub mirror) so they stay identical.
