@@ -1,9 +1,16 @@
 # Release Notes
 
-## Version 1.0.2 (30.06.2026)
+## Version 1.0.3 (30.06.2026)
 
 ### Added
+- Bilingual (DE/EN) user guide under `usage/`: task-oriented step-by-step guides for registering reports (mapping), multi-language report names, selective registration (`--select`), and selectively exporting UI-adjusted reports back to YAML (collect mode), plus an index. The README gains value-proposition bullets and a user-guide chapter linking these guides.
 - LLM-facing capability card `usage/AGENT.md` (generated via the `cli-capability-card` skill): a dense, English reference of the CLI surface, recipes, and guardrails for agents that want to *use* the tool. Regenerate the command table after any CLI change.
+
+### Security
+- Made `.env` auto-discovery transparent: when no `.env` exists in the working directory, the loader now resolves the actual file via `find_dotenv(usecwd=True)` and logs the real path (or `(environment variables only)`), instead of loading a parent-directory `.env` silently behind an `(auto-discovery)` placeholder — preventing unintended connections to a parent project's credentials.
+- Switched the output serializer base class `YAMLDumper` from `yaml.Dumper` to `yaml.SafeDumper`, so collected/exported YAML can never emit `!!python/object` tags even if a non-basic object reaches the export dict in future code.
+
+## Version 1.0.2 (24.06.2026)
 
 ### Changed
 - Lowered minimum Python requirement from 3.12 to 3.10. The package code was never tied to 3.12 (all runtime modules use `from __future__ import annotations`, so builtin generics and `X | Y` unions are string-only at runtime). The real lower bound is the dependency `odoorpc-toolbox` (>=3.10), which uses runtime `X | Y` union syntax. No source code changes required.
@@ -16,8 +23,6 @@
 ### Security
 - Hardened the deprecated YAML-based connection workflow (`collect_all_connections()`): it now emits a real `DeprecationWarning` and both it and `create_odoo_connection_from_yaml_object()` document that they read credentials from clear-text YAML — use `create_connection_from_env()` (`.env`) instead.
 - Strengthened the inline security note on the YAML `SafeLoader` subclass in `parse_yaml()` to prevent future edits from silently re-enabling unsafe deserialization.
-- Made `.env` auto-discovery transparent: when no `.env` exists in the working directory, the loader now resolves the actual file via `find_dotenv(usecwd=True)` and logs the real path (or `(environment variables only)`), instead of loading a parent-directory `.env` silently behind an `(auto-discovery)` placeholder — preventing unintended connections to a parent project's credentials.
-- Switched the output serializer base class `YAMLDumper` from `yaml.Dumper` to `yaml.SafeDumper`, so collected/exported YAML can never emit `!!python/object` tags even if a non-basic object reaches the export dict in future code.
 
 ## Version 1.0.1 (12.06.2026)
 
