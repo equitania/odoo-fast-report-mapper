@@ -701,6 +701,19 @@ class OdooConnection:
         company_id: int | Literal[False],
         modules: list[str] | None = None,  # resolved by caller from field_object.modules; None means no dependency info
     ) -> dict[Any, Any]:
+        """Add a single model field to the per-report mapping dictionary.
+
+        Creates the report/model entries on first use and appends the field and
+        any company id without introducing duplicates.
+
+        :param data_dictionary: accumulator keyed by report id, then model name
+        :param report_id: Odoo report record id
+        :param model_name: technical model name the field belongs to
+        :param field_name: technical field name to map
+        :param company_id: company id to scope the report to, or ``False``
+        :param modules: modules providing the field (for dependency info), or None
+        :return: the updated ``data_dictionary``
+        """
         if report_id not in data_dictionary:
             data_dictionary[report_id] = {}
         if model_name not in data_dictionary[report_id]:
@@ -745,6 +758,16 @@ class OdooConnection:
     def create_eq_report_object(
         self, action_id: Any, field_dictionary: dict[str, Any]
     ) -> Any:  # Any: Report object (circular import avoided)
+        """Build a :class:`Report` object from an existing Odoo report action.
+
+        Reads the report action via RPC, collects its name in all installed
+        languages and assembles a :class:`Report` populated with the given field
+        dictionary — used by the collect workflow to export Odoo reports to YAML.
+
+        :param action_id: id of the ``ir.actions.report`` record
+        :param field_dictionary: collected field mapping for this report
+        :return: a populated :class:`Report` instance
+        """
         # Lazy import to avoid forward-reference before _report.py exists in Wave 3
         from ._report import Report  # noqa: PLC0415
 
@@ -834,9 +857,11 @@ class OdooConnection:
             )
 
     def is_boolean(self, object_to_be_checked: Any) -> bool:
+        """Return ``True`` if the given value is a ``bool``."""
         return bool(isinstance(object_to_be_checked, bool))
 
     def is_dict(self, object_to_be_checked: Any) -> bool:
+        """Return ``True`` if the given value is a ``dict``."""
         return bool(isinstance(object_to_be_checked, dict))
 
     def test_fast_report_rendering(self, report_list: list[Any]) -> None:
@@ -912,6 +937,12 @@ class OdooConnection:
             self.connection.env.user.company_id = original_company_yaml_user
 
     def disable_qweb_reports(self) -> None:
+        """Remove the print-menu actions of all QWeb (pdf/html/text) reports.
+
+        Searches every ``ir.actions.report`` of type ``qweb-pdf``, ``qweb-html``
+        or ``qweb-text`` and calls ``unlink_action()`` so only FastReport entries
+        remain available in the print menu.
+        """
         IR_ACTIONS_REPORT = self.connection.env["ir.actions.report"]
         report_ids = IR_ACTIONS_REPORT.search(
             [

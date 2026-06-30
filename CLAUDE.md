@@ -144,7 +144,7 @@ odoo-fast-report-mapper/
 - **PyYAML** (>=5.4.1): YAML parsing and processing
 
 ### Python Requirements
-- Python >= 3.12
+- Python >= 3.10 (lower bound set by dependency `odoorpc-toolbox`, which requires >=3.10)
 - UTF-8 encoding support for international characters
 
 ## Configuration Examples

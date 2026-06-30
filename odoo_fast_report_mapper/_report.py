@@ -12,6 +12,14 @@ from ._utils import self_clean
 
 
 class Report:
+    """In-memory representation of a single FastReport definition.
+
+    Holds the bilingual names, target model, export settings, field mappings and
+    calculated fields parsed from a report YAML file, and converts them into the
+    payloads required for Odoo mapping (:meth:`self_ensure`) or YAML export
+    (:meth:`ensure_data_for_yaml`).
+    """
+
     # Note: this class has no base class after consolidation. No super-init call is needed.
     def __init__(
         self,
@@ -91,6 +99,15 @@ class Report:
         }
 
     def ensure_data_for_yaml(self) -> dict[str, Any]:
+        """Build the full report dict for YAML export (collect workflow).
+
+        Unlike :meth:`self_ensure`, this keeps the per-language name dicts intact
+        and includes dependencies, report fields and calculated fields. When a
+        ``company_id`` is set it is inserted after the first five keys to preserve
+        the canonical key order.
+
+        :return: dict ready to be serialized to a report YAML file
+        """
         yaml_data = {
             "name": self.entry_name,
             "report_name": self.report_name,

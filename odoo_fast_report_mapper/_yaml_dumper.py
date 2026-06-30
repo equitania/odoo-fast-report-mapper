@@ -8,8 +8,9 @@ from __future__ import annotations
 import yaml
 
 
-class YAMLDumper(yaml.Dumper):
+class YAMLDumper(yaml.SafeDumper):
     """Custom YAML dumper for consistent indentation formatting."""
 
     def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        """Force block-style indentation for nested sequences (never indentless)."""
         return super().increase_indent(flow, False)

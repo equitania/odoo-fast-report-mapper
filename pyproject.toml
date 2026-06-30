@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "A Python library for creating, managing, and testing FastReport entries in Odoo environments"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 authors = [
     { name = "Equitania Software GmbH", email = "info@equitania.de" },
 ]
@@ -19,6 +19,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Office/Business",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -74,7 +76,7 @@ odoo_fast_report_mapper = ["py.typed"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py312"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "UP", "B", "SIM"]
@@ -110,7 +112,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 80
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
@@ -119,7 +121,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.10"
 strict = true
 # warn_return_any and warn_unused_configs are subsumed by strict = true
 # ignore_missing_imports removed — replaced by targeted follow_untyped_imports override below

@@ -14,12 +14,13 @@ from __future__ import annotations
 import copy
 import logging
 import os
+import warnings
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
 import yaml
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from odoorpc_toolbox import ODOO
 
 from ._exceptions import PathDoesNotExistError
@@ -178,7 +179,12 @@ def _safe_load_with_duplicate_check(text: str) -> tuple[Any, list[tuple[str, int
         return yaml.SafeLoader.construct_mapping(loader, node, deep)
 
     _Loader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
-    # _Loader subclasses yaml.SafeLoader — as safe as yaml.safe_load()
+    # SECURITY: _Loader is a yaml.SafeLoader subclass, so this is equivalent to
+    # yaml.safe_load() — no arbitrary Python object construction (no RCE) is possible.
+    # The only added constructor delegates to yaml.SafeLoader.construct_mapping().
+    # Do NOT register any constructor here that does not delegate to SafeLoader,
+    # and never switch _Loader's base to yaml.Loader/FullLoader — either would
+    # silently re-enable unsafe deserialization of untrusted report YAML.
     return yaml.load(text, Loader=_Loader), duplicates
 
 
@@ -320,6 +326,13 @@ def create_report_object_from_yaml_object(yaml_object: dict[str, Any]) -> Any:
 def create_odoo_connection_from_yaml_object(yaml_object: dict[str, Any]) -> Any:
     """
     Create OdooConnection object from yaml_object.
+
+    .. warning::
+        SECURITY: this reads the server password / API key from the YAML
+        ``Server`` section in clear text. Storing credentials in YAML files is
+        discouraged — prefer :func:`create_connection_from_env` (``.env`` based).
+        This function exists only for the deprecated
+        :func:`collect_all_connections` workflow.
 
     :param: yaml_object
     :return: OdooConnection object
@@ -479,10 +492,19 @@ def create_connection_from_env(env_path: str | None = None) -> tuple[Any, str]:
             logger.info(f"Loading .env from: {dotenv_path}")
             load_dotenv(dotenv_path=dotenv_path)
         else:
-            dotenv_path = "(auto-discovery)"
             logger.warning(f".env not found in current directory: {os.getcwd()}")
             logger.info("Trying python-dotenv auto-discovery...")
-            load_dotenv()
+            # Resolve the actual file that auto-discovery would load BEFORE loading it,
+            # so the reported path reflects reality instead of a placeholder. This prevents
+            # silently connecting against credentials picked up from a parent directory.
+            discovered = find_dotenv(usecwd=True)
+            if discovered:
+                dotenv_path = discovered
+                logger.warning(f"Auto-discovered .env in a parent directory: {dotenv_path}")
+                load_dotenv(dotenv_path=dotenv_path)
+            else:
+                dotenv_path = "(environment variables only)"
+                logger.warning("No .env found via auto-discovery — relying on environment variables only")
 
     # Required (non-auth) variables
     required_vars = {
@@ -585,9 +607,20 @@ def collect_all_connections(path: str) -> list[Any]:
     This function is deprecated and maintained only for backwards compatibility.
     Use create_connection_from_env() instead for better security.
 
+    .. warning::
+        SECURITY: this workflow expects server credentials (password / API key)
+        in clear text inside YAML files, which can leak into version control or
+        backups. Migrate to :func:`create_connection_from_env` (``.env`` based).
+
     :param: path to yaml files
     :return: list of connection objects
     """
+    warnings.warn(
+        "collect_all_connections() is deprecated and reads credentials from clear-text "
+        "YAML files. Use create_connection_from_env() instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     logger.warning("collect_all_connections() is deprecated. Use create_connection_from_env() instead.")
     try:
         yaml_connection_objects = parse_yaml_folder(path)

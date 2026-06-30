@@ -1,9 +1,9 @@
 # Odoo Fast Report Mapper
 
 [![PyPI version](https://badge.fury.io/py/odoo-fast-report-mapper-equitania.svg)](https://badge.fury.io/py/odoo-fast-report-mapper-equitania)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Tests](https://img.shields.io/badge/tests-349%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-353%20passed-brightgreen.svg)]()
 
 > **Language / Sprache**: [DE](#deutsche-dokumentation) | [EN](#english-documentation)
 
@@ -40,7 +40,7 @@ Nutzer, die von einer früheren Version upgraden, finden alle Breaking Changes u
 
 ### Voraussetzungen
 
-Python >= 3.12 und [UV](https://docs.astral.sh/uv/) müssen installiert sein.
+Python >= 3.10 und [UV](https://docs.astral.sh/uv/) müssen installiert sein.
 
 | Betriebssystem | Python | UV |
 |----------------|--------|-----|
@@ -196,7 +196,7 @@ Users upgrading from an earlier version will find all breaking changes and impor
 
 ### Prerequisites
 
-Python >= 3.12 and [UV](https://docs.astral.sh/uv/) must be installed.
+Python >= 3.10 and [UV](https://docs.astral.sh/uv/) must be installed.
 
 | OS | Python | UV |
 |----|--------|-----|
@@ -335,7 +335,7 @@ odoo-fast-report-mapper/
 │   ├── _utils.py                    # YAML collection, .env config, conversions
 │   ├── _yaml_dumper.py              # Custom YAML serializer
 │   └── py.typed                     # PEP 561 marker
-├── tests/                           # Unit tests (349 tests)
+├── tests/                           # Unit tests (353 tests)
 ├── yaml_examples/                   # Configuration templates
 └── pyproject.toml                   # Package configuration
 ```

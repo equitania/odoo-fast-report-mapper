@@ -5,11 +5,11 @@ from __future__ import annotations
 
 
 class OdooConnectionError(Exception):
-    pass
+    """Raised when establishing or using the Odoo RPC connection fails."""
 
 
 class PathDoesNotExistError(Exception):
-    pass
+    """Raised when a required file system path (e.g. a YAML directory) does not exist."""
 
 
 # Backward-compatibility alias for the historical misspelling (typo: "Exit" → "Exist")
