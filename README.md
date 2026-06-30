@@ -15,6 +15,19 @@
 
 Eine Python CLI-Bibliothek zur Erstellung, Verwaltung und Testung von FastReport-Einträgen in Odoo-Umgebungen. Unterstützt das [FastReport-Modul für Odoo](https://www.ownerp.com/odoo-fastreport) von Equitania Software GmbH.
 
+### Mehrwerte
+
+- **Berichte automatisiert einrichten** – ein komplettes Belegset aus zentralen
+  Konfigurationsdateien in einem Durchlauf registrieren, statt jeden Bericht von Hand zu pflegen.
+- **Einheitlich über viele Systeme** – dieselbe Konfiguration reproduzierbar auf Test-, Abnahme-
+  und Produktivumgebungen ausrollen.
+- **Sicherheit vor dem Echteinsatz** – Berichte testweise erzeugen und Fehler erkennen, bevor sie
+  beim Kunden landen.
+- **Mehrsprachig ohne Zusatzaufwand** – Berichtsnamen werden automatisch für alle aktiven
+  Odoo-Sprachen gepflegt.
+- **Nichts geht verloren** – in Odoo angepasste Berichte jederzeit selektiv zurück nach YAML
+  sichern, versionieren und auf ein anderes System übertragen.
+
 ### Upgrade auf v1.0
 
 Nutzer, die von einer früheren Version upgraden, finden alle Breaking Changes und Import-Pfad-Anpassungen in der **[MIGRATION.md](MIGRATION.md)**.
@@ -159,6 +172,18 @@ odoo-fr-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
 odoo-fr-mapper --yaml_path=./output
 ```
 
+### Benutzerhandbuch
+
+Ausführliche, einsatzzweck-orientierte Schritt-für-Schritt-Anleitungen (zweisprachig) liegen im
+Verzeichnis **[usage/](usage/README.md)**:
+
+| Einsatzzweck | Anleitung |
+|--------------|-----------|
+| Berichte aus YAML in Odoo **registrieren/aktualisieren** (Mapping, Verbindungsbestätigung, Fehlerverhalten, QWeb ausblenden) | [usage/mapping-reports.md](usage/mapping-reports.md) |
+| Berichtsnamen **mehrsprachig** pflegen (automatisch für alle aktiven Odoo-Sprachen) | [usage/multilanguage.md](usage/multilanguage.md) |
+| Mit `--select` gezielt **einzelne Berichte** registrieren | [usage/selective-registration.md](usage/selective-registration.md) |
+| In Odoo angepasste Berichte **selektiv zurück nach YAML** sichern (Collect-Modus) | [usage/collect-to-yaml.md](usage/collect-to-yaml.md) |
+
 ### Weiterführende Abschnitte
 
 Architektur, Entwicklung (Setup, Tests, Code-Qualität), Troubleshooting, Ressourcen und Lizenz sind als gemeinsame englischsprachige Abschnitte am Ende dieses Dokuments zu finden: [Architecture](#architecture) · [Development](#development) · [Troubleshooting](#troubleshooting) · [Resources](#resources) · [License](#license) · [Support](#support)
@@ -170,6 +195,19 @@ Architektur, Entwicklung (Setup, Tests, Code-Qualität), Troubleshooting, Ressou
 ### Project Overview
 
 A Python CLI library for creating, managing, and testing FastReport entries in Odoo environments. Supports the [FastReport module for Odoo](https://www.ownerp.com/odoo-fastreport) by Equitania Software GmbH.
+
+### Why use it
+
+- **Automated report setup** – register a complete set of documents from central configuration
+  files in a single run, instead of maintaining each report by hand.
+- **Consistent across systems** – roll out the same configuration reproducibly to test, staging
+  and production environments.
+- **Safety before going live** – render reports for testing and catch errors before they reach
+  the customer.
+- **Multilingual with no extra effort** – report names are maintained automatically for all active
+  Odoo languages.
+- **Nothing gets lost** – save reports adjusted in Odoo selectively back to YAML at any time,
+  version them and transfer them to another system.
 
 ### Upgrading to v1.0
 
@@ -314,6 +352,18 @@ odoo-fr-mapper --yaml_path=./yaml --env_path=/path/to/config/.env
 # (set ODOO_COLLECT_YAML=True in .env)
 odoo-fr-mapper --yaml_path=./output
 ```
+
+### User Guide
+
+Detailed, task-oriented step-by-step guides (bilingual) live in the **[usage/](usage/README.md)**
+directory:
+
+| Use case | Guide |
+|----------|-------|
+| **Register/update** reports from YAML in Odoo (mapping, connection confirmation, failure handling, hiding QWeb) | [usage/mapping-reports.md](usage/mapping-reports.md) |
+| Maintain report names **multilingually** (automatically for all active Odoo languages) | [usage/multilanguage.md](usage/multilanguage.md) |
+| Register **individual reports** selectively with `--select` | [usage/selective-registration.md](usage/selective-registration.md) |
+| Save reports adjusted in Odoo **selectively back to YAML** (collect mode) | [usage/collect-to-yaml.md](usage/collect-to-yaml.md) |
 
 ---
 
